@@ -1,0 +1,35 @@
+# history files
+.Rhistory
+.Rapp.history
+.Rbuildignore
+
+# r project file
+.Rproj.user/
+.Rproj.user
+
+# session data files
+.RData
+.Rdata
+.RDataTmp
+.httr-oauth
+.DS_Store
+
+# user-specific files
+.Ruserdata
+
+# r environment variables
+.Renviron
+
+# r cache
+*_cache/
+/cache/
+
+# temporary files created by r markdown
+*.utf8.md
+*.knit.md
+
+# vs code files
+.vscode/
+
+# ignore scratch folder
+scratch/
