@@ -1,17 +1,32 @@
 Package: TADAShinyAnalyze
-Title: An Amazing Shiny App
+Title: TADAShinyAnalyze: Analyze Water and Sediment Chemistry Data
 Version: 0.0.0.9000
-Authors@R: 
-    person(given = "firstname",
-           family = "lastname",
-           role = c("aut", "cre"),
-           email = "your@email.com")
-Description: What the package does (one paragraph).
+Authors@R: c(
+    person("Cristina", "Mullin", , "mywaterway@epa.gov", role = "aut",
+           comment = c(ORCID = "0000-0002-0615-6087")),
+    person("Sheila", "Saia", , "sheila.saia@tetratech.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4943-0306")),
+    person("Ben", "Block", , "ben.block@tetratech.com", role = "aut",
+           comment = c(ORCID = "0000-0003-1427-4363")),
+    person("Yu-Chen", "Wang", role = "aut")
+  )
+Description: The overall goal of the `TADAShinyAnalyze` shiny app is to provide a third module to the `TADAShiny` shiny app where users can complete batch and custom analyses by monitoring locations or assessment units (AUs) with the ultimate goal of supporting water quality management.
 License: CC0
 Imports: 
+    attempt,
     config,
+    DT,
+    glue,
     golem,
+    htmltools,
     shiny
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.1
+URL: https://github.com/USEPA/TADAShinyJoinToAU
+BugReports: https://github.com/USEPA/TADAShinyJoinToAU/issues
+Suggests: 
+    spelling,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Language: en-US
