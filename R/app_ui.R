@@ -46,7 +46,7 @@ app_ui <- function(request) {
       shinyjs::useShinyjs(),
       shinyjs::inlineCSS(css),
       htmltools::br(),
-      shiny::headerPanel(title = "Tools for Automated Data Analysis (TADA) Module 2: Join Monitoring Locations to AUs"),
+      shiny::headerPanel(title = "Tools for Automated Data Analysis (TADA) Module 3: Analyze Data"),
       htmltools::br(),
       
       # create a navbar page with tabs at the top

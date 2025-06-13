@@ -46,4 +46,18 @@ golem::create_golem(proj_path, overwrite = TRUE)
 golem::set_golem_options()
 fs::dir_tree()
 
-# 
+## 7. fill description file
+# see dev > 01_start.R
+
+# 8. add utility functions
+golem::use_utils_ui()
+golem::use_utils_server()
+
+# 9. create load file module
+golem::add_module(name = "load_file", with_test = TRUE, export = FALSE)
+
+# 10. create batch module
+golem::add_module(name = "batch_analysis", with_test = TRUE, export = FALSE)
+
+# 11. create custom module
+golem::add_module(name = "custom_analysis", with_test = TRUE, export = FALSE)
