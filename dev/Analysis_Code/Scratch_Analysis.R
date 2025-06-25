@@ -12,11 +12,25 @@ library(tigris)
 ### Preprocessing
 
 # Load the criteria table
-criteria_table <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx")
+criteria_table <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx",
+                             sheet = "TADA-Format Criteria")
 
 # Convert the fraction to upper case
 criteria_table <- criteria_table |>
   dplyr::mutate(Fraction = toupper(Fraction))
+
+# Load equation table
+hardness_eq <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx",
+                          sheet = "Hardness_eq")
+
+pH_Hardness_eq <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx",
+                             sheet = "pH_Hardness_eq")
+
+pH_eq <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx",
+                    sheet = "pH_eq")
+
+pH_Temperature_eq <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250623_ycw.xlsx",
+                                sheet = "pH_Temperature_eq")
 
 # Load the example dataset
 dat <- readRDS("Data/ND_Little_Muddy.rds")
@@ -79,7 +93,11 @@ dat_no_lower <- dat_no |>
 dat_no_between <- dat_no |> 
   dplyr::filter(!is.na(MagnitudeValueLower) & !is.na(MagnitudeValueUpper))
 
-# For equation-based dataset, calculate the threshold 
+# For equation-based dataset separate the dataset into the following
+# Hardness_eq
+# pH_Hardness_eq
+# pH_eq
+# pH_Temperature_eq
 
 
 
