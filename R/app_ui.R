@@ -46,13 +46,13 @@ app_ui <- function(request) {
       shinyjs::useShinyjs(),
       shinyjs::inlineCSS(css),
       htmltools::br(),
-      shiny::headerPanel(title = "Tools for Automated Data Analysis (TADA) Module 3: Analyze Data"),
+      shiny::headerPanel(title = "Tools for Automated Data Analysis (TADA) Module: Analyze Data"),
       htmltools::br(),
       
       # create a navbar page with tabs at the top
       shiny::tabsetPanel(
         id = "tabbar",
-        shiny::tabPanel("1. Load File",
+        shiny::tabPanel("1. Load Files",
                         value = "Load", # each tabPanel represents a tab page at the top of the navbar
                         htmltools::br(),
                         mod_load_file_ui("load_file_1")
