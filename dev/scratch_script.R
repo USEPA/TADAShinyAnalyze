@@ -61,3 +61,6 @@ golem::add_module(name = "batch_analysis", with_test = TRUE, export = FALSE)
 
 # 11. create custom module
 golem::add_module(name = "custom_analysis", with_test = TRUE, export = FALSE)
+
+# 12. amend golem config with global variables
+golem::amend_golem_config(key = "MB_LIMIT", value = 200)
