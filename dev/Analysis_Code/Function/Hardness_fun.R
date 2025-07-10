@@ -5,7 +5,7 @@ hardness_filter <- function(x){
     dplyr::select(ActivityStartDate, `ActivityStartTime.Time`,
             MonitoringLocationIdentifier, MonitoringLocationTypeName,
             TADA.LatitudeMeasure, TADA.LongitudeMeasure,
-            StateName, Hardness = TADA.ResultMeasureValue) |>
+            Hardness = TADA.ResultMeasureValue) |>
     # Calculate average if multiple samples exist
     dplyr::group_by(dplyr::across(-Hardness)) |>
     dplyr::summarize(Hardness = mean(Hardness, na.rm = TRUE)) |>
@@ -18,8 +18,7 @@ hardness_join <- function(x, y){
     dplyr::left_join(y, by = c(
       "ActivityStartDate", "ActivityStartTime.Time",
       "MonitoringLocationIdentifier", "MonitoringLocationTypeName",
-      "TADA.LatitudeMeasure", "TADA.LongitudeMeasure",
-      "StateName"
+      "TADA.LatitudeMeasure", "TADA.LongitudeMeasure"
     ))
   return(x2)
 }
