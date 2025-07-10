@@ -116,8 +116,11 @@ dat2 <- dat |>
 
 # Join the criteria_table_f1 and AU_MLID_f1 to dat2
 dat3 <- dat2 |>
-  criteria_join(criteria_table_f1) |>
-  left_join(AU_MLID_f1)
+  left_join(AU_MLID_f1) |>
+  left_join(AU_Use_f1, 
+            by = "JoinToAU.AssessmentUnitIdentifier",
+            relationship = "many-to-many") |>
+  criteria_join(criteria_table_f1) 
 
 ### Step 3: Separate the dataset based on if criteria exist
 dat_na <- dat3 |> dplyr::filter(is.na(EquationBased))
