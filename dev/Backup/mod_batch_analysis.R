@@ -7,10 +7,6 @@
 #' @noRd 
 #'
 #' @importFrom shiny NS tagList 
-# Load the input data
-data_path1 <- app_sys("extdata/Criteria_Table_Input.RData")
-load(data_path1)
-
 mod_batch_analysis_ui <- function(id) {
   # set module session id
   ns <- NS(id)
@@ -76,7 +72,7 @@ mod_batch_analysis_ui <- function(id) {
 mod_batch_analysis_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    mod_analysis_selector_server("Batch_Select")
+ 
   })
 }
     

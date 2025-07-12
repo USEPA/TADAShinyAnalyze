@@ -171,6 +171,13 @@ mod_load_file_server <- function(id, tadat){
     # get module session id
     ns <- session$ns
     
+    # Create reactive values to track file upload status
+    files_loaded <- reactiveValues(
+      mlid = FALSE,
+      mltoau = FALSE,
+      autouse = FALSE
+    )
+    
     #### 1. ml file loaded event ####
     df_mlid_input <- shiny::eventReactive(input$mlid_input_file, {
       
@@ -212,6 +219,13 @@ mod_load_file_server <- function(id, tadat){
       
       # get missing columns
       mlid_missing_cols <- setdiff(mlid_required_cols, names(df_mlid_input))
+      
+      if (length(mlid_missing_cols) > 0){
+        files_loaded$mlid <- FALSE
+      } else {
+        files_loaded$mlid <- TRUE
+      }
+      
       if (length(mlid_missing_cols) > 0) {
         shiny::validate(
           need(
@@ -221,20 +235,14 @@ mod_load_file_server <- function(id, tadat){
                    paste0("* ", mlid_missing_cols, collapse = "\n"))
           )
         )
-      }
-      
+      } 
+  
       # save to tadat
       tadat$df_mlid_input <- df_mlid_input
       
       # return
       df_mlid_input
     }) # end of df_mlid_input
-    
-    # enable second tab to be selected once input data is processed
-    # TODO figure out how to get this to work only after all three files are loaded
-    # shiny::observeEvent(!is.null(df_mlid_input()), {
-    #   shinyjs::enable(selector = '.nav li a[data-value="Batch"]') # also custom!
-    # }, ignoreNULL = FALSE)
     
     # render data in a table
     output$df_mlid_input_dt <- DT::renderDT({
@@ -315,6 +323,13 @@ mod_load_file_server <- function(id, tadat){
       
       # get missing columns
       mltoau_missing_cols <- setdiff(mltoau_required_cols, names(df_mltoau_input))
+      
+      if (length(mltoau_missing_cols) > 0){
+        files_loaded$mltoau <- FALSE
+      } else if (length(mltoau_missing_cols) <= 0){
+        files_loaded$mltoau <- TRUE
+      }
+      
       if (length(mltoau_missing_cols) > 0) {
         shiny::validate(
           need(
@@ -324,7 +339,7 @@ mod_load_file_server <- function(id, tadat){
                    paste0("* ", mltoau_missing_cols, collapse = "\n"))
           )
         )
-      }
+      } 
       
       # save to tadat
       tadat$df_mltoau_input <- df_mltoau_input
@@ -332,12 +347,6 @@ mod_load_file_server <- function(id, tadat){
       # return
       df_mltoau_input
     }) # end of df_mltoau_input
-    
-    # enable second tab to be selected once input data is processed
-    # TODO figure out how to get this to work only after all three files are loaded
-    # shiny::observeEvent(!is.null(df_mltoau_input()), {
-    #   shinyjs::enable(selector = '.nav li a[data-value="Batch"]') # also custom!
-    # }, ignoreNULL = FALSE)
     
     # render data in a table
     output$df_mltoau_input_dt <- DT::renderDT({
@@ -418,6 +427,13 @@ mod_load_file_server <- function(id, tadat){
       
       # get missing columns
       autouse_missing_cols <- setdiff(autouse_required_cols, names(df_autouse_input))
+      
+      if (length(autouse_missing_cols) > 0){
+        files_loaded$autouse <-FALSE
+      } else {
+        files_loaded$autouse <- TRUE
+      }
+      
       if (length(autouse_missing_cols) > 0) {
         shiny::validate(
           need(
@@ -427,7 +443,7 @@ mod_load_file_server <- function(id, tadat){
                    paste0("* ", autouse_missing_cols, collapse = "\n"))
           )
         )
-      }
+      } 
       
       # save to tadat
       tadat$df_autouse_input <- df_autouse_input
@@ -435,12 +451,6 @@ mod_load_file_server <- function(id, tadat){
       # return
       df_autouse_input
     }) # end of df_autouse_input
-    
-    # enable second tab to be selected once input data is processed
-    # TODO figure out how to get this to work only after all three files are loaded
-    # shiny::observeEvent(!is.null(df_autouse_input()), {
-    #   shinyjs::enable(selector = '.nav li a[data-value="Batch"]') # also custom!
-    # }, ignoreNULL = FALSE)
     
     # render data in a table
     output$df_autouse_input_dt <- DT::renderDT({
@@ -480,6 +490,23 @@ mod_load_file_server <- function(id, tadat){
         )
       }
     }) # end renderText
+    
+    # enable second tab to be selected once input data is processed
+    shiny::observe({
+      
+      print("Test 1")
+      print("files_loaded$mlid")
+      print(files_loaded$mlid)
+      print("files_loaded$mltoau")
+      print(files_loaded$mltoau)
+      print("files_loaded$autouse")
+      print(files_loaded$autouse)
+      
+      if (files_loaded$mlid & files_loaded$mltoau & files_loaded$autouse){
+      shinyjs::enable(selector = '.nav li a[data-value="Batch"]') # also custom!
+      } else {
+      shinyjs::disable(selector = '.nav li a[data-value="Batch"]') # also custom!
+      }})
 
   }) # end of moduleServer
 } # end of server function

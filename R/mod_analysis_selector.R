@@ -15,31 +15,19 @@ mod_analysis_selector_ui <- function(id) {
         width = 6,
         shiny::radioButtons(inputId = ns("loc_select"),
                             label = "Batch Analyzed by: ",
-                            choices = c("Monitoring Location (ML)",
-                                        "Assessment Unit (AU)"))
+                            choices = c("Monitoring Location ID" = "MLId",
+                                        "Assessment Unit (Individual)" = "AU_ind",
+                                        "Assessment Unit (Group)" = "AU_group"))
       ),
       column(
         width = 6,
         shiny::selectInput(inputId = ns("state_tribe"),
                            label = "Select state/tribe",
-                           choices = c("Colorado" = "CO",
-                                       "Montana" = "MT",
-                                       "North Dakota" = "ND",
-                                       "South Dakota" = "SD",
-                                       "Wyoming" = "WY",
-                                       "Utah" = "UT")),
+                           choices = NULL),
         shinyWidgets::virtualSelectInput(
           inputId = ns("uses_select"),
           label = "Select:",
-          choices = list(
-            "Agriculture",
-            "Aquatic Life",
-            "Drinking water",
-            "Human Health",
-            "Industrial",
-            "Recreation",
-            "Wildlife"
-          ),
+          choices = NULL,
           showValueAsTags = TRUE,
           search = TRUE,
           multiple = TRUE

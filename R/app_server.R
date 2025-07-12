@@ -7,6 +7,9 @@
 app_server <- function(input, output, session) {
   # Your application server logic
   
+  # Set maximum file upload size to 100MB
+  options(shiny.maxRequestSize = 100*1024^2)
+  
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()
   
@@ -16,9 +19,8 @@ app_server <- function(input, output, session) {
   mod_custom_analysis_server("custom_analysis_1", tadat)
   
   # disable other tabs upon start
-  # commeting this out for now so yu-chen can develop
-  # shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
-  # shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
+  shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+  shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
   
   # save session info to tadat
   job_id <- paste0("ts", format(Sys.time(), "%Y%m%d%H%M%S"))
