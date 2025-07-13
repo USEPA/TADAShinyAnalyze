@@ -4,6 +4,13 @@
 #'     DO NOT REMOVE.
 #' @import shiny
 #' @noRd
+#' 
+
+# set options
+options(shiny.maxRequestSize = get_golem_config("MB_LIMIT")*1024^2)
+options(warn = 2)
+
+# server
 app_server <- function(input, output, session) {
   # Your application server logic
   

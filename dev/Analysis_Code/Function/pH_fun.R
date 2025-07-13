@@ -11,7 +11,7 @@ pH_filter <- function(x){
     dplyr::summarize(pH = mean(pH, na.rm = TRUE)) |>
     dplyr::ungroup() |>
     # Create the upper and lower bound
-    mutate(DateTime_upper = DateTime + lubridate::days(1),
+    dplyr::mutate(DateTime_upper = DateTime + lubridate::days(1),
            DateTime_lower = DateTime - lubridate::days(1))
   
   return(x2)
