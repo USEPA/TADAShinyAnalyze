@@ -12,7 +12,7 @@ modSum <- function(x){
 # A function to calculate the exceedance percentage data with criteria
 exceedance_summary <- function(x, type){
 
-  if(type %in% c("MLId", "AU_ind")){
+  if(type %in% c("MLid", "AUind")){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("MonitoringLocationIdentifier", "MonitoringLocationName",
@@ -22,7 +22,7 @@ exceedance_summary <- function(x, type){
                       "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                       "DurationValue", "DurationUnit", "DurationAggregation",
                       "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
-  } else if (type %in% "AU_group"){
+  } else if (type %in% "AUgroup"){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("JoinToAU.AssessmentUnitIdentifier", "ATTAINS.UseName",
@@ -31,6 +31,12 @@ exceedance_summary <- function(x, type){
                         "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                         "DurationValue", "DurationUnit", "DurationAggregation",
                         "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
+  }
+  
+  else {
+    # some sort of error statement?
+    # x2 <- ???
+    # or you could also remove the else if and put that code here
   }
 
   x3 <- x2 |>
@@ -54,7 +60,7 @@ exceedance_summary <- function(x, type){
       TRUE                                                            ~ "Not Exceed"
     ))
 
-  if (type %in% "MLId"){
+  if (type %in% "MLid"){
     x4 <- x3 |> dplyr::select(-JoinToAU.AssessmentUnitIdentifier)
   } else {
     x4 <- x3

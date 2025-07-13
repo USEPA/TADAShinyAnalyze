@@ -170,11 +170,11 @@ dat4 <- dplyr::bind_rows(dat_no2)
 
 # The users can select if they want to see the analysis results as
 # 1. MLid
-# 2. AU_ind: AU (Individual Sites)
-# 3. AU_group: AU (Group Sites)
+# 2. AUind: AU (Individual Sites)
+# 3. AUgroup: AU (Group Sites)
 
 # Select MLId AU_ind, or AU_group
-analysis_unit <- "MLId"
+analysis_unit <- "MLid"
 
 dat5 <- dat4 |> 
   exceedance_summary(type = analysis_unit)
