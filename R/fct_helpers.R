@@ -26,7 +26,7 @@ pH_filter <- function(x){
   x2 <- x |>
     dplyr::filter(TADA.CharacteristicName %in% "PH") |>
     dplyr::select(DateTime,
-                  MonitoringLocationIdentifier, MonitoringLocationTypeName,
+                  TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                   TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                   pH = TADA.ResultMeasureValue) |>
     # Calculate average if multiple samples exist
@@ -42,7 +42,7 @@ pH_filter <- function(x){
 
 pH_join <- function(x, y){
   
-  by <- dplyr::join_by(MonitoringLocationIdentifier, MonitoringLocationTypeName,
+  by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                        dplyr::closest(DateTime >= DateTime_lower), 
                        closest(DateTime <= DateTime_upper))
@@ -68,7 +68,7 @@ temp_filter <- function(x){
   x2 <- x |>
     dplyr::filter(TADA.CharacteristicName %in% "TEMPERATURE, WATER") |>
     dplyr::select(DateTime,
-                  MonitoringLocationIdentifier, MonitoringLocationTypeName,
+                  TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                   TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                   Temperature = TADA.ResultMeasureValue) |>
     # Calculate average if multiple samples exist
@@ -84,7 +84,7 @@ temp_filter <- function(x){
 
 temp_join <- function(x, y){
   
-  by <- dplyr::join_by(MonitoringLocationIdentifier, MonitoringLocationTypeName,
+  by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                        dplyr::closest(DateTime >= DateTime_lower), 
                        closest(DateTime <= DateTime_upper))
@@ -110,7 +110,7 @@ hardness_filter <- function(x){
   x2 <- x |>
     dplyr::filter(TADA.CharacteristicName %in% "HARDNESS, CA, MG") |>
     dplyr::select(ActivityStartDate, `ActivityStartTime.Time`,
-                  MonitoringLocationIdentifier, MonitoringLocationTypeName,
+                  TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                   TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                   Hardness = TADA.ResultMeasureValue) |>
     # Calculate average if multiple samples exist
@@ -124,7 +124,7 @@ hardness_join <- function(x, y){
   x2 <- x |>
     dplyr::left_join(y, by = c(
       "ActivityStartDate", "ActivityStartTime.Time",
-      "MonitoringLocationIdentifier", "MonitoringLocationTypeName",
+      "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationTypeName",
       "TADA.LatitudeMeasure", "TADA.LongitudeMeasure"
     ))
   return(x2)
@@ -159,7 +159,7 @@ exceedance_fun <- function(x){
 ### A function to summarize the exceedance data
 exceedance_summary <- function(x, type){
   
-  if(type %in% c("MLid", "AUind")){
+  if(type %in% c("MLId", "AU_ind")){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
@@ -173,7 +173,6 @@ exceedance_summary <- function(x, type){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("JoinToAU.AssessmentUnitIdentifier", "ATTAINS.UseName",
-                        "TADA.LongitudeMeasure", "TADA.LatitudeMeasure",
                         "TADA.CharacteristicName", "TADA.ResultSampleFractionText",
                         "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                         "DurationValue", "DurationUnit", "DurationAggregation",

@@ -12,7 +12,7 @@ modSum <- function(x){
 # A function to calculate the exceedance percentage data with criteria
 exceedance_summary <- function(x, type){
 
-  if(type %in% c("MLid", "AUind")){
+  if(type %in% c("MLid", "AU_ind")){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",

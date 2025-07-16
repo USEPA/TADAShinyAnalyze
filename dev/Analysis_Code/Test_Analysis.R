@@ -114,8 +114,8 @@ AU_MLID_f1 <- AU_MLID |>
 
 # Filter the input data based on AU_MLID_f1
 dat3 <- dat2 |>
-  dplyr::filter(MonitoringLocationIdentifier %in% 
-                  AU_MLID_f1$MonitoringLocationIdentifier)
+  dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
+                  AU_MLID_f1$TADA.MonitoringLocationIdentifier)
 
 # Join the criteria_table_f1 and AU_MLID_f1 to dat2
 dat4 <- dat3 |>
@@ -172,11 +172,11 @@ dat5 <- dplyr::bind_rows(dat_no2)
 
 # The users can select if they want to see the analysis results as
 # 1. MLid
-# 2. AUind: AU (Individual Sites)
-# 3. AUgroup: AU (Group Sites)
+# 2. AU_ind: AU (Individual Sites)
+# 3. AU_group: AU (Group Sites)
 
 # Select MLId AU_ind, or AU_group
-analysis_unit <- "MLid"
+analysis_unit <- "AU_ind"
 
 dat6 <- dat5 |> 
   exceedance_summary(type = analysis_unit)

@@ -3,7 +3,7 @@ pH_filter <- function(x){
   x2 <- x |>
     dplyr::filter(TADA.CharacteristicName %in% "PH") |>
     dplyr::select(DateTime,
-            MonitoringLocationIdentifier, MonitoringLocationTypeName,
+            TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
             TADA.LatitudeMeasure, TADA.LongitudeMeasure,
             pH = TADA.ResultMeasureValue) |>
     # Calculate average if multiple samples exist
@@ -19,7 +19,7 @@ pH_filter <- function(x){
 
 pH_join <- function(x, y){
   
-  by <- dplyr::join_by(MonitoringLocationIdentifier, MonitoringLocationTypeName,
+  by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                 TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                 dplyr::closest(DateTime >= DateTime_lower), 
                 closest(DateTime <= DateTime_upper))
