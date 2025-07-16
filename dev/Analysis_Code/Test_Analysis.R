@@ -109,14 +109,16 @@ AU_Use_f1 <- AU_Use |>
 
 # Filter the AU_MLID based on AU_Use_f1
 AU_MLID_f1 <- AU_MLID |>
-  dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
+  dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
+                  AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
 
 # Filter the input data based on AU_MLID_f1
-dat2 <- dat |>
-  dplyr::filter(MonitoringLocationIdentifier %in% AU_MLID_f1$MonitoringLocationIdentifier)
+dat3 <- dat2 |>
+  dplyr::filter(MonitoringLocationIdentifier %in% 
+                  AU_MLID_f1$MonitoringLocationIdentifier)
 
 # Join the criteria_table_f1 and AU_MLID_f1 to dat2
-dat3 <- dat2 |>
+dat4 <- dat3 |>
   dplyr::left_join(AU_MLID_f1) |>
   dplyr::left_join(AU_Use_f1, 
                    by = "JoinToAU.AssessmentUnitIdentifier",
@@ -124,9 +126,9 @@ dat3 <- dat2 |>
   criteria_join(criteria_table_f1) 
 
 ### Step 3: Separate the dataset based on if criteria exist
-dat_na <- dat3 |> dplyr::filter(is.na(EquationBased))
-dat_yes <- dat3 |> dplyr::filter(EquationBased %in% "Yes")
-dat_no <- dat3 |> dplyr::filter(EquationBased %in% "No")
+dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
+dat_yes <- dat4 |> dplyr::filter(EquationBased %in% "Yes")
+dat_no <- dat4 |> dplyr::filter(EquationBased %in% "No")
 
 ### Step 4: Compare the dataset that the condition is not based on equation
 dat_no2 <- dat_no |> exceedance_fun()
@@ -164,7 +166,7 @@ dat_no2 <- dat_no |> exceedance_fun()
 
 # Combine the results from each cases
 # Need to make sure all the cases have the same column headers
-dat4 <- dplyr::bind_rows(dat_no2)
+dat5 <- dplyr::bind_rows(dat_no2)
 
 ### Step 6: Summarize the data
 
@@ -176,5 +178,5 @@ dat4 <- dplyr::bind_rows(dat_no2)
 # Select MLId AU_ind, or AU_group
 analysis_unit <- "MLid"
 
-dat5 <- dat4 |> 
+dat6 <- dat5 |> 
   exceedance_summary(type = analysis_unit)

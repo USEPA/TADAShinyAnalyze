@@ -24,7 +24,7 @@ mod_batch_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        mod_analysis_selector_ui("Batch_Select")
+        mod_analysis_selector_ui(ns("Batch_Select"))
       )
     ),
     
@@ -56,13 +56,15 @@ mod_batch_analysis_ui <- function(id) {
           width = 6,
           selectizeInput(inputId = ns("loc_filter"),
                          label = "Filter ML/AU ID to view the results",
-                         choices = NULL)
+                         choices = NULL,
+                         multiple = TRUE)
         ),
         column(
           width = 6,
           selectizeInput(inputId = ns("parameter_filter"),
                          label = "Filter parameter to view the results",
-                         choices = NULL)
+                         choices = NULL,
+                         multiple = TRUE)
         )
       )
 
@@ -76,7 +78,83 @@ mod_batch_analysis_ui <- function(id) {
 mod_batch_analysis_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
-    mod_analysis_selector_server("Batch_Select")
+    mod_analysis_selector_server("Batch_Select", tadat)
+    
+    ### Remove records need to be reviewed in adat$df_mltoau_input
+    shiny::observeEvent(tadat$df_mltoau_input, {
+      tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
+        dplyr::filter(Needs_Review == "No")
+    })
+    
+    ### If the input data are ready, conduct the analysis
+    shiny::observeEvent(input$Run_Batch, {
+      shiny::req(tadat$df_mlid_input, tadat$df_mltoau_input_f, tadat$df_autouse_input,
+                 tadat$loc_select, tadat$state_tribe, tadat$uses_select)
+      
+      ### Get the input data and convert ActivityStartDateTime to dateTime
+      dat <- tadat$df_mlid_input
+      dat <- dat |>
+        dplyr::mutate(ActivityStartDateTime = lubridate::ymd_hms(ActivityStartDateTime)) |>
+        dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
+        dplyr::mutate(DateTime = ActivityStartDateTime)
+      
+      ### Step 1: Join pH, Temperature, and Hardness data
+      dat2 <- dat |> 
+        pH_fun() |>
+        Temperature_fun() |>
+        hardness_fun()
+      
+      ### Step 2: Join the criteria table
+      criteria_table_f1 <- criteria_table |>
+        dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select)
+      
+      # Filter the AU_Use based on available_uses_s
+      AU_Use <- tadat$df_autouse_input
+      AU_MLID <- tadat$df_mltoau_input_f
+      
+      AU_Use_f1 <- AU_Use |>
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select)
+      
+      # Filter the AU_MLID based on AU_Use_f1
+      AU_MLID_f1 <- AU_MLID |>
+        dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
+                        AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
+      
+      # Filter the input data based on AU_MLID_f1
+      dat3 <- dat2 |>
+        dplyr::filter(MonitoringLocationIdentifier %in% 
+                        AU_MLID_f1$MonitoringLocationIdentifier)
+      
+      # Join the criteria_table_f1 and AU_MLID_f1 to dat2
+      dat4 <- dat3 |>
+        dplyr::left_join(AU_MLID_f1) |>
+        dplyr::left_join(AU_Use_f1, 
+                         by = "JoinToAU.AssessmentUnitIdentifier",
+                         relationship = "many-to-many") |>
+        criteria_join(criteria_table_f1) 
+      
+      ### Step 3: Separate the dataset based on if criteria exist
+      dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
+      dat_yes <- dat4 |> dplyr::filter(EquationBased %in% "Yes")
+      dat_no <- dat4 |> dplyr::filter(EquationBased %in% "No")
+      
+      ### Step 4: Compare the dataset that the condition is not based on equation
+      dat_no2 <- dat_no |> exceedance_fun()
+      
+      # Combine the results from each cases
+      # TODO Need to make sure all the cases have the same column headers
+      dat5 <- dplyr::bind_rows(dat_no2)
+      
+      ### Step 6: Summarize the data
+      dat6 <- dat5 |> 
+        exceedance_summary(type = tadat$loc_select)
+      
+      # Save the data to tadat
+      tadat$exceed_summary <- dat6
+      
+    })
+    
   })
 }
     

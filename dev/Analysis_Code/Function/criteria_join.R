@@ -5,9 +5,6 @@ criteria_join <- function(x, y){
     dplyr::left_join(y, by = c("TADA.CharacteristicName",
                                "TADA.ResultSampleFractionText" = "Fraction",
                                "TADA.ResultMeasure.MeasureUnitCode" = "MagnitudeUnit",
-                               # TADA.ComparableDataIdentifier
-                               # "ATTAINS.waterTypeCode",
-                               # "MonitoringLocationTypeName", 
                                "ATTAINS.UseName"
     ),
     relationship = "many-to-many")

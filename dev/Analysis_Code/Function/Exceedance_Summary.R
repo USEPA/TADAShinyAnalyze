@@ -15,14 +15,14 @@ exceedance_summary <- function(x, type){
   if(type %in% c("MLid", "AUind")){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
-        dplyr::all_of(c("MonitoringLocationIdentifier", "MonitoringLocationName",
+        dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
                       "JoinToAU.AssessmentUnitIdentifier", "ATTAINS.UseName",
                       "TADA.LongitudeMeasure", "TADA.LatitudeMeasure",
                       "TADA.CharacteristicName", "TADA.ResultSampleFractionText",
                       "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                       "DurationValue", "DurationUnit", "DurationAggregation",
                       "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
-  } else if (type %in% "AUgroup"){
+  } else {
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("JoinToAU.AssessmentUnitIdentifier", "ATTAINS.UseName",
@@ -32,20 +32,14 @@ exceedance_summary <- function(x, type){
                         "DurationValue", "DurationUnit", "DurationAggregation",
                         "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
   }
-  
-  else {
-    # some sort of error statement?
-    # x2 <- ???
-    # or you could also remove the else if and put that code here
-  }
 
   x3 <- x2 |>
     dplyr::summarize(Sample_Size = dplyr::n(),
-                     Start_Date = min(ActivityStartDate),
-                     End_Date = max(ActivityStartDate),
-                     Minimum = min(TADA.ResultMeasureValue),
-                     Median = median(TADA.ResultMeasureValue),
-                     Maximum = max(TADA.ResultMeasureValue),
+                     Start_Date = min(ActivityStartDate, na.rm = TRUE),
+                     End_Date = max(ActivityStartDate, na.rm = TRUE),
+                     Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
                      Number_of_Exceedances = modSum(Exceedance),
                      .groups = "drop") |>
     dplyr::mutate(Exceedance_Percentage = Number_of_Exceedances/Sample_Size * 100) |>
