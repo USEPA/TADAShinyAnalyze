@@ -79,6 +79,10 @@ mod_batch_analysis_ui <- function(id) {
       column(
         width = 6,
         mod_map_viewer_ui(ns("Summary_Map"))
+      ),
+      column(
+        width = 6,
+        mod_boxplot_ui(ns("Boxplot_View"))
       )
     )
   )
@@ -160,6 +164,8 @@ mod_batch_analysis_server <- function(id, tadat){
       # TODO Need to make sure all the cases have the same column headers
       dat5 <- dplyr::bind_rows(dat_no2)
       
+      tadat$exceed_dat <- dat5
+      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         exceedance_summary(type = tadat$loc_select)
@@ -222,6 +228,8 @@ mod_batch_analysis_server <- function(id, tadat){
     mod_exceedance_viewer_server("Summary_View", tadat)
     
     mod_map_viewer_server("Summary_Map", tadat)
+    
+    mod_boxplot_server("Boxplot_View", tadat)
   })
 }
     

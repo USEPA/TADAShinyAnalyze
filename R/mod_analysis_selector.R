@@ -32,7 +32,7 @@ mod_analysis_selector_ui <- function(id) {
                               choices = NULL),
         shinyWidgets::virtualSelectInput(
           inputId = ns("uses_select"),
-          label = "Select:",
+          label = "Select the uses:",
           choices = NULL,
           showValueAsTags = TRUE,
           search = TRUE,
