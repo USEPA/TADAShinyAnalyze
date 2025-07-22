@@ -42,15 +42,15 @@ mod_map_viewer_server <- function(id, tadat){
         )
         
         # Create the leaflet map
-        leaflet::leaflet(dat2) %>%
+        leaflet::leaflet(dat2) |>
           # Add base tiles
-          leaflet::addTiles() %>%
+          leaflet::addTiles() |>
           # Set initial view (centered on data)
           leaflet::setView(
             lng = mean(dat2$TADA.LongitudeMeasure, na.rm = TRUE),
             lat = mean(dat2$TADA.LatitudeMeasure, na.rm = TRUE),
             zoom = 6
-          ) %>%
+          ) |>
           # Add circle markers
           leaflet::addCircleMarkers(
             lng = ~TADA.LongitudeMeasure,
@@ -88,7 +88,7 @@ mod_map_viewer_server <- function(id, tadat){
               textsize = "12px",
               direction = "auto"
             )
-          ) %>%
+          ) |>
           # Add legend
           leaflet::addLegend(
             position = "bottomright",

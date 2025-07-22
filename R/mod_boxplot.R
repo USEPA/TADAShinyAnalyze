@@ -168,7 +168,8 @@ mod_boxplot_server <- function(id, tadat){
       
       if (tadat$loc_select %in% c("MLid", "AU_ind")){
         p <- p + ggplot2::geom_jitter(data = filtered_data2(), ggplot2::aes(x = ATTAINS.UseName,
-                                                                y = TADA.ResultMeasureValue),
+                                                                y = TADA.ResultMeasureValue
+                                                                , fill = TADA.MonitoringLocationIdentifier),
                                       color = 'black',
                                       shape = 21,
                                       size = 3.5,
@@ -180,13 +181,14 @@ mod_boxplot_server <- function(id, tadat){
           ggplot2::scale_y_log10() +
           ggplot2::theme_bw() +
           ggplot2::labs(fill = 'Monitoring Location ID') +
-          ggplot2::theme(legend.position = "none"
+          ggplot2::theme(legend.position = "top"
                          , text = ggplot2::element_text(size = 24)
                          , axis.text = ggplot2::element_text(size = 22)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       } else {
         p <- p + ggplot2::geom_jitter(data = filtered_data2(), ggplot2::aes(x = ATTAINS.UseName,
-                                                                y = TADA.ResultMeasureValue),
+                                                                y = TADA.ResultMeasureValue
+                                                                , fill = TADA.MonitoringLocationIdentifier),
                                       color = 'black',
                                       shape = 21,
                                       size = 3.5,
@@ -197,7 +199,7 @@ mod_boxplot_server <- function(id, tadat){
           ggplot2::scale_y_log10() +
           ggplot2::theme_bw() +
           ggplot2::labs(fill = 'Assessment Unit ID') +
-          ggplot2::theme(legend.position = "none"
+          ggplot2::theme(legend.position = "top"
                          , text = ggplot2::element_text(size = 24)
                          , axis.text = ggplot2::element_text(size = 22)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
