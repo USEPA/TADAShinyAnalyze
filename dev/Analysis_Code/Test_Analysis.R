@@ -12,7 +12,7 @@ library(tigris)
 ### Load criteria tables related files
 
 ## Load the criteria table
-criteria_table <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250710.xlsx", 
+criteria_table <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250717.xlsx", 
                              sheet = "TADA-Format Criteria")
 
 # Convert the fraction to upper case
@@ -22,19 +22,19 @@ criteria_table <- criteria_table |>
 
 ## Load equation tables
 # Equation based on hardness
-hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250710.xlsx",
+hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250717.xlsx",
                                sheet = "Hardness_eq")
 
 # Equation based on pH and hardness
-pH_Hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250710.xlsx",
+pH_Hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250717.xlsx",
                                   sheet = "pH_Hardness_eq")
 
 # Equation based on pH
-pH_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250710.xlsx",
+pH_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250717.xlsx",
                          sheet = "pH_eq")
 
 # Equation based on pH and Temperature
-pH_Temperature_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250710.xlsx",
+pH_Temperature_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250717.xlsx",
                                      sheet = "pH_Temperature_eq")
 
 ### Load the example dataset
@@ -64,7 +64,7 @@ dat <- dat |>
 source("Function/pH_fun.R")
 source("Function/Temperature_fun.r")
 source("Function/Hardness_fun.r")
-source("Function/criteria_join.r")
+source("Function/criteria_join_advance.r")
 source("Function/Exceedance.r")
 source("Function/Exceedance_Summary.r")
 source("Function/hardness_eq.r")
@@ -123,7 +123,7 @@ dat4 <- dat3 |>
   dplyr::left_join(AU_Use_f1, 
                    by = "JoinToAU.AssessmentUnitIdentifier",
                    relationship = "many-to-many") |>
-  criteria_join(criteria_table_f1) 
+  criteria_join(criteria_table_f1, match_type = "Option 1", filter_type = FALSE) 
 
 ### Step 3: Separate the dataset based on if criteria exist
 dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
@@ -180,3 +180,11 @@ analysis_unit <- "AU_ind"
 
 dat6 <- dat5 |> 
   exceedance_summary(type = analysis_unit)
+
+### Frequency Table
+frequency_table <- criteria_table |> 
+  count(FrequencyCriteriaValue, FrequencyCriteriaMethod)
+
+### Duration Table
+duration_table <- criteria_table |> 
+  count(DurationValue, DurationUnit, DurationAggregation)
