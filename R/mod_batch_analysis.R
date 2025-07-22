@@ -72,7 +72,13 @@ mod_batch_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        DT::DTOutput((outputId = ns("exceed_table")))
+        mod_exceedance_viewer_ui(ns("Summary_View"))
+      )
+    ),
+    fluidRow(
+      column(
+        width = 6,
+        mod_map_viewer_ui(ns("Summary_Map"))
       )
     )
   )
@@ -166,7 +172,7 @@ mod_batch_analysis_server <- function(id, tadat){
     ### Update the loc_filter and parameter_filter if tadat$exceed_summary is ready
     shiny::observeEvent(tadat$exceed_summary, {
       req(tadat$loc_select)
-      if (tadat$loc_select %in% c("MLId", "AU_ind")){
+      if (tadat$loc_select %in% c("MLid", "AU_ind")){
         loc <- sort(unique(tadat$exceed_summary$TADA.MonitoringLocationIdentifier))
       } else {
         loc <- sort(unique(tadat$exceed_summary$JoinToAU.AssessmentUnitIdentifier))
@@ -195,7 +201,7 @@ mod_batch_analysis_server <- function(id, tadat){
     shiny::observeEvent(
       c(tadat$exceed_summary, input$loc_filter, input$parameter_filter),{
         req(tadat$loc_select)
-        if (tadat$loc_select %in% c("MLId", "AU_ind")){
+        if (tadat$loc_select %in% c("MLid", "AU_ind")){
           exceed_summary2 <- tadat$exceed_summary |>
             dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
                             input$loc_filter)
@@ -213,30 +219,9 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceed_summary_f <- exceed_summary3
       
     })
+    mod_exceedance_viewer_server("Summary_View", tadat)
     
-    ### Show the data as a data table
-    shiny::observeEvent(tadat$exceed_summary_f, {
-      
-      output$exceed_table <- DT::renderDT(
-        
-        DT::datatable(
-          tadat$exceed_summary_f |>
-            dplyr::mutate(Exceedance_Percentage = Exceedance_Percentage/100),
-          filter = "top",
-          class = "compact",
-          options = list(scrollX = TRUE,
-                         scrollY = TRUE,
-                         pageLength = 10,
-                         lengthMenu = c(10, 25, 50, 100),
-                         autoWidth = TRUE)) |>
-          DT::formatRound(
-            columns = c("Minimum", "Median", "Maximum")
-          ) |>
-          DT::formatPercentage(
-            columns = c("Exceedance_Percentage")
-          )
-        )
-    })
+    mod_map_viewer_server("Summary_Map", tadat)
   })
 }
     

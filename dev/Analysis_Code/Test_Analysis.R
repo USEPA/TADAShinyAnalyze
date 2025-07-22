@@ -51,7 +51,7 @@ dat <- readr::read_csv("Data/Example_JoinAU/tada_jointoau_output_ts2025070903331
 AU_Use <- readr::read_csv("Data/Example_JoinAU/tada_jointoau_output_ts20250709033312_autouse_for_review.csv")
 
 # The AU to MLID
-AU_MLID <- readr::read_csv("Data/Example_JoinAU/tada_jointoau_output_ts20250709033312_mltoaus_for_review.csv") |>
+AU_MLID <- readr::read_csv("Data/Example_JoinAU/tada_jointoau_output_ts20250709033312_mltoaus_for_review_test.csv") |>
   dplyr::filter(Needs_Review == "No")
 
 # Convert ActivityStartDateTime to dateTime
@@ -176,10 +176,26 @@ dat5 <- dplyr::bind_rows(dat_no2)
 # 3. AU_group: AU (Group Sites)
 
 # Select MLId AU_ind, or AU_group
-analysis_unit <- "AU_ind"
+analysis_unit <- "MLid"
 
 dat6 <- dat5 |> 
   exceedance_summary(type = analysis_unit)
+
+dat7 <- map_summary(dat6, type = analysis_unit)
+
+# a <- dat5 %>%
+#   distinct( TADA.MonitoringLocationIdentifier,
+#             TADA.MonitoringLocationName,
+#             JoinToAU.AssessmentUnitIdentifier,
+#             ATTAINS.UseName,
+#             TADA.LongitudeMeasure,
+#             TADA.LatitudeMeasure)
+# 
+# b <- dat6 %>%
+#   left_join(a)
+
+write_csv(dat6, "AU_group_output.csv")
+
 
 ### Frequency Table
 frequency_table <- criteria_table |> 

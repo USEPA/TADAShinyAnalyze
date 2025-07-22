@@ -1,0 +1,32 @@
+TADA.MonitoringLocationIdentifier,TADA.MonitoringLocationName,JoinToAU.AssessmentUnitIdentifier,TADA.LongitudeMeasure,TADA.LatitudeMeasure,Description,Exceedance_Result
+21NDHDWQ_WQX-380054,LITTLE MUDDY RIVER - WILLISTON,ND-10110102-001-S_00,-103.57327,48.28459,"Fish and Other Aquatic Biota - TEMPERATURE, WATER - Not Exceed",FALSE
+21NDHDWQ_WQX-380540,BLACKTAIL DAM - DEEPEST,ND-10110102-001-S_00,-103.7331,48.42984,"Fish and Other Aquatic Biota - TEMPERATURE, WATER - Not Exceed",FALSE
+21NDHDWQ_WQX-385602,COW CREEK,ND-10110102-001-S_00,-103.63572,48.29566,"Fish and Other Aquatic Biota - TEMPERATURE, WATER - Not Exceed",FALSE
+21NDHDWQ_WQX-386055,LITTLE MUDDY RIVER,ND-10110102-001-S_00,-103.661602,48.488882,"Fish and Other Aquatic Biota - TEMPERATURE, WATER - Not Exceed",FALSE
+21NDHDWQ_WQX-386056,BLACKTAIL CREEK,ND-10110102-001-S_00,-103.64626,48.40323,"Fish and Other Aquatic Biota - TEMPERATURE, WATER - Not Exceed",FALSE
+COEOMAHA_WQX-GARNFLMUD1,GARNFLMUD1,ND-10110102-013-S_00,-103.5957,48.14697,"Agricultural - PH - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Exceed
+Municipal and Domestic - ANTIMONY - Not Exceed",TRUE
+COEOMAHA_WQX-WILCFMRLM1,WILCFMRLM1,ND-10110102-013-S_00,-103.593,48.13561,"Agricultural - PH - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Exceed
+Municipal and Domestic - ANTIMONY - Not Exceed",TRUE
+COEOMAHA_WQX-WILRRLMUD2,WILRRLMUD2,ND-10110102-013-S_00,-103.5953,48.14017,"Agricultural - PH - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Exceed
+Municipal and Domestic - ANTIMONY - Not Exceed",TRUE
+COEOMAHA_WQX-WILRRSCMP1,WILRRSCMP1,ND-10110102-013-S_00,-103.599,48.13607,"Agricultural - PH - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Exceed",TRUE
+NARS_WQX-NRS_ND-10500,NRS_ND-10500,ND-10110102-004-S_00,-103.6357201,48.29566109,"Agricultural - PH - Not Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Not Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Not Exceed",TRUE
+USGS-06331000,NA,ND-10110102-004-S_00,-103.5729718,48.2844683,"Fish and Other Aquatic Biota - ALUMINUM - Not Exceed
+Fish and Other Aquatic Biota - ALUMINUM - Exceed
+Fish and Other Aquatic Biota - PH - Not Exceed",TRUE

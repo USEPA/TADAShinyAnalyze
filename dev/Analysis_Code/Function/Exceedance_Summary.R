@@ -11,6 +11,17 @@ modSum <- function(x){
 
 # A function to calculate the exceedance percentage data with criteria
 exceedance_summary <- function(x, type){
+  
+  # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
+  # "JoinToAU.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
+  
+  coords <- dplyr::distinct(x, 
+                            TADA.MonitoringLocationIdentifier,
+                            TADA.MonitoringLocationName,
+                            JoinToAU.AssessmentUnitIdentifier,
+                            ATTAINS.UseName,
+                            TADA.LongitudeMeasure,
+                            TADA.LatitudeMeasure)
 
   if(type %in% c("MLid", "AU_ind")){
     x2 <- x |>
@@ -26,7 +37,6 @@ exceedance_summary <- function(x, type){
     x2 <- x |>
       dplyr::group_by(dplyr::across(
         dplyr::all_of(c("JoinToAU.AssessmentUnitIdentifier", "ATTAINS.UseName",
-                        "TADA.LongitudeMeasure", "TADA.LatitudeMeasure",
                         "TADA.CharacteristicName", "TADA.ResultSampleFractionText",
                         "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                         "DurationValue", "DurationUnit", "DurationAggregation",
@@ -56,10 +66,49 @@ exceedance_summary <- function(x, type){
 
   if (type %in% "MLid"){
     x4 <- x3 |> dplyr::select(-JoinToAU.AssessmentUnitIdentifier)
-  } else {
+  } else if (type %in% "AU_ind"){
     x4 <- x3
+  } else {
+    x4 <- x3 %>%
+      dplyr::left_join(coords, by = c("JoinToAU.AssessmentUnitIdentifier",
+                                      "ATTAINS.UseName"),
+                       relationship = "many-to-many")
   }
 
   return(x4)
+}
+
+### A function to summarize the map data
+map_summary <- function(x, type){
+  
+  if (type %in% c("AU_ind", "AU_group")){
+    x2 <- x |>
+      dplyr::group_by(TADA.MonitoringLocationIdentifier,
+                      TADA.MonitoringLocationName,
+                      JoinToAU.AssessmentUnitIdentifier,
+                      TADA.LongitudeMeasure,
+                      TADA.LatitudeMeasure) 
+  } else {
+    
+    x2 <- x |>
+      dplyr::group_by(TADA.MonitoringLocationIdentifier,
+                      TADA.MonitoringLocationName,
+                      TADA.LongitudeMeasure,
+                      TADA.LatitudeMeasure)
+  }
+  
+  x3 <- x2 |>
+    dplyr::mutate(
+      Description = paste(ATTAINS.UseName, 
+                          TADA.CharacteristicName,
+                          Exceedance_Percentage,
+                          Exceedance_Result, sep = " - ")
+    ) |>
+    summarize(Description = paste0(Description,
+                                   collapse = "\n"),
+              Exceedance_Result = any(Exceedance_Result %in% "Exceed"))
+  
+  return(x3)
+  
 }
 
