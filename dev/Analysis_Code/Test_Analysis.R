@@ -176,7 +176,7 @@ dat5 <- dplyr::bind_rows(dat_no2)
 # 3. AU_group: AU (Group Sites)
 
 # Select MLId AU_ind, or AU_group
-analysis_unit <- "MLid"
+analysis_unit <- "AU_group"
 
 dat6 <- dat5 |> 
   exceedance_summary(type = analysis_unit)

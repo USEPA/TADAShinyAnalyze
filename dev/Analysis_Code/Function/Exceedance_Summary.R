@@ -99,10 +99,16 @@ map_summary <- function(x, type){
   
   x3 <- x2 |>
     dplyr::mutate(
-      Description = paste(ATTAINS.UseName, 
-                          TADA.CharacteristicName,
-                          Exceedance_Percentage,
-                          Exceedance_Result, sep = " - ")
+      Description = ifelse(is.na(AcuteChronic),
+                           paste(ATTAINS.UseName, 
+                                 TADA.CharacteristicName,
+                                 Exceedance_Percentage,
+                                 Exceedance_Result, sep = " - "),
+                           paste(ATTAINS.UseName, 
+                                 TADA.CharacteristicName,
+                                 AcuteChronic,
+                                 Exceedance_Percentage,
+                                 Exceedance_Result, sep = " - "))
     ) |>
     summarize(Description = paste0(Description,
                                    collapse = "\n"),
