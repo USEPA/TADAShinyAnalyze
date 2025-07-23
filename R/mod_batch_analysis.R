@@ -166,6 +166,14 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$exceed_dat <- dat5
       
+      # A label to activate the third tab
+      if (nrow(tadat$exceed_dat) > 0){
+        tadat$exceed_dat_label <- TRUE
+      } else {
+        tadat$exceed_dat_label <- FALSE
+      }
+      
+      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         exceedance_summary(type = tadat$loc_select)
@@ -230,6 +238,15 @@ mod_batch_analysis_server <- function(id, tadat){
     mod_map_viewer_server("Summary_Map", tadat)
     
     mod_boxplot_server("Boxplot_View", tadat)
+    
+    # enable the third tab to be selected once input data is processed
+    shiny::observeEvent(tadat$exceed_dat_label, {
+      if (tadat$exceed_dat_label){
+        shinyjs::enable(selector = '.nav li a[data-value="Custom"]') # also custom!
+      } else {
+        shinyjs::disable(selector = '.nav li a[data-value="Custom"]') # also custom!
+      }})
+    
   })
 }
     
