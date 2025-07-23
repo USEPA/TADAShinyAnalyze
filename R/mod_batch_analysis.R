@@ -54,14 +54,14 @@ mod_batch_analysis_ui <- function(id) {
         width = 12,
         column(
           width = 6,
-          selectizeInput(inputId = ns("loc_filter"),
+          shiny::selectizeInput(inputId = ns("loc_filter"),
                          label = "Filter ML/AU ID to view the results",
                          choices = NULL,
                          multiple = TRUE)
         ),
         column(
           width = 6,
-          selectizeInput(inputId = ns("parameter_filter"),
+          shiny::selectizeInput(inputId = ns("parameter_filter"),
                          label = "Filter parameter to view the results",
                          choices = NULL,
                          multiple = TRUE)
@@ -176,7 +176,7 @@ mod_batch_analysis_server <- function(id, tadat){
       
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
-        exceedance_summary(type = tadat$loc_select)
+        exceedance_summary(type = tadat$loc_select, group = FALSE)
       
       # Save the data to tadat
       tadat$exceed_summary <- dat6

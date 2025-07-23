@@ -38,6 +38,7 @@ usethis::use_package("EPATADA")
 ## Add modules ----
 ## Create a module infrastructure in R/
 golem::add_module(name = "analysis_selector", with_test = TRUE)
+golem::add_module(name = "analysis_selector_custom", with_test = TRUE)
 golem::add_module(name = "exceedance_viewer", with_test = TRUE) 
 golem::add_module(name = "map_viewer", with_test = TRUE)
 golem::add_module(name = "analysis_results", with_test = TRUE)
