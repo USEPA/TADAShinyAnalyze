@@ -227,7 +227,7 @@ exceedance_summary <- function(x, type){
   } else if (type %in% "AU_ind"){
     x4 <- x3
   } else {
-    x4 <- x3 %>%
+    x4 <- x3 |>
       dplyr::left_join(coords, by = c("JoinToAU.AssessmentUnitIdentifier",
                                       "ATTAINS.UseName"),
                        relationship = "many-to-many")
