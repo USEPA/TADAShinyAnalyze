@@ -19,7 +19,6 @@ exceedance_summary <- function(x, type){
                             TADA.MonitoringLocationIdentifier,
                             TADA.MonitoringLocationName,
                             JoinToAU.AssessmentUnitIdentifier,
-                            ATTAINS.UseName,
                             TADA.LongitudeMeasure,
                             TADA.LatitudeMeasure)
 
@@ -70,9 +69,7 @@ exceedance_summary <- function(x, type){
     x4 <- x3
   } else {
     x4 <- x3 %>%
-      dplyr::left_join(coords, by = c("JoinToAU.AssessmentUnitIdentifier",
-                                      "ATTAINS.UseName"),
-                       relationship = "many-to-many")
+      dplyr::left_join(coords, by = "JoinToAU.AssessmentUnitIdentifier")
   }
 
   return(x4)
@@ -102,15 +99,15 @@ map_summary <- function(x, type){
       Description = ifelse(is.na(AcuteChronic),
                            paste(ATTAINS.UseName, 
                                  TADA.CharacteristicName,
-                                 Exceedance_Percentage,
+                                 paste0(Exceedance_Percentage, "%"),
                                  Exceedance_Result, sep = " - "),
                            paste(ATTAINS.UseName, 
                                  TADA.CharacteristicName,
                                  AcuteChronic,
-                                 Exceedance_Percentage,
+                                 paste0(Exceedance_Percentage, "%"),
                                  Exceedance_Result, sep = " - "))
     ) |>
-    summarize(Description = paste0(Description,
+    dplyr::summarize(Description = paste0(unique(Description),
                                    collapse = "\n"),
               Exceedance_Result = any(Exceedance_Result %in% "Exceed"))
   

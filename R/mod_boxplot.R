@@ -217,7 +217,7 @@ mod_boxplot_server <- function(id, tadat){
       } else {
         p <- p + ggplot2::geom_jitter(data = filtered_data3(), ggplot2::aes(x = ATTAINS.UseName,
                                                                 y = TADA.ResultMeasureValue
-                                                                , fill = TADA.MonitoringLocationIdentifier),
+                                                                , fill = JoinToAU.AssessmentUnitIdentifier),
                                       color = 'black',
                                       shape = 21,
                                       size = 3.5,

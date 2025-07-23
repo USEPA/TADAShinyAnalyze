@@ -23,12 +23,24 @@ mod_exceedance_viewer_server <- function(id, tadat){
     
     ### Show the data as a data table
     shiny::observeEvent(tadat$exceed_summary_f, {
+      
+      # Simplify the table when tadat$loc_select == AU_group
+      if (tadat$loc_select %in% "AU_group"){
+        dat <- tadat$exceed_summary_f |>
+          dplyr::select(-TADA.MonitoringLocationIdentifier,
+                        -TADA.MonitoringLocationName,
+                        -TADA.LongitudeMeasure,
+                        -TADA.LatitudeMeasure) |>
+          dplyr::distinct()
+      } else {
+        dat <- tadat$exceed_summary_f
+      }
+
+      dat <- dat |> dplyr::mutate(Exceedance_Percentage = Exceedance_Percentage/100)
 
       output$exceed_table <- DT::renderDT(
-
         DT::datatable(
-          tadat$exceed_summary_f |>
-            dplyr::mutate(Exceedance_Percentage = Exceedance_Percentage/100),
+          dat,
           filter = "top",
           class = "compact",
           options = list(scrollX = TRUE,
@@ -39,12 +51,9 @@ mod_exceedance_viewer_server <- function(id, tadat){
           DT::formatRound(
             columns = c("Minimum", "Median", "Maximum")
           ) |>
-          DT::formatRound(
-            columns = c("TADA.LongitudeMeasure", "TADA.LatitudeMeasure"),
-          digits = 3) |>
           DT::formatPercentage(
             columns = c("Exceedance_Percentage")
-          )
+          ) 
         )
     })
     

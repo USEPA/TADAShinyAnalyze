@@ -177,7 +177,6 @@ exceedance_summary <- function(x, type){
                             TADA.MonitoringLocationIdentifier,
                             TADA.MonitoringLocationName,
                             JoinToAU.AssessmentUnitIdentifier,
-                            ATTAINS.UseName,
                             TADA.LongitudeMeasure,
                             TADA.LatitudeMeasure)
   
@@ -227,10 +226,8 @@ exceedance_summary <- function(x, type){
   } else if (type %in% "AU_ind"){
     x4 <- x3
   } else {
-    x4 <- x3 |>
-      dplyr::left_join(coords, by = c("JoinToAU.AssessmentUnitIdentifier",
-                                      "ATTAINS.UseName"),
-                       relationship = "many-to-many")
+    x4 <- x3 %>%
+      dplyr::left_join(coords, by = "JoinToAU.AssessmentUnitIdentifier")
   }
   
   return(x4)
@@ -268,7 +265,7 @@ map_summary <- function(x, type){
                                  paste0(Exceedance_Percentage, "%"),
                                  Exceedance_Result, sep = " - "))
     ) |>
-    dplyr::summarize(Description = paste0(Description,
+    dplyr::summarize(Description = paste0(unique(Description),
                                    collapse = "\n"),
               Exceedance_Result = any(Exceedance_Result %in% "Exceed"))
   
