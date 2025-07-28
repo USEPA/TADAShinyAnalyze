@@ -209,6 +209,8 @@ mod_boxplot_server <- function(id, tadat){
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
+          viridis::scale_fill_viridis(discrete = T,
+                                      option = "mako") +
           ggplot2::labs(fill = 'Monitoring Location ID') +
           ggplot2::theme(legend.position = "right"
                          , text = ggplot2::element_text(size = 24)
@@ -228,6 +230,8 @@ mod_boxplot_server <- function(id, tadat){
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
+          viridis::scale_fill_viridis(discrete = T,
+                                      option = "mako") +
           ggplot2::labs(fill = 'Assessment Unit ID') +
           ggplot2::theme(legend.position = "right"
                          , text = ggplot2::element_text(size = 24)
