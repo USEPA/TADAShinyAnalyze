@@ -10,7 +10,62 @@
 mod_timeseries_ui <- function(id) {
   ns <- NS(id)
   tagList(
- 
+    fluidRow(
+      column(
+        width = 6,
+        # Parameter selectize input (single selection)
+        shiny::selectizeInput(
+          inputId = ns("parameter_box_select"),
+          label = "Select a parameter",
+          choices = NULL,
+          selected = NULL,
+          multiple = FALSE,
+          options = list(
+            placeholder = "Select a parameter",
+            create = FALSE
+          )
+        )
+      ),
+      column(
+        width = 6,
+        # Uses selectize input (multiple selection)
+        shiny::selectizeInput(
+          inputId = ns("uses_box_select"),
+          label = "Select the uses",
+          choices = NULL,
+          selected = NULL,
+          multiple = FALSE,
+          options = list(
+            placeholder = "Select the uses",
+            create = FALSE
+          )
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 6,
+        # Uses selectize input (multiple selection)
+        shiny::selectizeInput(
+          inputId = ns("loc_box_select"),
+          label = "Select the location",
+          choices = NULL,
+          selected = NULL,
+          multiple = TRUE,
+          options = list(
+            placeholder = "Select location",
+            create = FALSE
+          )
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        # Plot output
+        shiny::plotOutput(ns("timeseries_view"))
+      )
+    )
   )
 }
     
