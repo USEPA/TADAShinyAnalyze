@@ -79,10 +79,12 @@ mod_batch_analysis_ui <- function(id) {
       column(
         width = 6,
         mod_map_viewer_ui(ns("Summary_Map"))
-      ),
+      )
+    ),
+    fluidRow(
       column(
-        width = 6,
-        mod_boxplot_ui(ns("Boxplot_View"))
+        width = 12,
+        mod_analysis_plots_ui(ns("Analysis_Plots"))
       )
     )
   )
@@ -237,7 +239,7 @@ mod_batch_analysis_server <- function(id, tadat){
     
     mod_map_viewer_server("Summary_Map", tadat)
     
-    mod_boxplot_server("Boxplot_View", tadat)
+    mod_analysis_plots_server("Analysis_Plots", tadat)
     
     # enable the third tab to be selected once input data is processed
     shiny::observeEvent(tadat$exceed_dat_label, {
