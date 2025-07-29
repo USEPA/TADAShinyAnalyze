@@ -44,6 +44,8 @@ golem::add_module(name = "map_viewer", with_test = TRUE)
 golem::add_module(name = "analysis_results", with_test = TRUE)
 golem::add_module(name = "timeseries", with_test = TRUE)
 golem::add_module(name = "boxplot", with_test = TRUE)
+golem::add_module(name = "analysis_plots", with_test = TRUE, export = FALSE)
+
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
