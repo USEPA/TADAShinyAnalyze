@@ -13,7 +13,7 @@ mod_timeseries_ui <- function(id) {
     fluidRow(
       column(
         width = 6,
-        # Parameter selectize input (single selection)
+        # Parameter select input (single selection)
         shiny::selectizeInput(
           inputId = ns("parameter_box_select"),
           label = "Select a parameter",
@@ -188,7 +188,7 @@ mod_timeseries_server <- function(id, tadat){
       }
       
       p<-ggplot2::ggplot() +
-        ggplot2::geom_point(data = filt,
+        ggplot2::geom_point(data = filtered_data2(),
                             ggplot2::aes(x = ActivityStartDate,
                                          y = TADA.ResultMeasureValue,
                                          fill = MonitoringLocationIdentifier),
@@ -197,22 +197,16 @@ mod_timeseries_server <- function(id, tadat){
                             size = 3.5,
                             alpha = 0.8) +
         ggplot2::xlab('Time') +
-        ggplot2::scale_y_log10() +
+        # ggplot2::scale_y_log10() +
         ggplot2::ylab(paste0(str_to_title(j), ' (', tolower(filt$TADA.ResultMeasure.MeasureUnitCode), ')')) +
         ggplot2::theme_bw() +
         viridis::scale_fill_viridis(discrete = T,
                                     option = "mako") +
         ggplot2::labs(fill = 'Monitoring Location ID') +
         ggplot2::theme(legend.position="top"
-                       , legend.spacing.x = unit(0.5, 'cm')
                        , text = ggplot2::element_text(family = "Open_Sans", size = 24)
                        , axis.text = ggplot2::element_text(family = "Open_Sans", size = 22)
-                       , legend.background = element_rect(colour = 'gray60', fill = 'white', linetype='dashed')
-                       , plot.margin = unit(c(0.5,0.25,0.5,0.25), "cm")) +
-        ggplot2::guides(fill = ggplot2::guide_legend(nrow = ceiling(length(unique(filt$MonitoringLocationIdentifier))/3),
-                                                     byrow=TRUE,
-                                                     title.position="top",
-                                                     title.hjust = 0.5))
+                       , legend.background = element_rect(colour = 'gray60', fill = 'white', linetype='dashed')) 
       
       if (tadat$loc_select %in% c("MLid", "AU_ind")){
         p <- p 

@@ -77,8 +77,8 @@ mod_boxplot_server <- function(id, tadat){
     ns <- session$ns
     
     # Update selectize inputs when data changes
-    observe({
-      req(tadat$exceed_dat)
+    shiny::observe({
+      shiny::req(tadat$exceed_dat)
       
       # Get unique values for Parameter dropdown
       param_choices <- sort(unique(tadat$exceed_dat$TADA.CharacteristicName))
@@ -94,9 +94,9 @@ mod_boxplot_server <- function(id, tadat){
     })
     
     # Reactive to filter data based on selections
-    filtered_data1 <- reactive({
-      req(tadat$exceed_dat)
-      req(input$parameter_box_select)
+    filtered_data1 <- shiny::reactive({
+      shiny::req(tadat$exceed_dat)
+      shiny::req(input$parameter_box_select)
       
       # Filter by selected parameter
       dat2 <- tadat$exceed_dat |>
@@ -105,8 +105,8 @@ mod_boxplot_server <- function(id, tadat){
       return(dat2)
     })
     
-    observe({
-      req(filtered_data1())
+    shiny::observe({
+      shiny::req(filtered_data1())
       
       # Get unique values for Uses dropdown
       uses_choices <- sort(unique(filtered_data1()$ATTAINS.UseName))
@@ -124,9 +124,9 @@ mod_boxplot_server <- function(id, tadat){
     
     
     # Reactive to filter data based on selections
-    filtered_data2 <- reactive({
-      req(filtered_data1())
-      req(input$uses_box_select)
+    filtered_data2 <- shiny::reactive({
+      shiny::req(filtered_data1())
+      shiny::req(input$uses_box_select)
       
       # Filter by selected uses
       dat2 <- filtered_data1() |>
@@ -136,9 +136,9 @@ mod_boxplot_server <- function(id, tadat){
     })
     
     # Update the available location selection
-    observe({
-      req(filtered_data2())
-      req(tadat$loc_select)
+    shiny::observe({
+      shiny::req(filtered_data2())
+      shiny::req(tadat$loc_select)
       if (tadat$loc_select %in% c("MLid", "AU_ind")){
         loc_choices <- sort(unique(filtered_data2()$TADA.MonitoringLocationIdentifier))
       } else {
@@ -157,9 +157,9 @@ mod_boxplot_server <- function(id, tadat){
     })
     
     # Reactive to filter data based on location selections
-    filtered_data3 <- reactive({
-      req(filtered_data2())
-      req(input$loc_box_select)
+    filtered_data3 <- shiny::reactive({
+      shiny::req(filtered_data2())
+      shiny::req(input$loc_box_select)
       
       # Filter by selected location
       if (tadat$loc_select %in% c("MLid", "AU_ind")){
@@ -175,9 +175,9 @@ mod_boxplot_server <- function(id, tadat){
 
     
     # Create boxplot
-    output$boxplot_view <- renderPlot({
-      req(filtered_data2())
-      req(filtered_data3())
+    output$boxplot_view <- shiny::renderPlot({
+      shiny::req(filtered_data2())
+      shiny::req(filtered_data3())
       
       # Check if there's data to plot
       if(nrow(filtered_data2()) == 0 | nrow(filtered_data3()) == 0) {
@@ -186,13 +186,19 @@ mod_boxplot_server <- function(id, tadat){
              cex = 1.2, col = "gray50")
         return(NULL)
       }
-      
+      #add filtered_data4 - change 0 values to 0,000001
+      #tadat$p_boxplot <- p
       p <- ggplot2::ggplot() +
-        ggplot2::geom_boxplot(data = filtered_data2(),
+        ggplot2::geom_boxplot(data = filtered_data3(),
                               ggplot2::aes(x = ATTAINS.UseName,
                                            y = TADA.ResultMeasureValue),
                               color = 'gray30',
                               outlier.shape = NA) 
+        # ggplot2::geom_boxplot(data = filtered_data2(),
+        #                       ggplot2::aes(x = ATTAINS.UseName,
+        #                                    y = TADA.ResultMeasureValue),
+        #                       color = 'gray30',
+        #                       outlier.shape = NA) 
       
       if (tadat$loc_select %in% c("MLid", "AU_ind")){
         p <- p + ggplot2::geom_jitter(data = filtered_data3(), ggplot2::aes(x = ATTAINS.UseName,
@@ -204,8 +210,8 @@ mod_boxplot_server <- function(id, tadat){
                                       width = 0.2,
                                       alpha = 0.8) +
           ggplot2::xlab('Uses') +
-          ggplot2::ylab(paste0(stringr::str_to_title(unique(filtered_data2()$TADA.CharacteristicName)), 
-                               ' (', tolower(filtered_data2()$TADA.ResultMeasure.MeasureUnitCode), ')')) +
+          ggplot2::ylab(paste0(unique(filtered_data2()$TADA.CharacteristicName), 
+                               ' (', filtered_data2()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
@@ -226,7 +232,8 @@ mod_boxplot_server <- function(id, tadat){
                                       width = 0.2,
                                       alpha = 0.8) +
           ggplot2::xlab('Uses') +
-          ggplot2::ylab(paste0(stringr::str_to_title(filtered_data2()$TADA.CharacteristicName), ' (', tolower(filtered_data2()$TADA.ResultMeasure.MeasureUnitCode), ')')) +
+          ggplot2::ylab(paste0(filtered_data2()$TADA.CharacteristicName,
+                               ' (', filtered_data2()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
