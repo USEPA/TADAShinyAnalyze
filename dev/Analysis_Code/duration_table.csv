@@ -1,0 +1,35 @@
+DurationValue,DurationUnit,DurationAggregation,n
+1,n-day,arithmetic max,559
+30,n-day,arithmetic mean,484
+1,n-hour,arithmetic mean,166
+1,n-day,arithmetic mean,138
+1,n-day,arithmetic extremes,53
+NA,NA,NA,52
+1,n-day,arithmetic min,47
+96,n-day,arithmetic mean,42
+4,n-day,arithmetic mean,41
+96,n-hour,arithmetic mean,38
+7,n-day,arithmetic mean,35
+30,n-day,geometric mean,32
+7,n-day,rolling arithmetic mean,24
+7,n-day,arithmetic mean min,20
+1,n-day,geometric mean,10
+7,n-day,arithmetic extremes,10
+7,n-day,arithmetic max,8
+1,n-season,geometric mean,5
+1,n-month,arithmetic mean,4
+2,n-month,geometric mean,4
+10,n-day,arithmetic max,4
+2,n-hour,arithmetic max,3
+2,n-hour,arithmetic mean,2
+4,n-day,arithmetic max average,2
+7,n-day,NA,2
+30,n-day,arithmetic extremes,2
+30,n-hour,arithmetic mean,2
+60,n-day,geometric mean,2
+4,n-day,rolling arithmetic mean,1
+12,n-hour,arithmetic mean,1
+30,n-day,arithmetic max,1
+30,n-day,rolling arithmetic mean,1
+90,n-day,arithmetic mean,1
+90,n-day,geometric mean,1

@@ -48,6 +48,13 @@ mod_batch_analysis_ui <- function(id) {
     # Horizontal divider
     hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     
+    # Map-table selector
+    fluidRow(
+      column(
+        width = 12,
+        mod_map_table_selector_ui(ns("Batch_map_table_selector"))
+      )
+    ),
     # Select the ML/AU iD
     fluidRow(
       column(
@@ -168,13 +175,23 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$exceed_dat <- dat5
       
+      # Create a table for the map-table selector
+      site_AU_table <- dat5 |>
+        dplyr::distinct(TADA.MonitoringLocationIdentifier,
+                        TADA.MonitoringLocationName,
+                        TADA.MonitoringLocationTypeName,
+                        TADA.LongitudeMeasure,
+                        TADA.LatitudeMeasure,
+                        JoinToAU.AssessmentUnitIdentifier)
+      
+      tadat$site_AU_table <- site_AU_table
+      
       # A label to activate the third tab
       if (nrow(tadat$exceed_dat) > 0){
         tadat$exceed_dat_label <- TRUE
       } else {
         tadat$exceed_dat_label <- FALSE
       }
-      
       
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
@@ -184,6 +201,9 @@ mod_batch_analysis_server <- function(id, tadat){
       tadat$exceed_summary <- dat6
       
     })
+    
+    # Activate the map-table selector
+    mod_map_table_selector_server("Batch_map_table_selector", tadat)
     
     ### Update the loc_filter and parameter_filter if tadat$exceed_summary is ready
     shiny::observeEvent(tadat$exceed_summary, {

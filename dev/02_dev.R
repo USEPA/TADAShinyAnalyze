@@ -45,6 +45,7 @@ golem::add_module(name = "analysis_results", with_test = TRUE)
 golem::add_module(name = "timeseries", with_test = TRUE)
 golem::add_module(name = "boxplot", with_test = TRUE)
 golem::add_module(name = "analysis_plots", with_test = TRUE, export = FALSE)
+golem::add_module(name = "map_table_selector", with_test = TRUE)
 
 
 ## Add helper functions ----

@@ -85,19 +85,11 @@ mod_analysis_selector_server <- function(id, tadat){
     }, ignoreNULL = TRUE)
     
     ### Save the selected loc_select, state_tribe and uses to tadat
-    shiny::observeEvent(input$loc_select, {
+    observe({
       tadat$loc_select <- input$loc_select
-    })
-    
-    shiny::observeEvent(input$state_tribe, {
       tadat$state_tribe <- input$state_tribe
-    })
-    
-    shiny::observeEvent(input$uses_select, {
       tadat$uses_select <- input$uses_select
     })
-    
-    
   })
 }
     
