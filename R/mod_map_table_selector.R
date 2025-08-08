@@ -29,6 +29,9 @@ mod_map_table_selector_ui <- function(id) {
 mod_map_table_selector_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+    
+    # Initialize reactive value for tracking selected indices
+    selected_idx <- reactiveVal(integer(0))
   
     shiny::observe({
       req(tadat$state_tribe, tadat$uses_select)
@@ -84,10 +87,7 @@ mod_map_table_selector_server <- function(id, tadat){
       map_selector_proxy   <- leaflet::leafletProxy("map_selector", session = session)
       table_selector_proxy <- DT::dataTableProxy("table_selector", session = session)
       
-      # DT and Leaflet sync
-      selected_idx <- reactiveVal(integer(0))
-      
-      # --- DT -> Map: highlight selected points --------------------------------
+      # DT -> Map: highlight selected points
       observeEvent(input$table_selector_rows_selected, ignoreInit = TRUE, ignoreNULL = FALSE, {
         req(tadat$site_AU_table)
         
@@ -123,7 +123,7 @@ mod_map_table_selector_server <- function(id, tadat){
         }
       })
       
-      # --- Map -> DT: clicking markers toggles table selection -----------------
+      # Map -> DT: clicking markers toggles table selection
       observeEvent(input$map_selector_marker_click, {
         req(tadat$site_AU_table)
         
@@ -184,7 +184,7 @@ mod_map_table_selector_server <- function(id, tadat){
         }
       }, ignoreInit = TRUE)
       
-      # --- Reset selection when dataset changes -------------------------------
+      # Reset selection when dataset changes
       observeEvent(c(tadat$state_tribe, tadat$uses_select), {
         # Clear selections when filters change
         selected_idx(integer(0))
@@ -192,6 +192,44 @@ mod_map_table_selector_server <- function(id, tadat){
         map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
       }, ignoreInit = TRUE)
     })
+    
+    # Create a reactive expression to get selected monitoring location IDs
+    selected_monitoring_locations <- reactive({
+      req(tadat$site_AU_table)
+      
+      # Get current selected indices
+      idx <- selected_idx()
+      
+      # If nothing is selected, return empty character vector
+      if (length(idx) == 0) {
+        return(character(0))
+      }
+      
+      # Get the selected rows from the table
+      selected_rows <- tadat$site_AU_table |> 
+        dplyr::slice(idx)
+      
+      # Extract the MonitoringLocationIdentifier values
+      selected_ids <- selected_rows$TADA.MonitoringLocationIdentifier
+      
+      return(selected_ids)
+    })
+    
+    # Update tadat whenever selection changes
+    observeEvent(selected_monitoring_locations(), {
+      # Store the selected monitoring location IDs in tadat
+      tadat$selected_monitoring_locations <- selected_monitoring_locations()
+      
+      # Optional: Also store the full selected rows if needed
+      if (length(selected_idx()) > 0) {
+        tadat$selected_sites_data <- tadat$site_AU_table |> 
+          dplyr::slice(selected_idx())
+      } else {
+        tadat$selected_sites_data <- NULL
+      }
+
+    }, ignoreInit = TRUE)
+    
   })
 }
     
