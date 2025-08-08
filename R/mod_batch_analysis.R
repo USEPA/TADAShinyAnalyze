@@ -27,40 +27,38 @@ mod_batch_analysis_ui <- function(id) {
         mod_analysis_selector_ui(ns("Batch_Select"))
       )
     ),
-    
-    # Horizontal divider
-    hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
-    
     fluidRow(
       column(
         width = 12,
         column(
           width = 12,
-          div(style = "display: flex; align-items: center; gap: 10px;",
-              htmltools::h4("Run Batch Analysis:", style = "margin: 0;"),
-              shiny::actionButton(inputId = ns("Run_Batch"),
-                                  label = "Run")
+          shiny::actionButton(ns("Run_Batch"), "Run Batch Analysis", shiny::icon("computer"),
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
           )
         )
       )
     ),
     
     # Horizontal divider
-    hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
+    htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
+    
+    # Map-table selector
+    fluidRow(
+      column(
+        width = 12,
+        mod_map_table_selector_ui(ns("Batch_map_table_selector"))
+      )
+    ),
+    
+    # Horizontal divider
+    htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     
     # Select the ML/AU iD
     fluidRow(
       column(
         width = 12,
         column(
-          width = 6,
-          shiny::selectizeInput(inputId = ns("loc_filter"),
-                         label = "Filter ML/AU ID to view the results",
-                         choices = NULL,
-                         multiple = TRUE)
-        ),
-        column(
-          width = 6,
+          width = 12,
           shiny::selectizeInput(inputId = ns("parameter_filter"),
                          label = "Filter parameter to view the results",
                          choices = NULL,
@@ -168,13 +166,23 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$exceed_dat <- dat5
       
+      # Create a table for the map-table selector
+      site_AU_table <- dat5 |>
+        dplyr::distinct(TADA.MonitoringLocationIdentifier,
+                        TADA.MonitoringLocationName,
+                        TADA.MonitoringLocationTypeName,
+                        TADA.LongitudeMeasure,
+                        TADA.LatitudeMeasure,
+                        JoinToAU.AssessmentUnitIdentifier)
+      
+      tadat$site_AU_table <- site_AU_table
+      
       # A label to activate the third tab
       if (nrow(tadat$exceed_dat) > 0){
         tadat$exceed_dat_label <- TRUE
       } else {
         tadat$exceed_dat_label <- FALSE
       }
-      
       
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
@@ -185,56 +193,102 @@ mod_batch_analysis_server <- function(id, tadat){
       
     })
     
-    ### Update the loc_filter and parameter_filter if tadat$exceed_summary is ready
-    shiny::observeEvent(tadat$exceed_summary, {
-      req(tadat$loc_select)
-      if (tadat$loc_select %in% c("MLid", "AU_ind")){
-        loc <- sort(unique(tadat$exceed_summary$TADA.MonitoringLocationIdentifier))
-      } else {
-        loc <- sort(unique(tadat$exceed_summary$JoinToAU.AssessmentUnitIdentifier))
-      }
-      
-      ### TODO Find a way to not display all selected items in the UI
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "loc_filter",
-        selected = loc,
-        choices = loc
-      )
-      
-      params <- sort(unique(tadat$exceed_summary$TADA.CharacteristicName))
-      
-      ### TODO Find a way to not display all selected items in the UI
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "parameter_filter",
-        selected = params,
-        choices = params
-      )
-    }, ignoreNULL = TRUE)
+    # Activate the map-table selector
+    mod_map_table_selector_server("Batch_map_table_selector", tadat)
     
-    # Filter the tadat$exceed_summary
-    shiny::observeEvent(
-      c(tadat$exceed_summary, input$loc_filter, input$parameter_filter),{
-        req(tadat$loc_select)
-        if (tadat$loc_select %in% c("MLid", "AU_ind")){
-          exceed_summary2 <- tadat$exceed_summary |>
-            dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
-                            input$loc_filter)
+    ### Subset tadat$exceed_summary if selected_monitoring_locations is ready
+    shiny::observeEvent(c(tadat$selected_monitoring_locations, tadat$exceed_summary), {
+      # Check if we have the exceed_summary data
+      req(tadat$exceed_summary)
+      
+      # Get selected locations - if NULL or empty, use all locations
+      selected_locs <- tadat$selected_monitoring_locations
+      
+      if (is.null(selected_locs) || length(selected_locs) == 0) {
+        # No selection - set to NULL to show empty state
+        tadat$exceedance_summary2 <- NULL
+      } else {
+        # Filter based on location type
+        if (tadat$loc_select %in% c("MLid", "AU_ind")) {
+          exceedance_summary2 <- tadat$exceed_summary |>
+            dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs)
         } else {
-          exceed_summary2 <- tadat$exceed_summary |>
-            dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
-                            input$loc_filter)
+          # For AU_group, need to filter by AU instead
+          # First get the AUs for selected monitoring locations
+          selected_aus <- tadat$site_AU_table |>
+            dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs) |>
+            dplyr::pull(JoinToAU.AssessmentUnitIdentifier) |>
+            unique()
+          
+          exceedance_summary2 <- tadat$exceed_summary |>
+            dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% selected_aus)
         }
         
-        exceed_summary3 <- exceed_summary2 |>
-          dplyr::filter(TADA.CharacteristicName %in% 
-                          input$parameter_filter)
+        # Save exceedance_summary2 to tadat
+        tadat$exceedance_summary2 <- exceedance_summary2
+      }
+      
+    }, ignoreNULL = FALSE)  # Changed to FALSE to handle empty selections
+    
+    # Update parameter filter when exceedance_summary2 changes
+    shiny::observeEvent(tadat$exceedance_summary2, {
+      # Handle NULL exceedance_summary2 (no sites selected)
+      if (is.null(tadat$exceedance_summary2)) {
+        # Clear the parameter filter
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "parameter_filter",
+          choices = character(0),
+          selected = character(0)
+        )
+        return()  # Exit early
+      }
+      
+      # Get the parameter names
+      params <- sort(unique(tadat$exceedance_summary2$TADA.CharacteristicName))
+      
+      # Only update if we have parameters to show
+      if (length(params) > 0) {
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "parameter_filter",
+          choices = params,
+          selected = params  # Select all by default
+        )
+      } else {
+        # Clear the parameter filter if no data
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "parameter_filter",
+          choices = character(0),
+          selected = character(0)
+        )
+      }
+    }, ignoreNULL = FALSE)
+    
+    # Filter the tadat$exceed_summary2 by parameter
+    shiny::observeEvent(c(tadat$exceedance_summary2, input$parameter_filter), {
+      req(tadat$loc_select)
+      
+      # Handle NULL exceedance_summary2 (no sites selected)
+      if (is.null(tadat$exceedance_summary2)) {
+        tadat$exceed_summary_f <- NULL
+        return()
+      }
+      
+      # Handle NULL or empty parameter filter
+      if (is.null(input$parameter_filter) || length(input$parameter_filter) == 0) {
+        # If no parameters selected, show empty data
+        tadat$exceed_summary_f <- NULL
+      } else {
+        exceed_summary3 <- tadat$exceedance_summary2 |>
+          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
         
         # Save the data to tadat
         tadat$exceed_summary_f <- exceed_summary3
-      
-    })
+      }
+    }, ignoreNULL = FALSE)
+    
     mod_exceedance_viewer_server("Summary_View", tadat)
     
     mod_map_viewer_server("Summary_Map", tadat)

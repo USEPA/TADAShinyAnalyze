@@ -18,18 +18,27 @@ mod_analysis_selector_ui <- function(id) {
   tagList(
     fluidRow(
       column(
+        width = 12,
+        htmltools::p("Determine the spatial unit, state/tribe of the criteria, and the uses included in the analysis."),
+      )
+    ),
+    fluidRow(
+      column(
         width = 6,
         shiny::radioButtons(inputId = ns("loc_select"),
-                            label = "Batch Analyzed by: ",
+                            label = "Batch Analyzed by the spatial unit: ",
                             choices = c("Monitoring Location ID" = "MLid",
                                         "Assessment Unit (Individual)" = "AU_ind",
                                         "Assessment Unit (Group)" = "AU_group"))
       ),
       column(
-        width = 6,
+        width = 3,
         shiny::selectizeInput(inputId = ns("state_tribe"),
-                              label = "Select state/tribe",
-                              choices = NULL),
+                              label = "Select state/tribe of the criteria",
+                              choices = NULL)
+        ),
+      column(
+        width = 3,
         shinyWidgets::virtualSelectInput(
           inputId = ns("uses_select"),
           label = "Select the uses:",
@@ -37,7 +46,7 @@ mod_analysis_selector_ui <- function(id) {
           showValueAsTags = TRUE,
           search = TRUE,
           multiple = TRUE
-        )
+      )
       )
     )
   )
@@ -85,19 +94,11 @@ mod_analysis_selector_server <- function(id, tadat){
     }, ignoreNULL = TRUE)
     
     ### Save the selected loc_select, state_tribe and uses to tadat
-    shiny::observeEvent(input$loc_select, {
+    observe({
       tadat$loc_select <- input$loc_select
-    })
-    
-    shiny::observeEvent(input$state_tribe, {
       tadat$state_tribe <- input$state_tribe
-    })
-    
-    shiny::observeEvent(input$uses_select, {
       tadat$uses_select <- input$uses_select
     })
-    
-    
   })
 }
     
