@@ -30,7 +30,7 @@ mod_load_file_ui <- function(id) {
         shiny::radioButtons(
           inputId = ns("mlid_separator"),
           label = "1a. Choose file separator:",
-          choices = c(Comma = ",", Tab = "\t"),
+          choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
@@ -44,7 +44,7 @@ mod_load_file_ui <- function(id) {
             "text/comma-separated-values",
             "text/tab-separated-values",
             "text/plain",
-            ".csv", ".tsv", ".txt"
+            ".csv", ".tsv", ".txt", ".xlsx"
           )
         )
       ),
@@ -79,7 +79,7 @@ mod_load_file_ui <- function(id) {
         shiny::radioButtons(
           inputId = ns("mltoau_separator"),
           label = "2a. Choose file separator:",
-          choices = c(Comma = ",", Tab = "\t"),
+          choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
@@ -93,7 +93,7 @@ mod_load_file_ui <- function(id) {
             "text/comma-separated-values",
             "text/tab-separated-values",
             "text/plain",
-            ".csv", ".tsv", ".txt"
+            ".csv", ".tsv", ".txt", ".xlsx"
           )
         )
       ),
@@ -128,7 +128,7 @@ mod_load_file_ui <- function(id) {
         shiny::radioButtons(
           inputId = ns("autouse_separator"),
           label = "3a. Choose file separator:",
-          choices = c(Comma = ",", Tab = "\t"),
+          choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
@@ -142,7 +142,7 @@ mod_load_file_ui <- function(id) {
             "text/comma-separated-values",
             "text/tab-separated-values",
             "text/plain",
-            ".csv", ".tsv", ".txt"
+            ".csv", ".tsv", ".txt", ".xlsx"
           )
         )
       ),
@@ -184,13 +184,19 @@ mod_load_file_server <- function(id, tadat){
       # validate file is selected
       shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
       
+      
+      # define file path and extension
+      file_path_mlid_input <- input$mlid_input_file$datapath
+      file_ext_mlid_input <- tools::file_ext(file_path_mlid_input)
+      
       # log to command line
       message(
         paste0(
-          paste0(format(Sys.time(), "%Y-%m-%d %H:%M:%S \n")),
-          paste0("Monitoring Location Import, separator: '", input$mlid_separator, "'\n"),
-          paste0("Monitoring Location Import, file name: ", input$mlid_input_file$name, "\n"),
-          paste0("Monitoring Location Import, file path: ", input$mlid_input_file$datapath, "\n")
+          format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "Monitoring Location Import, separator: '", input$mlid_separator, "'\n",
+          "Monitoring Location Import, file name: ", input$mlid_input_file$name, "\n",
+          "Monitoring Location Import, file path: ", file_path_mlid_input, "\n",
+          "Monitoring Location Import, file extension: ", file_ext_mlid_input, "\n"
         )
       )
       
@@ -204,12 +210,20 @@ mod_load_file_server <- function(id, tadat){
         duration = 5
       )
       
-      # read user imported file
-      df_mlid_input <- utils::read.delim(input$mlid_input_file$datapath,
-                                         header = TRUE,
-                                         sep = input$mlid_separator,
-                                         stringsAsFactors = FALSE,
-                                         na.strings = c("", "NA"))
+      # read user imported file based on extension
+      if (file_ext_mlid_input %in% c("csv", "tsv", "txt")) {
+        df_mlid_input <- utils::read.delim(file_path_mlid_input, header = TRUE
+                                           , sep = input$mlid_separator
+                                           , stringsAsFactors = FALSE
+                                           , na.strings = c("", "NA"))
+      } else if (file_ext_mlid_input %in% c("xlsx", "xls")) {
+        df_mlid_input <- readxl::read_excel(file_path_mlid_input, na = c("NA","")
+                                            , trim_ws = TRUE, col_names = TRUE
+                                            , guess_max = 100000)
+      } else {
+        shiny::showNotification("Unsupported file type.", type = "error")
+        return(NULL)
+      } # END ~ if/else
       
       # define required columns
       # TODO need to check this is correct
@@ -289,13 +303,18 @@ mod_load_file_server <- function(id, tadat){
       # validate file is selected
       shiny::validate(need(!is.null(input$mltoau_input_file), "No file selected."))
       
+      # define file path and extension
+      file_path_mltoau <- input$mltoau_input_file$datapath
+      file_ext_mltoau <- tools::file_ext(file_path_mltoau)
+      
       # log to command line
       message(
         paste0(
-          paste0(format(Sys.time(), "%Y-%m-%d %H:%M:%S \n")),
-          paste0("ML to AU Crosswalk Import, separator: '", input$mltoau_separator, "'\n"),
-          paste0("ML to AU Crosswalk Import, file name: ", input$mltoau_input_file$name, "\n"),
-          paste0("ML to AU Crosswalk Import, file path: ", input$mltoau_input_file$datapath, "\n")
+          format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "Monitoring Location Import, separator: '", input$mltoau_separator, "'\n",
+          "Monitoring Location Import, file name: ", input$mltoau_input_file$name, "\n",
+          "Monitoring Location Import, file path: ", file_path_mltoau, "\n",
+          "Monitoring Location Import, file extension: ", file_ext_mltoau, "\n"
         )
       )
       
@@ -309,12 +328,20 @@ mod_load_file_server <- function(id, tadat){
         duration = 5
       )
       
-      # read user imported file
-      df_mltoau_input <- utils::read.delim(input$mltoau_input_file$datapath,
-                                           header = TRUE,
-                                           sep = input$mltoau_separator,
-                                           stringsAsFactors = FALSE,
-                                           na.strings = c("", "NA"))
+      # read user imported file based on extension
+      if (file_ext_mltoau %in% c("csv", "tsv", "txt")) {
+        df_mltoau_input <- utils::read.delim(file_path_mltoau, header = TRUE
+                                           , sep = input$mltoau_separator
+                                           , stringsAsFactors = FALSE
+                                           , na.strings = c("", "NA"))
+      } else if (file_ext_mltoau %in% c("xlsx", "xls")) {
+        df_mltoau_input <- readxl::read_excel(file_path_mltoau, na = c("NA","")
+                                            , trim_ws = TRUE, col_names = TRUE
+                                            , guess_max = 100000)
+      } else {
+        shiny::showNotification("Unsupported file type.", type = "error")
+        return(NULL)
+      } # END ~ if/else
       
       # define required columns
       # TODO need to check this is correct
@@ -384,7 +411,7 @@ mod_load_file_server <- function(id, tadat){
         paste0(
           "Loaded dataset has ", nrow(df_mltoau_summary), " rows and ", ncol(df_mltoau_summary), " columns.\n",
           "There are ", length(unique(df_mltoau_summary$MonitoringLocationIdentifier)), " unique monitoring locations.",
-          "There are ", length(unique(df_mltoau_summary$JoinAUApp.AssessmentUnitIdentifier)), " unique assessment units."
+          "There are ", length(unique(df_mltoau_summary$JoinToAU.AssessmentUnitIdentifier)), " unique assessment units."
         )
       }
     }) # end renderText
@@ -395,13 +422,18 @@ mod_load_file_server <- function(id, tadat){
       # validate file is selected
       shiny::validate(need(!is.null(input$autouse_input_file), "No file selected."))
       
+      # define file path and extension
+      file_path_autouse <- input$autouse_input_file$datapath
+      file_ext_autouse <- tools::file_ext(file_path_autouse)
+      
       # log to command line
       message(
         paste0(
-          paste0(format(Sys.time(), "%Y-%m-%d %H:%M:%S \n")),
-          paste0("AU to Use Crosswalk Import, separator: '", input$autouse_separator, "'\n"),
-          paste0("AU to Use Crosswalk Import, file name: ", input$autouse_input_file$name, "\n"),
-          paste0("AU to Use Crosswalk Import, file path: ", input$autouse_input_file$datapath, "\n")
+          format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "Monitoring Location Import, separator: '", input$autouse_separator, "'\n",
+          "Monitoring Location Import, file name: ", input$autouse_input_file$name, "\n",
+          "Monitoring Location Import, file path: ", file_path_autouse, "\n",
+          "Monitoring Location Import, file extension: ", file_ext_autouse, "\n"
         )
       )
       
@@ -415,12 +447,20 @@ mod_load_file_server <- function(id, tadat){
         duration = 5
       )
       
-      # read user imported file
-      df_autouse_input <- utils::read.delim(input$autouse_input_file$datapath,
-                                            header = TRUE,
-                                            sep = input$autouse_separator,
-                                            stringsAsFactors = FALSE,
-                                            na.strings = c("", "NA"))
+      # read user imported file based on extension
+      if (file_ext_autouse %in% c("csv", "tsv", "txt")) {
+        df_autouse_input <- utils::read.delim(file_path_autouse, header = TRUE
+                                             , sep = input$autouse_separator
+                                             , stringsAsFactors = FALSE
+                                             , na.strings = c("", "NA"))
+      } else if (file_ext_autouse %in% c("xlsx", "xls")) {
+        df_autouse_input <- readxl::read_excel(file_path_autouse, na = c("NA","")
+                                              , trim_ws = TRUE, col_names = TRUE
+                                              , guess_max = 100000)
+      } else {
+        shiny::showNotification("Unsupported file type.", type = "error")
+        return(NULL)
+      } # END ~ if/else
       
       # define required columns
       # TODO need to check this is correct
@@ -488,7 +528,7 @@ mod_load_file_server <- function(id, tadat){
         # print
         paste0(
           "Loaded dataset has ", nrow(df_autouse_summary), " rows and ", ncol(df_autouse_summary), " columns.\n",
-          "There are ", length(unique(df_autouse_summary$JoinAUApp.AssessmentUnitIdentifier)), " unique assessment units.",
+          "There are ", length(unique(df_autouse_summary$JoinToAU.AssessmentUnitIdentifier)), " unique assessment units.",
           "There are ", length(unique(df_autouse_summary$ATTAINS.UseName)), " unique use types."
         )
       }
