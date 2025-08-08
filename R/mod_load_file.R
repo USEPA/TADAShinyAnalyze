@@ -21,21 +21,36 @@ mod_load_file_ui <- function(id) {
       # instructions column
       shiny::column(
         width = 4,
-        htmltools::h2("1. Load Monitoring Location File"),
-        htmltools::strong("Purpose"),
-        htmltools::p("text text text text"),
-        htmltools::strong("Instructions"),
-        htmltools::p("text text text text"),
+        htmltools::h3("Purpose"),
+        htmltools::p("This app is used to analyze water quality data through 
+        either a batch analysis (Step 2) or custom analysis (Step 3). Three files
+        are necessary and must be uploaded to proceed."),
+        
+        htmltools::h3("Instructions"),
+        htmltools::p("First, upload water 
+        quality data (Step 1a). The water quality file for this app is a 
+        long-format data file with MLs and water quality data. You can download 
+        a file with MLs and associated chemistry data from the Water Quality 
+        Portal or use the", htmltools::a("TADAShinyApp."
+                                         , href = "https://rconnect-public.epa.gov/TADAShiny/"
+                                         , target = "_blank"),
+        "Second, upload a Monitoring Location to AU crosswalk table (Step 1b). 
+        Third, upload an AU to Designated Uses crosswalk table (Step 1c).
+        The files for Steps 1b and 1c can be supplied from an organization 
+        or generated using the", htmltools::a("TADAShinyJoinToAU App."
+            , href = "https://tetratech-wtr-wne.shinyapps.io/TADAShinyJoinToAU/"
+            , target = "_blank")),
+        htmltools::h2("1a. Load Water Quality Data File"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
           inputId = ns("mlid_separator"),
-          label = "1a. Choose file separator:",
+          label = "Choose file separator:",
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
           inputId = ns("mlid_input_file"),
-          label = "1b. Choose file to load:",
+          label = "Choose file to load:",
           width = "90%",
           placeholder = "No file selected.",
           multiple = FALSE,
@@ -52,7 +67,7 @@ mod_load_file_ui <- function(id) {
       # data table column
       shiny::column(
         width = 8,
-        htmltools::h3("Monitoring Location File Summary"),
+        htmltools::h3("Water Quality Data File Summary"),
         htmltools::p("Summary of loaded file (blank until file is loaded)."),
         shiny::verbatimTextOutput(outputId = ns("mlid_input_summary"), placeholder = TRUE),
         htmltools::h3("Data Preview"),
@@ -70,21 +85,17 @@ mod_load_file_ui <- function(id) {
       # instructions column
       shiny::column(
         width = 4,
-        htmltools::h2("2. Load ML ID to AU ID Crosswalk File"),
-        htmltools::strong("Purpose"),
-        htmltools::p("text text text text"),
-        htmltools::strong("Instructions"),
-        htmltools::p("text text text text"),
+        htmltools::h2("1b. Load ML ID to AU ID Crosswalk File"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
           inputId = ns("mltoau_separator"),
-          label = "2a. Choose file separator:",
+          label = "Choose file separator:",
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
           inputId = ns("mltoau_input_file"),
-          label = "2b. Choose file to load:",
+          label = "Choose file to load:",
           width = "90%",
           placeholder = "No file selected.",
           multiple = FALSE,
@@ -119,21 +130,17 @@ mod_load_file_ui <- function(id) {
       # instructions column
       shiny::column(
         width = 4,
-        htmltools::h2("3. Load AU ID to Uses Crosswalk File"),
-        htmltools::strong("Purpose"),
-        htmltools::p("text text text text"),
-        htmltools::strong("Instructions"),
-        htmltools::p("text text text text"),
+        htmltools::h2("1c. Load AU ID to Uses Crosswalk File"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
           inputId = ns("autouse_separator"),
-          label = "3a. Choose file separator:",
+          label = "Choose file separator:",
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
         shiny::fileInput(
           inputId = ns("autouse_input_file"),
-          label = "3b. Choose file to load:",
+          label = "Choose file to load:",
           width = "90%",
           placeholder = "No file selected.",
           multiple = FALSE,
