@@ -16,7 +16,8 @@ criteria_join <- function(x, y, match_type = "Option 1", filter_type = TRUE){
     by <- join_by("TADA.CharacteristicName",
                   "TADA.ResultSampleFractionText" == "Fraction",
                   "TADA.ResultMeasure.MeasureUnitCode" == "MagnitudeUnit",
-                  "ATTAINS.UseName")
+                  "ATTAINS.UseName",
+                  "ATTAINS.waterTypeCode")
     
     x2 <- x |>
       dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
@@ -26,7 +27,8 @@ criteria_join <- function(x, y, match_type = "Option 1", filter_type = TRUE){
   } else { # Join Option 2: No Fraction
     by <- join_by("TADA.CharacteristicName",
                   "TADA.ResultMeasure.MeasureUnitCode" == "MagnitudeUnit",
-                  "ATTAINS.UseName")
+                  "ATTAINS.UseName",
+                  "ATTAINS.waterTypeCode")
     
     y_col <- names(y2)
     y_col2 <- y_col[!y_col %in% "Fraction"]

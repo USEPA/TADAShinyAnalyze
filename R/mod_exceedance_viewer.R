@@ -23,6 +23,12 @@ mod_exceedance_viewer_server <- function(id, tadat){
     
     ### Show the data as a data table
     shiny::observeEvent(tadat$exceed_summary_f, {
+
+      # Handle NULL or empty data - clear the table
+      if (is.null(tadat$exceed_summary_f) || nrow(tadat$exceed_summary_f) == 0) {
+        output$exceed_table <- DT::renderDT(NULL)
+        return()
+      }
       
       # Simplify the table when tadat$loc_select == AU_group
       if (tadat$loc_select %in% "AU_group"){
@@ -55,7 +61,7 @@ mod_exceedance_viewer_server <- function(id, tadat){
             columns = c("Exceedance_Percentage")
           ) 
         )
-    })
+    }, ignoreNULL = FALSE)
     
   })
 }

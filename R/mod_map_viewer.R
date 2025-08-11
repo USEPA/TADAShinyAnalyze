@@ -23,6 +23,18 @@ mod_map_viewer_server <- function(id, tadat){
     ns <- session$ns
     
     shiny::observeEvent(tadat$exceed_summary_f, {
+      
+      # Handle NULL or empty data - clear/reset the map
+      if (is.null(tadat$exceed_summary_f) || nrow(tadat$exceed_summary_f) == 0) {
+        # Create an empty base map
+        output$summary_map <- leaflet::renderLeaflet({
+          leaflet::leaflet() |>
+            leaflet::addTiles() |>
+            leaflet::setView(lng = -98.5795, lat = 39.8283, zoom = 4)  # Default view (US center)
+        })
+        return()
+      }
+      
       # Create leaflet map
       output$summary_map <- leaflet::renderLeaflet({
         
@@ -98,7 +110,7 @@ mod_map_viewer_server <- function(id, tadat){
             opacity = 0.8
           )
       })
-    })
+    }, ignoreNULL = FALSE)
     })
 }
     

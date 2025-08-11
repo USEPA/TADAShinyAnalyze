@@ -160,7 +160,8 @@ dat_hardness3 <- dat_hardness2 |>
          "E_A" = E_A, "E_B" = E_B),
     .f = hardness_eq
   )) |>
-  exceedance_fun()
+  exceedance_fun() |>
+  dplyr::select(all_of(names(dat_no2)))
 
 # pH
 dat_pH <- dat_yes |>
@@ -174,7 +175,8 @@ dat_pH2 <- dat_pH |>
             ~ eval(parse(text = .x), envir = list(pH = .y))
           )
   ) |>
-  exceedance_fun()
+  exceedance_fun() |>
+  dplyr::select(all_of(names(dat_no2)))
 
 # # Examples
 # df <- data.frame(
@@ -209,7 +211,8 @@ dat_pH_hardness2 <- dat_pH_hardness |>
   dplyr::mutate(MagnitudeValueUppe = ifelse(pH < 7, 
                                             min(87, MagnitudeValueUppe),
                                             MagnitudeValueUppe)) |>
-  exceedance_fun()
+  exceedance_fun() |>
+  dplyr::select(all_of(names(dat_no2)))
 
 # pH and Temperature
 dat_pH_temperature <- dat_yes |>
@@ -226,10 +229,9 @@ dat_pH_temperature <- dat_yes |>
 
 # Combine the results from each cases
 # Need to make sure all the cases have the same column headers
-dat5 <- dplyr::bind_rows(dat_no2)
+dat5 <- dplyr::bind_rows(dat_no2, dat_hardness3, dat_pH2, dat_pH_temperature)
 
-write_csv(dat5, "Example_boxplot_Input.csv", na = "")
-
+# Select relevant columns
 dat5_1 <- dat5 |>
   dplyr::select(
     TADA.MonitoringLocationIdentifier,
@@ -240,12 +242,13 @@ dat5_1 <- dat5 |>
     ATTAINS.OrganizationIdentifier,
     ATTAINS.ParameterName,
     ATTAINS.UseName,
+    AcuteChronic,
     TADA.CharacteristicName,
     TADA.ResultSampleFractionText,
     TADA.MethodSpeciationName,
     TADA.ResultMeasure.MeasureUnitCode,
     TADA.ResultMeasureValue,
-    DateTime,
+    ActivityStartDate,
     pH,
     Temperature,
     Hardness,
@@ -259,6 +262,8 @@ dat5_1 <- dat5 |>
     Exceedance
   )
 
+# Save example data
+write_csv(dat5, "Example_boxplot_Input.csv", na = "")
 write_csv(dat5_1, "Example_boxplot_Input_Simple.csv", na = "")
 
 ### Step 6: Summarize the data
@@ -271,7 +276,7 @@ write_csv(dat5_1, "Example_boxplot_Input_Simple.csv", na = "")
 # Select MLId AU_ind, or AU_group
 analysis_unit <- "AU_group"
 
-dat6 <- dat5 |> 
+dat6 <- dat5_1 |> 
   exceedance_summary(type = analysis_unit)
 
 dat7 <- map_summary(dat6, type = analysis_unit)

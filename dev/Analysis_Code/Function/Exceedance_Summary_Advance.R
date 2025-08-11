@@ -9,21 +9,25 @@ modSum <- function(x){
   return(y)
 }
 
+# A function to create a site look up table
+Site_AU_lookup <- function(x){
+  # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
+  # "JoinToAU.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
+  
+  dat <- dplyr::distinct(x, 
+                         TADA.MonitoringLocationIdentifier,
+                         TADA.MonitoringLocationName,
+                         JoinToAU.AssessmentUnitIdentifier,
+                         TADA.LongitudeMeasure,
+                         TADA.LatitudeMeasure)
+  
+  return(dat)
+}
+
 # A function to calculate the exceedance percentage data with criteria
-exceedance_summary <- function(x, type, group = FALSE){
+exceedance_data <- function(x, type, group = FALSE){
   
   if (!group){
-    
-    # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
-    # "JoinToAU.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
-    
-    coords <- dplyr::distinct(x, 
-                              TADA.MonitoringLocationIdentifier,
-                              TADA.MonitoringLocationName,
-                              JoinToAU.AssessmentUnitIdentifier,
-                              TADA.LongitudeMeasure,
-                              TADA.LatitudeMeasure)
-    
     if(type %in% c("MLid", "AU_ind")){
       x2 <- x |>
         dplyr::group_by(dplyr::across(
@@ -44,28 +48,7 @@ exceedance_summary <- function(x, type, group = FALSE){
                           "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
     }
     
-    x3 <- x2 |>
-      dplyr::summarize(Sample_Size = dplyr::n(),
-                       Start_Date = min(ActivityStartDate, na.rm = TRUE),
-                       End_Date = max(ActivityStartDate, na.rm = TRUE),
-                       Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Number_of_Exceedances = modSum(Exceedance),
-                       .groups = "drop") 
-    
-    if (type %in% "MLid"){
-      x4 <- x3 |> dplyr::select(-JoinToAU.AssessmentUnitIdentifier)
-    } else if (type %in% "AU_ind"){
-      x4 <- x3
-    } else {
-      x4 <- x3 %>%
-        dplyr::left_join(coords, by = "JoinToAU.AssessmentUnitIdentifier")
-    }
-    
-    return(x4)
-    
-  } else {
+  } else { # This is for th custom tab for custom grouping
     
     x2 <- x |>
       dplyr::group_by(dplyr::across(
@@ -74,23 +57,21 @@ exceedance_summary <- function(x, type, group = FALSE){
                         "TADA.ResultMeasure.MeasureUnitCode", "AcuteChronic",
                         "DurationValue", "DurationUnit", "DurationAggregation",
                         "FrequencyCriteriaValue", "FrequencyCriteriaMethod"))))
-    x3 <- x2 |>
-      dplyr::summarize(Sample_Size = dplyr::n(),
-                       Start_Date = min(ActivityStartDate, na.rm = TRUE),
-                       End_Date = max(ActivityStartDate, na.rm = TRUE),
-                       Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
-                       Number_of_Exceedances = modSum(Exceedance),
-                       .groups = "drop") |>
-      dplyr::mutate(Exceedance_Percentage = Number_of_Exceedances/Sample_Size * 100)
-    
-    # Separate x3 based on FrequencyCriteriaValue, FrequencyCriteriaMethod
-    x3_list <- x3 |>
-      split(.$FrequencyCriteriaValue, .$FrequencyCriteriaMethod)
-    
-    return(x3_list)
-    
+
   }
+  
+  # Calculate the summary statistics
+  x3 <- x2 |>
+    dplyr::summarize(Sample_Size = dplyr::n(),
+                     Start_Date = min(ActivityStartDate, na.rm = TRUE),
+                     End_Date = max(ActivityStartDate, na.rm = TRUE),
+                     Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Number_of_Exceedances = modSum(Exceedance),
+                     .groups = "drop") |>
+    dplyr::mutate(Exceedance_Percentage = Number_of_Exceedances/Sample_Size * 100) 
+  
+  return(x3)
   
 }

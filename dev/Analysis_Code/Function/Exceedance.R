@@ -1,4 +1,4 @@
-# A function to calculate exceedance
+### A function to compare the exceedances
 exceedance_fun <- function(x){
   x2 <- x |>
     dplyr::mutate(Exceedance = dplyr::case_when(

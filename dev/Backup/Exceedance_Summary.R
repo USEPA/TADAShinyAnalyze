@@ -54,7 +54,6 @@ exceedance_summary <- function(x, type, group = FALSE){
                        Number_of_Exceedances = modSum(Exceedance),
                        .groups = "drop") |>
       dplyr::mutate(Exceedance_Percentage = Number_of_Exceedances/Sample_Size * 100) |>
-      # This code block evaluates the FrequencyCriteriaValue and FrequencyCriteriaMethod
       dplyr::mutate(Exceedance_Result = dplyr::case_when(
         is.na(FrequencyCriteriaMethod) & Number_of_Exceedances > 0      ~ "Exceed",
         FrequencyCriteriaMethod %in%
@@ -75,7 +74,7 @@ exceedance_summary <- function(x, type, group = FALSE){
     
     return(x4)
     
-  } else { # This is for th custom tab for custom grouping
+  } else {
     
     x2 <- x |>
       dplyr::group_by(dplyr::across(

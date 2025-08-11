@@ -294,12 +294,12 @@ map_summary <- function(x, type){
       Description = ifelse(is.na(AcuteChronic),
                            paste(ATTAINS.UseName, 
                                  TADA.CharacteristicName,
-                                 paste0(Exceedance_Percentage, "%"),
+                                 paste0(round(Exceedance_Percentage, 2), "%"),
                                  Exceedance_Result, sep = " - "),
                            paste(ATTAINS.UseName, 
                                  TADA.CharacteristicName,
                                  AcuteChronic,
-                                 paste0(Exceedance_Percentage, "%"),
+                                 paste0(round(Exceedance_Percentage, 2), "%"),
                                  Exceedance_Result, sep = " - "))
     ) |>
     dplyr::summarize(Description = paste0(unique(Description),

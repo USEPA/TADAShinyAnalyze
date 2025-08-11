@@ -77,6 +77,10 @@ mod_batch_analysis_ui <- function(id) {
       column(
         width = 6,
         mod_map_viewer_ui(ns("Summary_Map"))
+      ),
+      column(
+        width = 6,
+        htmltools::p("Placehoder for summary descrition.")
       )
     ),
     fluidRow(
@@ -228,6 +232,9 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceedance_summary2 <- exceedance_summary2
       }
       
+      print("Test: exceedance_summary2")
+      print(tadat$exceedance_summary2)
+      
     }, ignoreNULL = FALSE)  # Changed to FALSE to handle empty selections
     
     # Update parameter filter when exceedance_summary2 changes
@@ -287,6 +294,10 @@ mod_batch_analysis_server <- function(id, tadat){
         # Save the data to tadat
         tadat$exceed_summary_f <- exceed_summary3
       }
+      
+      print("Test: exceedance_summary3")
+      print(tadat$exceed_summary_f)
+      
     }, ignoreNULL = FALSE)
     
     mod_exceedance_viewer_server("Summary_View", tadat)
