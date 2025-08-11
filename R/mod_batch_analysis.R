@@ -39,6 +39,22 @@ mod_batch_analysis_ui <- function(id) {
       )
     ),
     
+    htmltools::br(),
+    
+    fluidRow(
+      column(
+        width = 12,
+        column(
+          width = 12,
+          shinyjs::disabled(shiny::downloadButton(
+            outputId = ns("download_results"),
+            label = "Download Batch Results (.zip)",
+            style = "color: #fff; background-color: #337ab7; border-color: #2e6da4") # download button
+          )
+        )
+      )
+    ),
+    
     # Horizontal divider
     htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     
@@ -100,7 +116,7 @@ mod_batch_analysis_server <- function(id, tadat){
     ns <- session$ns
     mod_analysis_selector_server("Batch_Select", tadat)
     
-    ### Remove records need to be reviewed in adat$df_mltoau_input
+    ### Remove records need to be reviewed in tadat$df_mltoau_input
     shiny::observeEvent(tadat$df_mltoau_input, {
       tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
         dplyr::filter(Needs_Review == "No")
@@ -194,6 +210,79 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # Save the data to tadat
       tadat$exceed_summary <- dat6
+      
+      ### Step 7. Download the batch analysis results
+      output$download_results <- shiny::downloadHandler(
+        
+        # define zipfile name
+        filename = function() {
+          paste0(tadat$default_outfile, ".zip")
+          # paste0("Batch_Results_",
+          #        format(Sys.time(), "%Y%m%d_%H%M%S"),
+          #        ".zip")
+        },
+        
+        # define contents of zipfile
+        content = function(file) {
+          
+          # define file paths
+          temp_dir <- tempdir()
+          ml_input_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_ml_input_file.csv"))
+          mltoaus_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file.csv"))
+          mltoaus_file_f_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file_filtered.csv"))
+          autouse_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_autouse_input_file.csv"))
+          batch_result_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_batch_analysis_result.csv"))
+          progress_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_prog.rda"))
+          zipfile <- file.path(temp_dir, paste0(tadat$default_outfile, ".zip"))
+          
+          # function to save tadat values
+          write_tadat_file <- function(tadat, filename) {
+            
+            # define file variables to be saved
+            default_outfile <- tadat$default_outfile
+            job_id <- tadat$job_id
+            df_ml_input <- tadat$df_ml_input
+            df_mltoau_input <- tadat$df_mltoau_input
+            df_mltoau_input_f <- tadat$df_mltoau_input_f
+            df_autouse_input <- tadat$df_autouse_input
+            df_batch_result <- tadat$exceed_summary
+            temp_dir <- tadat$temp_dir
+            
+            # save file
+            save(default_outfile,
+                 job_id,
+                 df_ml_input,
+                 df_mltoau_input,
+                 df_mltoau_input_f,
+                 df_autouse_input,
+                 df_batch_result,
+                 temp_dir,
+                 file = filename)
+          }
+          
+          # write tadat RData file with session info
+          write_tadat_file(tadat, progress_file_path)
+          
+          # write data frames to csv
+          readr::write_csv(x = as.data.frame(tadat$df_ml_input), file = ml_input_file_path)
+          readr::write_csv(x = as.data.frame(tadat$df_mltoau_input), file = mltoaus_file_path)
+          readr::write_csv(x = as.data.frame(tadat$df_mltoau_input_f), file = mltoaus_file_f_path)
+          readr::write_csv(x = as.data.frame(tadat$df_autouse_input), file = autouse_file_path)
+          readr::write_csv(x = as.data.frame(tadat$exceed_summary), file = batch_result_path)
+          
+          
+          # zip them
+          utils::zip(zipfile = zipfile,
+                     files = c(ml_input_file_path, mltoaus_file_path, mltoaus_file_f_path, autouse_file_path, batch_result_path, progress_file_path),
+                     flags = "-j")
+          
+          # Copy zip to final destination
+          file.copy(zipfile, file)
+        }
+      ) # END ~ downloadHandler
+      
+      # enable download button
+      shinyjs::enable("download_results")
       
     })
     
