@@ -241,7 +241,7 @@ mod_batch_analysis_server <- function(id, tadat){
             # define file variables to be saved
             default_outfile <- tadat$default_outfile
             job_id <- tadat$job_id
-            df_ml_input <- tadat$df_ml_input
+            df_ml_input <- tadat$df_mlid_input
             df_mltoau_input <- tadat$df_mltoau_input
             df_mltoau_input_f <- tadat$df_mltoau_input_f
             df_autouse_input <- tadat$df_autouse_input
