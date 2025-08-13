@@ -91,16 +91,6 @@ mod_batch_analysis_ui <- function(id) {
     ),
     fluidRow(
       column(
-        width = 6,
-        mod_map_viewer_ui(ns("Summary_Map"))
-      ),
-      column(
-        width = 6,
-        htmltools::p("Placehoder for summary descrition.")
-      )
-    ),
-    fluidRow(
-      column(
         width = 12,
         mod_analysis_plots_ui(ns("Analysis_Plots"))
       )
@@ -125,7 +115,7 @@ mod_batch_analysis_server <- function(id, tadat){
     ### If the input data are ready, conduct the analysis
     shiny::observeEvent(input$Run_Batch, {
       shiny::req(tadat$df_mlid_input, tadat$df_mltoau_input_f, tadat$df_autouse_input,
-                 tadat$loc_select, tadat$state_tribe, tadat$uses_select)
+                 tadat$loc_select, tadat$state_tribe, tadat$uses_select_re)
       
       ### Get the input data and convert ActivityStartDateTime to dateTime
       dat <- tadat$df_mlid_input
@@ -143,7 +133,7 @@ mod_batch_analysis_server <- function(id, tadat){
       ### Step 2: Join the criteria table
       criteria_table_f1 <- criteria_table |>
         dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select)
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
       
       # Filter the AU_Use based on available_uses_s
       AU_Use <- tadat$df_autouse_input
@@ -152,7 +142,7 @@ mod_batch_analysis_server <- function(id, tadat){
                         stringr::str_to_upper(MonitoringLocationIdentifier))
       
       AU_Use_f1 <- AU_Use |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select)
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
       
       # Filter the AU_MLID based on AU_Use_f1
       AU_MLID_f1 <- AU_MLID |>
@@ -390,8 +380,6 @@ mod_batch_analysis_server <- function(id, tadat){
     }, ignoreNULL = FALSE)
     
     mod_exceedance_viewer_server("Summary_View", tadat)
-    
-    mod_map_viewer_server("Summary_Map", tadat)
     
     mod_analysis_plots_server("Analysis_Plots", tadat)
     

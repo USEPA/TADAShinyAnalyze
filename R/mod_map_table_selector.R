@@ -46,7 +46,7 @@ mod_map_table_selector_server <- function(id, tadat){
     updating_checkbox <- reactiveVal(FALSE)
   
     shiny::observe({
-      req(tadat$state_tribe, tadat$uses_select)
+      req(tadat$state_tribe, tadat$uses_select_re)
       
       # Map selector
       output$map_selector <- leaflet::renderLeaflet({
@@ -236,7 +236,7 @@ mod_map_table_selector_server <- function(id, tadat){
       }, ignoreInit = TRUE)
       
       # Reset selection when dataset changes
-      observeEvent(c(tadat$state_tribe, tadat$uses_select), {
+      observeEvent(c(tadat$state_tribe, tadat$uses_select_re), {
         # Clear selections when filters change
         selected_idx(integer(0))
         table_selector_proxy %>% DT::selectRows(numeric(0))

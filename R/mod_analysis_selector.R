@@ -35,7 +35,10 @@ mod_analysis_selector_ui <- function(id) {
         width = 3,
         shiny::selectizeInput(inputId = ns("state_tribe"),
                               label = "Select state/tribe of the criteria",
-                              choices = NULL)
+                              choices = NULL),
+        shiny::checkboxInput(inputId = ns("uses_all"),
+                             label = "Select all uses",
+                             value = TRUE)
         ),
       column(
         width = 3,
@@ -86,18 +89,61 @@ mod_analysis_selector_server <- function(id, tadat){
       # Find the intersection
       available_uses <- base::intersect(criteria_uses, AU_Use_uses)
       
-      shinyWidgets::updateVirtualSelect(
-        session = session,
-        inputId = "uses_select",
-        choices = sort(available_uses)
-      )
+      # Save available_uses to tadat
+      tadat$available_uses <- available_uses
+      
     }, ignoreNULL = TRUE)
     
+    # Initialize uses_select_re
+    shiny::observe({
+      req(tadat$available_uses)
+      if (is.null(tadat$uses_select_re)) {
+        tadat$uses_select_re <- if(isolate(input$uses_all)) {
+          tadat$available_uses
+        } else {
+          character(0)
+        }
+      }
+    })
+    
+    # Handle checkbox changes
+    shiny::observeEvent(input$uses_all, {
+      req(tadat$available_uses)
+      
+      if (input$uses_all) {
+        shinyjs::disable("uses_select")
+        tadat$uses_select_re <- tadat$available_uses
+        # Update the select to show all selected (visual consistency)
+        shinyWidgets::updateVirtualSelect(
+          session = session,
+          inputId = "uses_select",
+          choices = sort(tadat$available_uses),
+          selected = tadat$available_uses
+        )
+      } else {
+        shinyjs::enable("uses_select")
+        shinyWidgets::updateVirtualSelect(
+          session = session,
+          inputId = "uses_select",
+          choices = sort(tadat$available_uses),
+          selected = tadat$uses_select_re  # Maintain current selection
+        )
+        # Don't update tadat$uses_select_re here
+      }
+    }, ignoreInit = FALSE)
+    
+    # Handle uses_select changes separately
+    shiny::observeEvent(input$uses_select, {
+      # Only update when checkbox is unchecked AND uses_select is not disabled
+      if (!input$uses_all && !is.null(input$uses_select)) {
+        tadat$uses_select_re <- input$uses_select
+      }
+    }, ignoreNULL = FALSE)  # Important: Allow empty selections
+    
     ### Save the selected loc_select, state_tribe and uses to tadat
-    observe({
+    shiny::observe({
       tadat$loc_select <- input$loc_select
       tadat$state_tribe <- input$state_tribe
-      tadat$uses_select <- input$uses_select
     })
   })
 }
