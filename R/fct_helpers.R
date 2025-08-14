@@ -182,7 +182,7 @@ exceedance_summary <- function(x, type, group = FALSE){
                               TADA.LongitudeMeasure,
                               TADA.LatitudeMeasure)
     
-    if(type %in% c("MLid", "AU_ind")){
+    if(type %in% "MLid"){
       x2 <- x |>
         dplyr::group_by(dplyr::across(
           dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
@@ -224,8 +224,6 @@ exceedance_summary <- function(x, type, group = FALSE){
       ))
     
     if (type %in% "MLid"){
-      x4 <- x3 |> dplyr::select(-JoinToAU.AssessmentUnitIdentifier)
-    } else if (type %in% "AU_ind"){
       x4 <- x3
     } else {
       x4 <- x3 |>
@@ -273,7 +271,7 @@ exceedance_summary <- function(x, type, group = FALSE){
 ### A function to summarize the map data
 map_summary <- function(x, type){
   
-  if (type %in% c("AU_ind", "AU_group")){
+  if (type %in% "AU"){
     x2 <- x |>
       dplyr::group_by(TADA.MonitoringLocationIdentifier,
                       TADA.MonitoringLocationName,
