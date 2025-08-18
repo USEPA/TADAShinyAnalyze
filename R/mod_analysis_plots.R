@@ -275,7 +275,7 @@ mod_analysis_plots_server <- function(id, tadat){
                             color = "black", shape = 21, size = 3.5, alpha = 0.8) +
         ggplot2::scale_y_log10() +
         ggplot2::xlab("Time") +
-        ggplot2::ylab(paste0(filtered_data2()$CharacteristicName[1], " (", filtered_data2()$ResultMeasure.MeasureUnitCode[1], ")")) +
+        ggplot2::ylab(paste0(filtered_data2()$TADA.CharacteristicName[1], " (", filtered_data2()$TADA.ResultMeasure.MeasureUnitCode[1], ")")) +
         ggplot2::theme_bw() +
         viridis::scale_fill_viridis(discrete = TRUE, option = "mako") +
         ggplot2::labs(fill = if (tadat$loc_select %in% c("MLid", "AU_ind")) {
