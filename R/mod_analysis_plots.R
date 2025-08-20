@@ -75,11 +75,13 @@ mod_analysis_plots_server <- function(id, tadat){
  
     # Update selectize inputs when data changes
     shiny::observe({
-      shiny::req(tadat$exceed_dat)
-      shiny::req(nrow(tadat$exceed_dat) > 0)
+      shiny::req(tadat$exceed_dat_filtered)
+      shiny::req(nrow(tadat$exceed_dat_filtered) > 0)
+      shiny::req(tadat$exceed_summary_f)
+      shiny::req(nrow(tadat$exceed_summary_f) > 0)
       
       # Get unique values for Parameter dropdown
-      param_choices <- sort(unique(tadat$exceed_dat$TADA.CharacteristicName))
+      param_choices <- sort(unique(tadat$exceed_summary_f$TADA.CharacteristicName))
       
       # Update Parameter selectize
       shiny::updateSelectizeInput(
@@ -93,11 +95,12 @@ mod_analysis_plots_server <- function(id, tadat){
     
     # Reactive to filter data based on selections
     filtered_data1 <- shiny::reactive({
-      shiny::req(tadat$exceed_dat)
+      shiny::req(tadat$exceed_dat_filtered)
+      shiny::req(tadat$exceed_summary_f)
       shiny::req(input$parameter_box_select)
       
       # Filter by selected parameter
-      dat2 <- tadat$exceed_dat |>
+      dat2 <- tadat$exceed_dat_filtered |>
         dplyr::filter(TADA.CharacteristicName %in% input$parameter_box_select)
       
       return(dat2)
@@ -137,7 +140,7 @@ mod_analysis_plots_server <- function(id, tadat){
     shiny::observe({
       shiny::req(filtered_data2())
       shiny::req(tadat$loc_select)
-      if (tadat$loc_select %in% c("MLid", "AU_ind")){
+      if (tadat$loc_select %in% c("MLid")){
         loc_choices <- sort(unique(filtered_data2()$TADA.MonitoringLocationIdentifier))
       } else {
         loc_choices <- sort(unique(filtered_data2()$JoinToAU.AssessmentUnitIdentifier))
@@ -160,7 +163,7 @@ mod_analysis_plots_server <- function(id, tadat){
       shiny::req(input$loc_box_select)
       
       # Filter by selected location
-      if (tadat$loc_select %in% c("MLid", "AU_ind")){
+      if (tadat$loc_select %in% c("MLid")){
         dat2 <- filtered_data2() |>
           dplyr::filter(TADA.MonitoringLocationIdentifier %in% input$loc_box_select)
       } else {
@@ -199,7 +202,7 @@ mod_analysis_plots_server <- function(id, tadat){
                               color = 'gray30',
                               outlier.shape = NA) 
       
-      if (tadat$loc_select %in% c("MLid", "AU_ind")){
+      if (tadat$loc_select %in% c("MLid")){
         tadat$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data3(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
                                                                             , fill = TADA.MonitoringLocationIdentifier),
@@ -263,7 +266,7 @@ mod_analysis_plots_server <- function(id, tadat){
       
       df <- filtered_data3()
       
-      fill_var <- if (tadat$loc_select %in% c("MLid", "AU_ind")) {
+      fill_var <- if (tadat$loc_select %in% c("MLid")) {
         df$MonitoringLocationIdentifier
       } else {
         df$JoinToAU.AssessmentUnitIdentifier
@@ -278,7 +281,7 @@ mod_analysis_plots_server <- function(id, tadat){
         ggplot2::ylab(paste0(filtered_data2()$TADA.CharacteristicName[1], " (", filtered_data2()$TADA.ResultMeasure.MeasureUnitCode[1], ")")) +
         ggplot2::theme_bw() +
         viridis::scale_fill_viridis(discrete = TRUE, option = "mako") +
-        ggplot2::labs(fill = if (tadat$loc_select %in% c("MLid", "AU_ind")) {
+        ggplot2::labs(fill = if (tadat$loc_select %in% c("MLid")) {
           "Monitoring Location ID"
         } else {
           "Assessment Unit ID"

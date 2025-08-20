@@ -175,6 +175,7 @@ mod_batch_analysis_server <- function(id, tadat){
       dat5 <- dplyr::bind_rows(dat_no2)
       
       tadat$exceed_dat <- dat5
+      tadat$exceed_dat_filtered <- tadat$exceed_dat
       
       # Create a table for the map-table selector
       site_AU_table <- dat5 |>
@@ -311,9 +312,6 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceedance_summary2 <- exceedance_summary2
       }
       
-      print("Test: exceedance_summary2")
-      print(tadat$exceedance_summary2)
-      
     }, ignoreNULL = FALSE)  # Changed to FALSE to handle empty selections
     
     # Update parameter filter when exceedance_summary2 changes
@@ -374,8 +372,24 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceed_summary_f <- exceed_summary3
       }
       
-      print("Test: exceedance_summary3")
-      print(tadat$exceed_summary_f)
+      if (!is.null(tadat$exceed_summary_f) && nrow(tadat$exceed_summary_f) > 0) {
+        # Get the filtered parameters and locations
+        filtered_params <- unique(tadat$exceed_summary_f$TADA.CharacteristicName)
+        
+        if (tadat$loc_select %in% c("MLid")) {
+          filtered_locs <- unique(tadat$exceed_summary_f$TADA.MonitoringLocationIdentifier)
+          tadat$exceed_dat_filtered <- tadat$exceed_dat |>
+            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+                          TADA.MonitoringLocationIdentifier %in% filtered_locs)
+        } else {
+          filtered_aus <- unique(tadat$exceed_summary_f$JoinToAU.AssessmentUnitIdentifier)
+          tadat$exceed_dat_filtered <- tadat$exceed_dat |>
+            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+                          JoinToAU.AssessmentUnitIdentifier %in% filtered_aus)
+        }
+      } else {
+        tadat$exceed_dat_filtered <- NULL
+      }
       
     }, ignoreNULL = FALSE)
     
