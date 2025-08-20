@@ -197,7 +197,8 @@ mod_batch_analysis_server <- function(id, tadat){
       
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
-        exceedance_summary(type = tadat$loc_select, group = FALSE)
+        exceedance_summary(type = tadat$loc_select, group = FALSE) |>
+        purrr::pluck("data")
       
       # Save the data to tadat
       tadat$exceed_summary <- dat6
@@ -396,14 +397,6 @@ mod_batch_analysis_server <- function(id, tadat){
     mod_exceedance_viewer_server("Summary_View", tadat)
     
     mod_analysis_plots_server("Analysis_Plots", tadat)
-    
-    # enable the third tab to be selected once input data is processed
-    shiny::observeEvent(tadat$exceed_dat_label, {
-      if (tadat$exceed_dat_label){
-        shinyjs::enable(selector = '.nav li a[data-value="Custom"]') # also custom!
-      } else {
-        shinyjs::disable(selector = '.nav li a[data-value="Custom"]') # also custom!
-      }})
     
   })
 }

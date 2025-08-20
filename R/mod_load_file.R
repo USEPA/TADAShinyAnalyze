@@ -548,6 +548,14 @@ mod_load_file_server <- function(id, tadat){
       } else {
       shinyjs::disable(selector = '.nav li a[data-value="Batch"]') # also custom!
       }})
+    
+    # enable the third tab to be selected once input data is processed
+    shiny::observeEvent(tadat$exceed_dat_label, {
+      if (files_loaded$mlid & files_loaded$mltoau & files_loaded$autouse){
+        shinyjs::enable(selector = '.nav li a[data-value="Custom"]') # also custom!
+      } else {
+        shinyjs::disable(selector = '.nav li a[data-value="Custom"]') # also custom!
+      }})
 
   }) # end of moduleServer
 } # end of server function

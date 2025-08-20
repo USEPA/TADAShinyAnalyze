@@ -56,6 +56,28 @@ mod_custom_analysis_ui <- function(id) {
         width = 12,
         mod_exceedance_viewer_custom_ui(ns("Summary_View_Custom"))
       )
+    ),
+    # Add to your UI
+    fluidRow(
+      column(12,
+             tabsetPanel(
+               tabPanel("Overall Status", 
+                        leaflet::leafletOutput(ns("overall_map"))
+               ),
+               tabPanel("By Use", 
+                        shiny::selectInput(ns("selected_use"), "Select Use:", 
+                                    choices = NULL),
+                        leaflet::leafletOutput(ns("use_map"))
+               ),
+               tabPanel("By Parameter", 
+                        shiny::selectInput(ns("selected_param"), "Select Parameter:", 
+                                           choices = NULL),
+                        shiny::selectInput(ns("selected_use_param"), "Select Use:", 
+                                           choices = NULL),
+                        leaflet::leafletOutput(ns("param_map"))
+               )
+             )
+      )
     )
   )
 }
@@ -147,9 +169,6 @@ mod_custom_analysis_server <- function(id, tadat){
     shiny::observeEvent(tadat$selected_monitoring_locations_custom, {
       req(tadat$custom_raw)
       
-      print("tadat$custom_raw")
-      print(nrow(tadat$custom_raw))
-      
       # Get selected monitoring locations
       selected_sites <- tadat$selected_monitoring_locations_custom
       
@@ -178,12 +197,6 @@ mod_custom_analysis_server <- function(id, tadat){
     shiny::observeEvent(input$parameter_filter_custom, {
       req(tadat$custom_raw2)
       
-      print("tadat$custom_raw2")
-      print(nrow(tadat$custom_raw2))
-      
-      print("Selected parameters:")
-      print(input$parameter_filter_custom)
-      
       # Check if any parameters are selected
       if (is.null(input$parameter_filter_custom) || length(input$parameter_filter_custom) == 0) {
         # If no parameters selected, use all data
@@ -193,9 +206,6 @@ mod_custom_analysis_server <- function(id, tadat){
         tadat$custom_raw3 <- tadat$custom_raw2 |>
           dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
       }
-      
-      print("tadat$custom_raw3")
-      print(nrow(tadat$custom_raw3))
       
     }, ignoreNULL = FALSE)
 
@@ -219,14 +229,94 @@ mod_custom_analysis_server <- function(id, tadat){
 
       ### Step 6: Summarize the data
       dat6 <- dat5 |>
-        exceedance_summary(type = tadat$loc_select_custom, group = input$custom_group)
+        exceedance_summary(type = tadat$loc_select_custom, group = input$custom_group) 
+      
+      dat6a <- dat6 |> purrr::pluck("data")
+      
+      dat6b <- dat6 |> purrr::pluck("coords")
 
       # Save the data to tadat
-      tadat$exceed_summary_custom <- dat6
+      tadat$exceed_summary_custom <- dat6a
+      tadat$exceed_summary_coords_custom <- dat6b
     })
     mod_exceedance_viewer_custom_server("Summary_View_Custom", tadat)
+    
+    # Render the summary maps
+    # Render the summary maps
+    output$overall_map <- leaflet::renderLeaflet({
+      req(tadat$exceed_summary_custom)
+      req(!input$custom_group)
+      
+      create_overall_map(
+        data = tadat$exceed_summary_custom,
+        coords_data = tadat$exceed_summary_coords_custom,
+        group_by = tadat$loc_select_custom
+      )
+    })
+    
+    output$use_map <- leaflet::renderLeaflet({
+      req(tadat$exceed_summary_custom)
+      req(!input$custom_group)
+      
+      create_use_map(
+        data = tadat$exceed_summary_custom,
+        coords_data = tadat$exceed_summary_coords_custom,
+        selected_use = input$selected_use,
+        group_by = tadat$loc_select_custom
+      )
+    })
+    
+    output$param_map <- leaflet::renderLeaflet({
+      req(tadat$exceed_summary_custom)
+      req(input$selected_param)
+      req(input$selected_use_param)
+      req(!input$custom_group)
+      
+      # Filter data to check if there are any results
+      filtered_data <- tadat$exceed_summary_custom |>
+        dplyr::filter(TADA.CharacteristicName == input$selected_param,
+                      ATTAINS.UseName == input$selected_use_param)
+      
+      # Only create map if filtered data has rows
+      if (nrow(filtered_data) > 0) {
+        create_parameter_map(
+          data = tadat$exceed_summary_custom,
+          coords_data = tadat$exceed_summary_coords_custom,
+          selected_param = input$selected_param,
+          selected_use = input$selected_use_param,
+          group_by = tadat$loc_select_custom
+        )
+      } else {
+        # Return empty leaflet map with message
+        leaflet::leaflet() |>
+          leaflet::addTiles() |>
+          leaflet::addControl(
+            html = "<div style='padding: 20px; background: white; border-radius: 5px;'>
+                <h4>No data available</h4>
+                <p>No results found for the selected parameter and use combination.</p>
+                </div>",
+            position = "topright"
+          )
+      }
+    })
+    
+    # Update dropdown choices
+    observe({
+      req(tadat$exceed_summary_custom)
+      req(!input$custom_group)
+      
+      uses <- sort(unique(tadat$exceed_summary_custom$ATTAINS.UseName))  
+      params <- sort(unique(tadat$exceed_summary_custom$TADA.CharacteristicName))
+      uses_with_all <- uses 
+      
+      updateSelectInput(session, "selected_use", choices = uses, selected = uses[1])
+      updateSelectInput(session, "selected_param", choices = params, selected = params[1])
+      updateSelectInput(session, "selected_use_param", choices = uses, selected = uses[1])
+    })
 
   })
+  
+  
 }
     
 ## To be copied in the UI
