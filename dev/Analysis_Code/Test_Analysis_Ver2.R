@@ -12,7 +12,7 @@ library(tigris)
 ### Load criteria tables related files
 
 ## Load the criteria table
-criteria_table <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250729.xlsx", 
+criteria_table <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx", 
                              sheet = "TADA-Format Criteria",
                              guess_max = 1810)
 
@@ -30,19 +30,19 @@ params2 <- criteria_table |>
 
 ## Load equation tables
 # Equation based on hardness
-hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250729.xlsx",
+hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
                                sheet = "Hardness_eq")
 
 # Equation based on pH and hardness
-pH_Hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250729.xlsx",
+pH_Hardness_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
                                   sheet = "pH_Hardness_eq")
 
 # Equation based on pH
-pH_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250729.xlsx",
+pH_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
                          sheet = "pH_eq")
 
 # Equation based on pH and Temperature
-pH_Temperature_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250729.xlsx",
+pH_Temperature_equation <- readxl::read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
                                      sheet = "pH_Temperature_eq")
 
 ### Load the example dataset
@@ -66,7 +66,10 @@ AU_MLID <- readr::read_csv("Data/Example_JoinAU/tada_jointoau_output_ts202507090
 dat <- dat |>
   dplyr::mutate(ActivityStartDateTime = ymd_hms(ActivityStartDateTime)) |>
   dplyr::mutate(ActivityStartDate = ymd(ActivityStartDate)) |>
-  dplyr::mutate(DateTime = ActivityStartDateTime)
+  dplyr::mutate(DateTime = ActivityStartDateTime) 
+
+# Remove NA in TADA.ResultMeasureValue
+dat <- dat |> drop_na(TADA.ResultMeasureValue)
 
 ### Load helper functions
 source("Function/pH_fun.R")
@@ -133,10 +136,43 @@ dat4 <- dat3 |>
                    relationship = "many-to-many") |>
   criteria_join(criteria_table_f1, match_type = "Option 1", filter_type = FALSE) 
 
+# Select columns
+dat4_1 <- dat4 |>
+  dplyr::select(
+    TADA.MonitoringLocationIdentifier,
+    TADA.MonitoringLocationName,
+    TADA.LongitudeMeasure,
+    TADA.LatitudeMeasure,
+    JoinToAU.AssessmentUnitIdentifier,
+    ATTAINS.OrganizationIdentifier,
+    ATTAINS.ParameterName,
+    ATTAINS.UseName,
+    AcuteChronic,
+    EquationBased,
+    Notes2,
+    TADA.CharacteristicName,
+    TADA.ResultSampleFractionText,
+    TADA.MethodSpeciationName,
+    TADA.ResultMeasure.MeasureUnitCode,
+    TADA.ResultMeasureValue,
+    ActivityStartDate,
+    DateTime,
+    pH,
+    Temperature,
+    Hardness,
+    MagnitudeValueLower,
+    MagnitudeValueUpper,
+    DurationValue,
+    DurationUnit,
+    DurationAggregation,
+    FrequencyCriteriaValue,
+    FrequencyCriteriaMethod,
+  )
+
 ### Step 3: Separate the dataset based on if criteria exist
-dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
-dat_yes <- dat4 |> dplyr::filter(EquationBased %in% "Yes")
-dat_no <- dat4 |> dplyr::filter(EquationBased %in% "No")
+dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
+dat_yes <- dat4_1 |> dplyr::filter(EquationBased %in% "Yes")
+dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
 
 ### Step 4: Compare the dataset that the condition is not based on equation
 
@@ -216,7 +252,7 @@ dat_pH_hardness2 <- dat_pH_hardness |>
 
 # pH and Temperature
 dat_pH_temperature <- dat_yes |>
-  dplyr::filter(Notes %in% "pH and Temperature") |>
+  dplyr::filter(Notes2 %in% "pH and Temperature") |>
   dplyr::left_join(pH_Temperature_equation) |>
   dplyr::mutate(
     MagnitudeValueUpper = purrr::pmap_dbl(
@@ -274,12 +310,12 @@ write_csv(dat5_1, "Example_boxplot_Input_Simple.csv", na = "")
 # 3. AU_group: AU (Group Sites)
 
 # Select MLId AU_ind, or AU_group
-analysis_unit <- "AU_group"
+analysis_unit <- "AU"
 
 dat6 <- dat5_1 |> 
   exceedance_summary(type = analysis_unit)
 
-dat7 <- map_summary(dat6, type = analysis_unit)
+# dat7 <- map_summary(dat6, type = analysis_unit)
 
 # a <- dat5 %>%
 #   distinct( TADA.MonitoringLocationIdentifier,
@@ -305,5 +341,16 @@ duration_table <- criteria_table |>
   count(DurationValue, DurationUnit, DurationAggregation) |>
   arrange(desc(n))
 
+### Duration and Frequency Table
+duration_frequency_table <- criteria_table |> 
+  count(FrequencyCriteriaValue, FrequencyCriteriaMethod, 
+        DurationValue, DurationUnit, DurationAggregation) |>
+  arrange(desc(n)) %>%
+  drop_na(DurationValue)
+
 write_csv(frequency_table, "frequency_table.csv")
 write_csv(duration_table, "duration_table.csv")
+write_csv(duration_frequency_table, "duration_frequency_table.csv")
+
+duration_frequency_table %>%
+  count(DurationAggregation)
