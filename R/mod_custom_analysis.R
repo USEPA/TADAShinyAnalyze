@@ -25,31 +25,28 @@ mod_custom_analysis_ui <- function(id) {
       )
     ),
     
-    # Horizontal divider
-    hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
-    
     fluidRow(
       column(
         width = 12,
         column(
-          width = 6,
-          shiny::selectizeInput(inputId = ns("loc_filter_custom"),
-                         label = "Filter ML/AU ID to view the results",
-                         choices = NULL,
-                         multiple = TRUE),
+          width = 12,
+          mod_map_table_selector_custom_ui(ns("Custom_map_table_selector"))
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
+        column(
+          width = 12,
           shiny::checkboxInput(inputId = ns("custom_group"),
                                label = "Group the ML/AU ID for analysis"),
           shiny::selectizeInput(inputId = ns("parameter_filter_custom"),
-                         label = "Filter parameter to view the results",
-                         choices = NULL,
-                         multiple = TRUE)
-        ),
-        column(
-          width = 6,
-          div(style = "display: flex; align-items: center; gap: 10px;",
-              htmltools::h4("Run Custom Analysis:", style = "margin: 0;"),
-              shiny::actionButton(inputId = ns("Run_Custom"),
-                                  label = "Run")
+                                label = "Filter parameter to view the results",
+                                choices = NULL,
+                                multiple = TRUE),
+          shiny::actionButton(ns("Run_Custom"), "Run Custom Analysis", shiny::icon("computer"),
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
           )
         )
       )
@@ -77,7 +74,7 @@ mod_custom_analysis_server <- function(id, tadat){
       shiny::req(tadat$df_mlid_input, tadat$df_mltoau_input_f, tadat$df_autouse_input,
                  tadat$loc_select_custom, 
                  tadat$state_tribe_custom, 
-                 tadat$uses_select_custom)
+                 tadat$uses_select_re_custom)
       
       ### Get the input data and convert ActivityStartDateTime to dateTime
       dat <- tadat$df_mlid_input
@@ -95,7 +92,7 @@ mod_custom_analysis_server <- function(id, tadat){
       ### Step 2: Join the criteria table
       criteria_table_f1 <- criteria_table |>
         dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe_custom) |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_custom)
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
       
       # Filter the AU_Use based on available_uses_s
       AU_Use <- tadat$df_autouse_input
@@ -104,7 +101,7 @@ mod_custom_analysis_server <- function(id, tadat){
                         stringr::str_to_upper(MonitoringLocationIdentifier))
       
       AU_Use_f1 <- AU_Use |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_custom)
+        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
       
       # Filter the AU_MLID based on AU_Use_f1
       AU_MLID_f1 <- AU_MLID |>
@@ -124,98 +121,111 @@ mod_custom_analysis_server <- function(id, tadat){
         dplyr::left_join(AU_Use_f1, 
                          by = "JoinToAU.AssessmentUnitIdentifier",
                          relationship = "many-to-many") |>
-        criteria_join(criteria_table_f1)
+        criteria_join(criteria_table_f1) |>
+        dplyr::filter(!is.na(EquationBased))
       
       # Save the data
-      tadat$custom_raw <- dat4
+      tadat$custom_raw <- dat4 
+      
+      # Create a table for the map-table selector
+      site_AU_table <- dat4 |>
+        dplyr::distinct(TADA.MonitoringLocationIdentifier,
+                        TADA.MonitoringLocationName,
+                        TADA.MonitoringLocationTypeName,
+                        TADA.LongitudeMeasure,
+                        TADA.LatitudeMeasure,
+                        JoinToAU.AssessmentUnitIdentifier)
+      
+      tadat$site_AU_table_custom <- site_AU_table
       
     })
     
-    ### Based on tadat$custom_raw, update loc_filter_custom and parameter_filter_custom
-    shiny::observeEvent(tadat$custom_raw, {
-      if (tadat$loc_select_custom %in% c("MLid")){
-        loc <- sort(unique(tadat$custom_raw$TADA.MonitoringLocationIdentifier))
-      } else {
-        loc <- sort(unique(tadat$custom_raw$JoinToAU.AssessmentUnitIdentifier))
-      }
-      
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "loc_filter_custom",
-        selected = NULL,
-        choices = loc
-      )
-    })
+    ### Based on tadat$site_AU_table_custom activate the map-table selector
+    mod_map_table_selector_custom_server("Custom_map_table_selector", tadat)
     
-    # Update tadat$custom_raw based on loc_filter_custom
-    shiny::observeEvent(input$loc_filter_custom, {
+    # Filter tadat$custom_raw based on selected monitoring locations
+    shiny::observeEvent(tadat$selected_monitoring_locations_custom, {
       req(tadat$custom_raw)
       
-      if (tadat$loc_select_custom %in% c("MLid")){
-        dat <- tadat$custom_raw |>
-          dplyr::filter(TADA.MonitoringLocationIdentifier %in% input$loc_filter_custom)
+      print("tadat$custom_raw")
+      print(nrow(tadat$custom_raw))
+      
+      # Get selected monitoring locations
+      selected_sites <- tadat$selected_monitoring_locations_custom
+      
+      # If no sites selected, use all sites
+      if (is.null(selected_sites) || length(selected_sites) == 0) {
+        tadat$custom_raw2 <- tadat$custom_raw
       } else {
-        dat <- tadat$custom_raw |>
-          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% input$loc_filter_custom)
+        # Filter the data based on selected sites
+        tadat$custom_raw2 <- tadat$custom_raw |>
+          dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_sites)
       }
       
-      # Save the data
-      tadat$custom_raw2 <- dat
-      
-    })
-    
-    ### Based on tadat$custom_raw2, update parameter_filter_custom
-    shiny::observeEvent(tadat$custom_raw2, {
-      
-      params <- sort(unique(tadat$custom_raw2$TADA.CharacteristicName))
-      
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "parameter_filter_custom",
-        selected = NULL,
-        choices = params
-      )
-    })
-    
-    # Update tadat$custom_raw based on parameter_filter_custom
+      # Update parameter filter choices based on filtered data
+      if (!is.null(tadat$custom_raw2) && nrow(tadat$custom_raw2) > 0) {
+        available_params <- unique(tadat$custom_raw2$TADA.CharacteristicName)
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "parameter_filter_custom",
+          choices = sort(available_params),
+          selected = NULL
+        )
+      }
+    }, ignoreNULL = FALSE)
+
+    # Update tadat$custom_raw3 based on parameter_filter_custom
     shiny::observeEvent(input$parameter_filter_custom, {
       req(tadat$custom_raw2)
       
-      dat <- tadat$custom_raw2 |>
-        dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
+      print("tadat$custom_raw2")
+      print(nrow(tadat$custom_raw2))
       
-      # Save the data
-      tadat$custom_raw3 <- dat
+      print("Selected parameters:")
+      print(input$parameter_filter_custom)
       
-    })
-    
+      # Check if any parameters are selected
+      if (is.null(input$parameter_filter_custom) || length(input$parameter_filter_custom) == 0) {
+        # If no parameters selected, use all data
+        tadat$custom_raw3 <- tadat$custom_raw2
+      } else {
+        # Filter based on selected parameters
+        tadat$custom_raw3 <- tadat$custom_raw2 |>
+          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
+      }
+      
+      print("tadat$custom_raw3")
+      print(nrow(tadat$custom_raw3))
+      
+    }, ignoreNULL = FALSE)
+
     ### Run the analysis if tadat$custom_raw3 is ready
     shiny::observeEvent(input$Run_Custom, {
       req(tadat$custom_raw3)
-      
+
       dat4 <- tadat$custom_raw3
-      
+
       ### Step 3: Separate the dataset based on if criteria exist
-      dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
+      # dat_na <- dat4 |> dplyr::filter(is.na(EquationBased))
       dat_yes <- dat4 |> dplyr::filter(EquationBased %in% "Yes")
       dat_no <- dat4 |> dplyr::filter(EquationBased %in% "No")
-      
+
       ### Step 4: Compare the dataset that the condition is not based on equation
       dat_no2 <- dat_no |> exceedance_fun()
-      
+
       # Combine the results from each cases
       # TODO Need to make sure all the cases have the same column headers
       dat5 <- dplyr::bind_rows(dat_no2)
-      
+
       ### Step 6: Summarize the data
-      dat6 <- dat5 |> 
+      dat6 <- dat5 |>
         exceedance_summary(type = tadat$loc_select_custom, group = input$custom_group)
-      
+
       # Save the data to tadat
       tadat$exceed_summary_custom <- dat6
     })
     mod_exceedance_viewer_custom_server("Summary_View_Custom", tadat)
-    
+
   })
 }
     

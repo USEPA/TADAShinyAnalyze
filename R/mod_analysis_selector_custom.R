@@ -8,21 +8,34 @@
 #'
 #' @importFrom shiny NS tagList 
 mod_analysis_selector_custom_ui <- function(id) {
+  
   ns <- NS(id)
   tagList(
     fluidRow(
       column(
-        width = 6,
-        shiny::radioButtons(inputId = ns("loc_select_custom"),
-                            label = "Batch Analyzed by: ",
-                            choices = c("Monitoring Location ID" = "MLid",
-                                        "Assessment Unit (Group)" = "AU_group"))
-      ),
+        width = 12,
+        htmltools::p("Determine the spatial unit, state/tribe of the criteria, and the uses included in the analysis."),
+      )
+    ),
+    fluidRow(
       column(
         width = 6,
+        shiny::radioButtons(inputId = ns("loc_select_custom"),
+                            label = "Batch Analyzed by the spatial unit: ",
+                            choices = c("Monitoring Location ID" = "MLid",
+                                        "Assessment Unit" = "AU"))
+      ),
+      column(
+        width = 3,
         shiny::selectizeInput(inputId = ns("state_tribe_custom"),
-                              label = "Select state/tribe",
+                              label = "Select state/tribe of the criteria",
                               choices = NULL),
+        shiny::checkboxInput(inputId = ns("uses_all_custom"),
+                             label = "Select all uses",
+                             value = TRUE)
+      ),
+      column(
+        width = 3,
         shinyWidgets::virtualSelectInput(
           inputId = ns("uses_select_custom"),
           label = "Select the uses:",
@@ -70,26 +83,62 @@ mod_analysis_selector_custom_server <- function(id, tadat){
       # Find the intersection
       available_uses <- base::intersect(criteria_uses, AU_Use_uses)
       
-      shinyWidgets::updateVirtualSelect(
-        session = session,
-        inputId = "uses_select_custom",
-        choices = sort(available_uses)
-      )
+      # Save available_uses to tadat
+      tadat$available_uses_custom <- available_uses
+      
     }, ignoreNULL = TRUE)
     
-    ### Save the selected loc_select, state_tribe and uses to tadat
-    shiny::observeEvent(input$loc_select_custom, {
-      tadat$loc_select_custom <- input$loc_select_custom
+    # Initialize uses_select_re
+    shiny::observe({
+      req(tadat$available_uses_custom)
+      if (is.null(tadat$uses_select_re_custom)) {
+        tadat$uses_select_re_custom <- if(isolate(input$uses_all_custom)) {
+          tadat$available_uses_custom
+        } else {
+          character(0)
+        }
+      }
     })
     
-    shiny::observeEvent(input$state_tribe_custom, {
+    # Handle checkbox changes
+    shiny::observeEvent(input$uses_all_custom, {
+      req(tadat$available_uses_custom)
+      
+      if (input$uses_all_custom) {
+        shinyjs::disable("uses_select_custom")
+        tadat$uses_select_re_custom <- tadat$available_uses_custom
+        # Update the select to show all selected (visual consistency)
+        shinyWidgets::updateVirtualSelect(
+          session = session,
+          inputId = "uses_select_custom",
+          choices = sort(tadat$available_uses_custom),
+          selected = tadat$available_uses_custom
+        )
+      } else {
+        shinyjs::enable("uses_select_custom")
+        shinyWidgets::updateVirtualSelect(
+          session = session,
+          inputId = "uses_select_custom",
+          choices = sort(tadat$available_uses_custom),
+          selected = tadat$uses_select_re_custom  # Maintain current selection
+        )
+        # Don't update tadat$uses_select_re here
+      }
+    }, ignoreInit = FALSE)
+    
+    # Handle uses_select changes separately
+    shiny::observeEvent(input$uses_select_custom, {
+      # Only update when checkbox is unchecked AND uses_select is not disabled
+      if (!input$uses_all_custom && !is.null(input$uses_select_custom)) {
+        tadat$uses_select_re_custom <- input$uses_select_custom
+      }
+    }, ignoreNULL = FALSE)  # Important: Allow empty selections
+    
+    ### Save the selected loc_select, state_tribe and uses to tadat
+    shiny::observe({
+      tadat$loc_select_custom <- input$loc_select_custom
       tadat$state_tribe_custom <- input$state_tribe_custom
     })
-    
-    shiny::observeEvent(input$uses_select_custom, {
-      tadat$uses_select_custom <- input$uses_select_custom
-    })
-    
   })
 }
 
