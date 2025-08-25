@@ -63,7 +63,7 @@ mod_analysis_selector_custom_server <- function(id, tadat){
         inputId = "state_tribe_custom",
         options = list(placeholder = "Select the state/tribe", maxItems = 1),
         selected = character(0),
-        choices = sort(unique(criteria_table$ATTAINS.OrganizationIdentifier))
+        choices = org_options
       )
     }, ignoreNULL = TRUE)
     

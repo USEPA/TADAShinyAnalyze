@@ -35,5 +35,18 @@ pH_equation <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
 pH_Temperature_equation <- read_excel("Data/TADA_Format_Criteria_Table_DRAFT_20250813.xlsx",
                                       sheet = "pH_Temperature_eq")
 
+# Attains Organization names
+Organization_Name <- read_excel("Data/Organization_Name.xlsx")
+
+# Get the ATTAINS.OrganizationIdentifier
+org <- criteria_table |>
+  dplyr::distinct(ATTAINS.OrganizationIdentifier) |>
+  dplyr::left_join(Organization_Name, by = "ATTAINS.OrganizationIdentifier") |>
+  dplyr::arrange(`Display Name`)
+
+# Create a vector for options in the state_tribe selector
+org_options <- org$ATTAINS.OrganizationIdentifier
+names(org_options) <- org$`Display Name`
+
 # Save the work space
 save.image("Data/Criteria_Table_Input.RData")
