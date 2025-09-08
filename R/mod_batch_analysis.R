@@ -140,7 +140,7 @@ mod_batch_analysis_server <- function(id, tadat){
       shinybusy::show_modal_spinner(
         spin = "double-bounce",
         color = "#0071bc",
-        text = "Runniing the analysis ...",
+        text = "Running the analysis ...",
         session = shiny::getDefaultReactiveDomain()
       )
       
@@ -375,6 +375,8 @@ mod_batch_analysis_server <- function(id, tadat){
       
       ### Step 9. Conduct frequency summary
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select)
+      
+      tadat$exceed_summary <- dat9
       
       ### Step 10. Join the data
       dat9_1 <- dat9 |>
