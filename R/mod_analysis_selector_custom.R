@@ -23,7 +23,8 @@ mod_analysis_selector_custom_ui <- function(id) {
         shiny::radioButtons(inputId = ns("loc_select_custom"),
                             label = "Batch Analyzed by the spatial unit: ",
                             choices = c("Monitoring Location ID" = "MLid",
-                                        "Assessment Unit" = "AU"))
+                                        "Assessment Unit" = "AU",
+                                        "Custom Gouping (Use the following map-table selector to select sites to group)" = "CG"))
       ),
       column(
         width = 3,
@@ -45,6 +46,13 @@ mod_analysis_selector_custom_ui <- function(id) {
           multiple = TRUE
         )
       )
+    ),
+    fluidRow(
+      column(width = 6,
+             shiny::radioButtons(inputId = ns("join_select_custom"),
+                                 label = "Join the criteria table with fraction information",
+                                 choices = c("Yes" = "Option 1", 
+                                             "No" = "Option 2")))
     )
   )
 }
@@ -138,6 +146,7 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     shiny::observe({
       tadat$loc_select_custom <- input$loc_select_custom
       tadat$state_tribe_custom <- input$state_tribe_custom
+      tadat$join_select_custom <- input$join_select_custom
     })
   })
 }

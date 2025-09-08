@@ -50,6 +50,13 @@ mod_analysis_selector_ui <- function(id) {
           multiple = TRUE
       )
       )
+    ),
+    fluidRow(
+      column(width = 6,
+             shiny::radioButtons(inputId = ns("join_select"),
+                                 label = "Join the criteria table with fraction information",
+                                 choices = c("Yes" = "Option 1", 
+                                             "No" = "Option 2")))
     )
   )
 }
@@ -143,6 +150,7 @@ mod_analysis_selector_server <- function(id, tadat){
     shiny::observe({
       tadat$loc_select <- input$loc_select
       tadat$state_tribe <- input$state_tribe
+      tadat$join_select <- input$join_select
     })
   })
 }

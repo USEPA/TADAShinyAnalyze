@@ -15,7 +15,7 @@ app_server <- function(input, output, session) {
   # Your application server logic
   
   # Set maximum file upload size to 100MB
-  options(shiny.maxRequestSize = 100*1024^2)
+  options(shiny.maxRequestSize = 300*1024^2)
   
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()

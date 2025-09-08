@@ -75,13 +75,13 @@ mod_analysis_plots_server <- function(id, tadat){
  
     # Update selectize inputs when data changes
     shiny::observe({
-      shiny::req(tadat$exceed_dat_filtered)
-      shiny::req(nrow(tadat$exceed_dat_filtered) > 0)
-      shiny::req(tadat$exceed_summary_f)
-      shiny::req(nrow(tadat$exceed_summary_f) > 0)
+      shiny::req(tadat$excurse_dat_filtered)
+      shiny::req(nrow(tadat$excurse_dat_filtered) > 0)
+      shiny::req(tadat$excurse_summary_f)
+      shiny::req(nrow(tadat$excurse_summary_f) > 0)
       
       # Get unique values for Parameter dropdown
-      param_choices <- sort(unique(tadat$exceed_summary_f$TADA.CharacteristicName))
+      param_choices <- sort(unique(tadat$excurse_summary_f$TADA.CharacteristicName))
       
       # Update Parameter selectize
       shiny::updateSelectizeInput(
@@ -95,12 +95,12 @@ mod_analysis_plots_server <- function(id, tadat){
     
     # Reactive to filter data based on selections
     filtered_data1 <- shiny::reactive({
-      shiny::req(tadat$exceed_dat_filtered)
-      shiny::req(tadat$exceed_summary_f)
+      shiny::req(tadat$excurse_dat_filtered)
+      shiny::req(tadat$excurse_summary_f)
       shiny::req(input$parameter_box_select)
       
       # Filter by selected parameter
-      dat2 <- tadat$exceed_dat_filtered |>
+      dat2 <- tadat$excurse_dat_filtered |>
         dplyr::filter(TADA.CharacteristicName %in% input$parameter_box_select)
       
       return(dat2)
@@ -267,7 +267,7 @@ mod_analysis_plots_server <- function(id, tadat){
       df <- filtered_data3()
       
       fill_var <- if (tadat$loc_select %in% c("MLid")) {
-        df$MonitoringLocationIdentifier
+        df$TADA.MonitoringLocationIdentifier
       } else {
         df$JoinToAU.AssessmentUnitIdentifier
       }

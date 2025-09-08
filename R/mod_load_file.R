@@ -550,7 +550,7 @@ mod_load_file_server <- function(id, tadat){
       }})
     
     # enable the third tab to be selected once input data is processed
-    shiny::observeEvent(tadat$exceed_dat_label, {
+    shiny::observe({
       if (files_loaded$mlid & files_loaded$mltoau & files_loaded$autouse){
         shinyjs::enable(selector = '.nav li a[data-value="Custom"]') # also custom!
       } else {

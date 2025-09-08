@@ -24,7 +24,7 @@ exceedance_summary <- function(x, type, group = FALSE){
                               TADA.LongitudeMeasure,
                               TADA.LatitudeMeasure)
     
-    if(type %in% c("MLid", "AU_ind")){
+    if(type %in% "MLid"){
       x2 <- x |>
         dplyr::group_by(dplyr::across(
           dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
@@ -65,14 +65,16 @@ exceedance_summary <- function(x, type, group = FALSE){
         TRUE                                                            ~ "Not Exceed"
       ))
     
-    if (type %in% "AU_group"){
-      x4 <- x3 %>%
-        dplyr::left_join(coords, by = "JoinToAU.AssessmentUnitIdentifier")
-    } else {
-      x4 <- x3
-    }
+    # if (type %in% "MLid"){
+    #   x4 <- x3
+    # } else {
+    #   x4 <- x3 |>
+    #     dplyr::left_join(coords, by = "JoinToAU.AssessmentUnitIdentifier")
+    # }
     
-    return(x4)
+    ans <- list(data = x3, coords = coords)
+    
+    return(ans)
     
   } else {
     
@@ -104,7 +106,9 @@ exceedance_summary <- function(x, type, group = FALSE){
         TRUE                                                            ~ "Not Exceed"
       ))
     
-    return(x3)
+    ans <- list(data = x3, coords = NULL)
+    
+    return(ans)
     
   }
   

@@ -24,19 +24,23 @@ mod_exceedance_viewer_custom_server <- function(id, tadat){
     ### Show the data as a data table
     shiny::observeEvent(tadat$exceed_summary_custom, {
       
-      # Simplify the table when tadat$loc_select == AU_group
-      if (tadat$loc_select %in% "AU_group"){
-        dat <- tadat$exceed_summary_custom |>
-          dplyr::select(-TADA.MonitoringLocationIdentifier,
-                        -TADA.MonitoringLocationName,
-                        -TADA.LongitudeMeasure,
-                        -TADA.LatitudeMeasure) |>
-          dplyr::distinct()
-      } else {
-        dat <- tadat$exceed_summary_custom
-      }
+      # # Simplify the table when tadat$loc_select == AU_group
+      # if (tadat$loc_select %in% "AU_group"){
+      #   dat <- tadat$exceed_summary_custom |>
+      #     dplyr::select(-TADA.MonitoringLocationIdentifier,
+      #                   -TADA.MonitoringLocationName,
+      #                   -TADA.LongitudeMeasure,
+      #                   -TADA.LatitudeMeasure) |>
+      #     dplyr::distinct()
+      # } else {
+      #   dat <- tadat$exceed_summary_custom
+      # }
+      
+      dat <- tadat$exceed_summary_custom
 
-      dat <- dat |> dplyr::mutate(Exceedance_Percentage = Exceedance_Percentage/100)
+      dat <- dat |> 
+        dplyr::mutate(Excursion_Percentage = Excursion_Percentage/100) |>
+        dplyr::mutate(Duration_Percentage = Duration_Percentage/100)
 
       output$exceed_table <- DT::renderDT(
         DT::datatable(
@@ -52,7 +56,7 @@ mod_exceedance_viewer_custom_server <- function(id, tadat){
             columns = c("Minimum", "Median", "Maximum")
           ) |>
           DT::formatPercentage(
-            columns = c("Exceedance_Percentage")
+            columns = c("Excursion_Percentage", "Duration_Percentage")
           ) 
         )
     })
