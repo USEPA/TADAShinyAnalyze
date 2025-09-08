@@ -415,7 +415,7 @@ mod_custom_analysis_server <- function(id, tadat){
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select_custom)
       
       ### Step 8. Conduct Duration Analysis
-      dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
+      dat8 <- dat7 |> duration_cal(type = tadat$loc_select_custom, complete_windows = FALSE)
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
