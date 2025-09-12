@@ -37,15 +37,74 @@ usethis::use_package("EPATADA")
 
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module(name = "analysis_selector", with_test = TRUE)
-golem::add_module(name = "analysis_selector_custom", with_test = TRUE)
-golem::add_module(name = "exceedance_viewer", with_test = TRUE) 
-golem::add_module(name = "map_viewer", with_test = TRUE)
-golem::add_module(name = "analysis_results", with_test = TRUE)
-golem::add_module(name = "timeseries", with_test = TRUE)
-golem::add_module(name = "boxplot", with_test = TRUE)
-golem::add_module(name = "analysis_plots", with_test = TRUE, export = FALSE)
-golem::add_module(name = "map_table_selector", with_test = TRUE)
+
+## Create test scripts only
+golem::add_module(
+  name = "map_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "map_table_selector_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "map_table_selector",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "load_file",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "excursion_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "exceedance_viewer_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "exceedance_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "custom_analysis",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "batch_analysis",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_selector_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_selector",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_plots",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_plots",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+
 
 
 ## Add helper functions ----

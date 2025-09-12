@@ -183,6 +183,21 @@ mod_custom_analysis_server <- function(id, tadat){
         tidyr::drop_na(TADA.ResultMeasureValue) |>
         tidyr::drop_na(DateTime)
       
+      # Check if dat4 has zero rows and exit
+      if (nrow(dat4) == 0) {
+        # Remove the spinner
+        shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())
+        
+        shiny::showNotification(
+          "No data available after processing. Please check your input criteria.",
+          type = "warning",
+          duration = 5
+        )
+        
+        # Exit the observeEvent
+        return()
+      }
+      
       # Save the data
       tadat$custom_raw <- dat4 
       
@@ -402,6 +417,21 @@ mod_custom_analysis_server <- function(id, tadat){
       )
       
       tadat$excurse_dat_custom_filtered <- dat5
+      
+      # Check if dat5 has zero rows and exit
+      if (nrow(dat5) == 0) {
+        # Remove the spinner
+        shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())
+        
+        shiny::showNotification(
+          "No data available after processing. Please check your input criteria.",
+          type = "warning",
+          duration = 5
+        )
+        
+        # Exit the observeEvent
+        return()
+      }
       
       ### Step 6: Summarize the data
       dat6 <- dat5 |>

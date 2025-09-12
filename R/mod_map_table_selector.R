@@ -50,7 +50,8 @@ mod_map_table_selector_server <- function(id, tadat){
       
       # Map selector
       output$map_selector <- leaflet::renderLeaflet({
-        req(tadat$site_AU_table)
+        req(is.data.frame(tadat$site_AU_table))
+        req(nrow(tadat$site_AU_table) > 0)
         
         dat <- tadat$site_AU_table
         
@@ -79,7 +80,8 @@ mod_map_table_selector_server <- function(id, tadat){
       
       # Table selector
       output$table_selector <- DT::renderDT({
-        req(tadat$site_AU_table)
+        req(is.data.frame(tadat$site_AU_table))
+        req(nrow(tadat$site_AU_table) > 0)
         
         dat <- tadat$site_AU_table
         
@@ -110,11 +112,11 @@ mod_map_table_selector_server <- function(id, tadat){
           # Select all rows
           all_rows <- seq_len(nrow(tadat$site_AU_table))
           selected_idx(all_rows)
-          table_selector_proxy %>% DT::selectRows(all_rows)
+          table_selector_proxy |> DT::selectRows(all_rows)
           
           # Highlight all points on map
-          map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
-          map_selector_proxy %>%
+          map_selector_proxy |> leaflet::clearGroup("highlighted_point")
+          map_selector_proxy |>
             leaflet::addCircleMarkers(
               lng = tadat$site_AU_table$TADA.LongitudeMeasure,
               lat = tadat$site_AU_table$TADA.LatitudeMeasure,
@@ -127,8 +129,8 @@ mod_map_table_selector_server <- function(id, tadat){
         } else {
           # Clear all selections
           selected_idx(integer(0))
-          table_selector_proxy %>% DT::selectRows(numeric(0))
-          map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
+          table_selector_proxy |> DT::selectRows(numeric(0))
+          map_selector_proxy |> leaflet::clearGroup("highlighted_point")
         }
         
         # Reset flag after a short delay
@@ -140,7 +142,8 @@ mod_map_table_selector_server <- function(id, tadat){
       
       # DT -> Map: highlight selected points
       observeEvent(input$table_selector_rows_selected, ignoreInit = TRUE, ignoreNULL = FALSE, {
-        req(tadat$site_AU_table)
+        req(is.data.frame(tadat$site_AU_table))
+        req(nrow(tadat$site_AU_table) > 0)
         
         # Get current selection - explicitly handle NULL/empty case
         cur <- input$table_selector_rows_selected
@@ -152,7 +155,7 @@ mod_map_table_selector_server <- function(id, tadat){
         selected_idx(cur)
         
         # Always clear existing highlights first
-        map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
+        map_selector_proxy |> leaflet::clearGroup("highlighted_point")
         
         # Only add highlights if there are selections
         if (length(cur) > 0) {
@@ -160,7 +163,7 @@ mod_map_table_selector_server <- function(id, tadat){
           sel <- tadat$site_AU_table |> dplyr::slice(cur)
           
           if (nrow(sel) > 0) {
-            map_selector_proxy %>%
+            map_selector_proxy |>
               leaflet::addCircleMarkers(
                 lng = sel$TADA.LongitudeMeasure,
                 lat = sel$TADA.LatitudeMeasure,
@@ -176,7 +179,8 @@ mod_map_table_selector_server <- function(id, tadat){
       
       # Map -> DT: clicking markers toggles table selection
       observeEvent(input$map_selector_marker_click, {
-        req(tadat$site_AU_table)
+        req(is.data.frame(tadat$site_AU_table))
+        req(nrow(tadat$site_AU_table) > 0)
         
         click_info <- input$map_selector_marker_click
         if (is.null(click_info)) return()
@@ -199,11 +203,11 @@ mod_map_table_selector_server <- function(id, tadat){
           # Update table selection - handle empty case explicitly
           if (length(new_selection) == 0) {
             # Force clear the table selection
-            table_selector_proxy %>% DT::selectRows(numeric(0))
+            table_selector_proxy |> DT::selectRows(numeric(0))
             # Also manually clear the map highlights since DT might not trigger
-            map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
+            map_selector_proxy |> leaflet::clearGroup("highlighted_point")
           } else {
-            table_selector_proxy %>% DT::selectRows(new_selection)
+            table_selector_proxy |> DT::selectRows(new_selection)
           }
           
         } else {
@@ -225,11 +229,11 @@ mod_map_table_selector_server <- function(id, tadat){
             # Update table selection - handle empty case explicitly
             if (length(new_selection) == 0) {
               # Force clear the table selection
-              table_selector_proxy %>% DT::selectRows(numeric(0))
+              table_selector_proxy |> DT::selectRows(numeric(0))
               # Also manually clear the map highlights
-              map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
+              map_selector_proxy |> leaflet::clearGroup("highlighted_point")
             } else {
-              table_selector_proxy %>% DT::selectRows(new_selection)
+              table_selector_proxy |> DT::selectRows(new_selection)
             }
           }
         }
@@ -239,14 +243,15 @@ mod_map_table_selector_server <- function(id, tadat){
       observeEvent(c(tadat$state_tribe, tadat$uses_select_re), {
         # Clear selections when filters change
         selected_idx(integer(0))
-        table_selector_proxy %>% DT::selectRows(numeric(0))
-        map_selector_proxy %>% leaflet::clearGroup("highlighted_point")
+        table_selector_proxy |> DT::selectRows(numeric(0))
+        map_selector_proxy |> leaflet::clearGroup("highlighted_point")
       }, ignoreInit = TRUE)
     })
     
     # Create a reactive expression to get selected monitoring location IDs
     selected_monitoring_locations <- reactive({
-      req(tadat$site_AU_table)
+      req(is.data.frame(tadat$site_AU_table))
+      req(nrow(tadat$site_AU_table) > 0)
       
       # Get current selected indices
       idx <- selected_idx()

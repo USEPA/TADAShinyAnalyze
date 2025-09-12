@@ -26,6 +26,7 @@ Imports:
     gotop,
     htmltools,
     leaflet,
+    pkgload,
     sf,
     shiny,
     shinyjs,

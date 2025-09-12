@@ -335,8 +335,27 @@ mod_batch_analysis_server <- function(id, tadat){
         dat_pH_temperature2
       )
       
+      # Check if dat5 has zero rows and exit
+      if (nrow(dat5) == 0) {
+        # Remove the spinner
+        shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())
+        
+        shiny::showNotification(
+          "No data available after processing. Please check your input criteria.",
+          type = "warning",
+          duration = 5
+        )
+        
+        # Exit the observeEvent
+        return()
+      }
+      
       tadat$excurse_dat <- dat5
       tadat$excurse_dat_filtered <- tadat$excurse_dat
+      
+      # if (nrow(dat5) == 0){
+      #   return()
+      # }
       
       # Create a table for the map-table selector
       site_AU_table <- dat5 |>
@@ -348,10 +367,16 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$site_AU_table <- site_AU_table
       
+      print("Test 1")
+      print(site_AU_table)
+      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
+      
+      print("Test 2")
+      print(dat6)
       
       # # Save the data to tadat
       # tadat$excurse_summary <- dat6
@@ -359,8 +384,14 @@ mod_batch_analysis_server <- function(id, tadat){
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
+      print("Test 3")
+      print(dat7)
+      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
+      
+      print("Test 4")
+      print(dat8)
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
