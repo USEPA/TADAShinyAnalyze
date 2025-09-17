@@ -54,9 +54,11 @@ mod_excursion_viewer_server <- function(id, tadat){
           filter = "top",
           class = "compact",
           options = list(scrollX = TRUE,
-                         scrollY = TRUE,
-                         pageLength = 10,
-                         lengthMenu = c(10, 25, 50, 100),
+                         scrollY = "400px",
+                         scrollCollapse = TRUE,
+                         paging = TRUE,
+                         pageLength = 5,
+                         lengthMenu = c(5, 10, 25, 50, 100),
                          autoWidth = TRUE)) |>
           DT::formatRound(
             columns = c("Minimum", "Median", "Maximum")

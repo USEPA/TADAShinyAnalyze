@@ -282,6 +282,9 @@ mod_load_file_server <- function(id, tadat){
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
+                                   scrollY = "400px",
+                                   scrollCollapse = TRUE,
+                                   paging = TRUE,
                                    pageLength = 5,
                                    lengthMenu = c(5, 10, 25, 50, 100),
                                    autoWidth = TRUE))
@@ -400,6 +403,9 @@ mod_load_file_server <- function(id, tadat){
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
+                                   scrollY = "400px",
+                                   scrollCollapse = TRUE,
+                                   paging = TRUE,
                                    pageLength = 5,
                                    lengthMenu = c(5, 10, 25, 50, 100),
                                    autoWidth = TRUE))
@@ -518,6 +524,9 @@ mod_load_file_server <- function(id, tadat){
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
+                                   scrollY = "400px",
+                                   scrollCollapse = TRUE,
+                                   paging = TRUE,
                                    pageLength = 5,
                                    lengthMenu = c(5, 10, 25, 50, 100),
                                    autoWidth = TRUE))
