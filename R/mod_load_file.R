@@ -33,9 +33,9 @@ mod_load_file_ui <- function(id) {
         a file with MLs and associated chemistry data from the Water Quality 
         Portal or use the", htmltools::a("TADAShinyApp."
                                          , href = "https://rconnect-public.epa.gov/TADAShiny/"
-                                         , target = "_blank"),
-        "Second, upload a Monitoring Location to AU crosswalk table (Step 1b). 
-        Third, upload an AU to Designated Uses crosswalk table (Step 1c).
+                                         , target = "_blank")),
+        htmltools::p("Second, upload a Monitoring Location to AU crosswalk table (Step 1b)."),
+        htmltools::p("Third, upload an AU to Designated Uses crosswalk table (Step 1c).
         The files for Steps 1b and 1c can be supplied from an organization 
         or generated using the", htmltools::a("TADAShinyJoinToAU App."
             , href = "https://tetratech-wtr-wne.shinyapps.io/TADAShinyJoinToAU/"
