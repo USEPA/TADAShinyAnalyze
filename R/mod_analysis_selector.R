@@ -8,11 +8,6 @@
 #'
 #' @importFrom shiny NS tagList 
 #' 
-
-# Load files
-data_path1 <- app_sys("extdata/Criteria_Table_Input.RData")
-load(data_path1)
-
 mod_analysis_selector_ui <- function(id) {
   ns <- NS(id)
   tagList(

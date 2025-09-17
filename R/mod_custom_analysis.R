@@ -288,7 +288,7 @@ mod_custom_analysis_server <- function(id, tadat){
           ATTAINS.UseName,
           AcuteChronic,
           EquationBased,
-          Notes2, # kept for reference, but no longer used for routing
+          EquationType, 
           TADA.CharacteristicName,
           TADA.ResultSampleFractionText,
           TADA.MethodSpeciationName,
@@ -303,9 +303,21 @@ mod_custom_analysis_server <- function(id, tadat){
           MagnitudeValueUpper,
           DurationValue,
           DurationUnit,
-          DurationAggregation,
-          FrequencyCriteriaValue,
-          FrequencyCriteriaMethod
+          DurationMethod,
+          FreqValue,
+          FreqMethod,
+          # Equation coefficient columns
+          Equation,
+          hardness_param_1,
+          hardness_param_2,
+          hardness_param_3,
+          hardness_param_4,
+          hardness_param_5,
+          hardness_param_6,
+          pH_param_1,
+          pH_param_2,
+          pH_param_3,
+          pH_param_4
         ) 
       
       ### Step 3: Separate the dataset based on if criteria exist
@@ -318,7 +330,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       ## Hardness
       dat_hardness <- dat_yes |>
-        dplyr::filter(Notes2 %in% "Hardness") |>
+        dplyr::filter(EquationType %in% "Hardness") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(Hardness), ~!is.na(.)))
       
@@ -339,7 +351,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # pH
       dat_pH <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH") |>
+        dplyr::filter(EquationType %in% "pH") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH), ~!is.na(.)))
       
@@ -360,7 +372,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # pH and Hardness
       dat_pH_hardness <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH and Hardness") |>
+        dplyr::filter(EquationType %in% "pH and Hardness") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Hardness), ~!is.na(.)))
       
@@ -387,7 +399,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # pH and Temperature
       dat_pH_temperature <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH and Temperature") |>
+        dplyr::filter(EquationType %in% "pH and Temperature") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Temperature), ~!is.na(.)))
       
@@ -451,7 +463,7 @@ mod_custom_analysis_server <- function(id, tadat){
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |> 
-        magnitude_update() |>
+        magnitude_update(match_type = tadat$join_select_custom) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
@@ -465,7 +477,7 @@ mod_custom_analysis_server <- function(id, tadat){
       dat9_1 <- dat9 |>
         dplyr::rename(Duration_Excursions = Number_of_Excursions,
                       Duration_Percentage = Excursion_Percentage) |>
-        dplyr::select(-Percentile, -EquationBased, -Notes2,
+        dplyr::select(-Percentile, -EquationBased, -EquationType,
                       -Start_Date, -End_Date, -Sample_Count)
       
       dat10 <- dat6a |> dplyr::left_join(dat9_1)

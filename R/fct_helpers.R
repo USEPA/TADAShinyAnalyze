@@ -10,12 +10,11 @@
 criteria_join <- function(x, y, match_type = "Option 2", filter_type = TRUE){
   
   # Add flags to criteria table
-  y2 <- y |> dplyr::mutate(Matched = "Yes") |>
-    dplyr::select(-ATTAINS.waterTypeCode)
+  y2 <- y |> dplyr::mutate(Matched = "Yes")
   
   if (match_type %in% "Option 1"){  # Join Option 1: Including Fraction
     by <- dplyr::join_by("TADA.CharacteristicName",
-                         "TADA.ResultSampleFractionText" == "Fraction",
+                         "TADA.ResultSampleFractionText",
                          "TADA.ResultMeasure.MeasureUnitCode" == "MagnitudeUnit",
                          "ATTAINS.UseName")
     
@@ -30,7 +29,7 @@ criteria_join <- function(x, y, match_type = "Option 2", filter_type = TRUE){
                          "ATTAINS.UseName")
     
     y_col <- names(y2)
-    y_col2 <- y_col[!y_col %in% "Fraction"]
+    y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
     
     y3 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     
@@ -216,11 +215,11 @@ excursion_summary <- function(x, type){
     "ATTAINS.OrganizationIdentifier",
     "EquationBased",
     "DurationUnit",
-    "DurationAggregation",
+    "DurationMethod",
     "DurationValue",
-    "FrequencyCriteriaValue",
-    "FrequencyCriteriaMethod",
-    "Notes2"
+    "FreqValue",
+    "FreqMethod",
+    "EquationType"
   )
   
   if(type %in% "MLid"){
@@ -616,11 +615,11 @@ time_aggregate <- function(x, type){
     "ATTAINS.OrganizationIdentifier",
     "EquationBased",
     "DurationUnit",
-    "DurationAggregation",
+    "DurationMethod",
     "DurationValue",
-    "FrequencyCriteriaValue",
-    "FrequencyCriteriaMethod",
-    "Notes2"
+    "FreqValue",
+    "FreqMethod",
+    "EquationType"
   )
   
   if (type %in% "MLid"){
@@ -685,7 +684,7 @@ duration_cal <- function(x, type, complete_windows = TRUE){
   x <- x |>
     dplyr::mutate(Window_Start = DateTime) |>
     dplyr::mutate(Window_End = DateTime) |>
-    dplyr::mutate(DurationAggregation_norm = trimws(tolower(DurationAggregation)))
+    dplyr::mutate(DurationMethod_norm = trimws(tolower(DurationMethod)))
   
   id_cols <- c(
     "ATTAINS.ParameterName",
@@ -698,11 +697,11 @@ duration_cal <- function(x, type, complete_windows = TRUE){
     "ATTAINS.OrganizationIdentifier",
     "EquationBased",
     "DurationUnit",
-    "DurationAggregation",
+    "DurationMethod",
     "DurationValue",
-    "FrequencyCriteriaValue",
-    "FrequencyCriteriaMethod",
-    "Notes2"
+    "FreqValue",
+    "FreqMethod",
+    "EquationType"
   )
   
   if (type %in% "MLid"){
@@ -726,8 +725,8 @@ duration_cal <- function(x, type, complete_windows = TRUE){
       
       idx        <- df$Window_Start
       before_per <- window_before_period(df$DurationUnit[1], df$DurationValue[1])
-      agg_raw    <- df$DurationAggregation[1]
-      agg_norm   <- df$DurationAggregation_norm[1]
+      agg_raw    <- df$DurationMethod[1]
+      agg_norm   <- df$DurationMethod_norm[1]
       
       # Measurement windows (compute multiple stats so we can map by label)
       win_mean   <- slider::slide_index_dbl(df$Value, idx, na_mean,  .before = before_per, .complete = complete_windows)
@@ -819,36 +818,60 @@ duration_excursion_fun <- function(x){
 }
 
 # A function to update the magnitude
-magnitude_update <- function(x){
+magnitude_update <- function(x, match_type){
   
   ## Hardness
   dat_hardness <- x |>
-    dplyr::filter(Notes2 %in% "Hardness") |>
+    dplyr::filter(EquationType %in% "Hardness") |>
     # Check the completeness of the input data
     dplyr::filter(dplyr::if_any(c(Hardness_win), ~!is.na(.)))
   
   if (nrow(dat_hardness) > 0){
+    if (match_type %in% "Option 1"){
+      hardness_equation2 <- hardness_equation
+    } else {
+      y_col <- names(hardness_equation)
+      y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+      
+      hardness_equation2 <- hardness_equation |> 
+        dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
+    }
+    
     dat_hardness2 <- dat_hardness |>
-      dplyr::left_join(hardness_equation) |>
-      dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
+      dplyr::left_join(hardness_equation2) |>
+    dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
         list("hardness" = Hardness_win,
-             "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-             "E_A" = E_A, "E_B" = E_B),
+             "CF_A" = hardness_param_1, 
+             "CF_B" = hardness_param_2, 
+             "CF_C" = hardness_param_3,
+             "E_A" = hardness_param_4, 
+             "E_B" = hardness_param_5),
         .f = hardness_eq
-      )) 
+    )) 
   } else {
     dat_hardness2 <- dat_hardness
   }
   
   # pH
   dat_pH <- x |>
-    dplyr::filter(Notes2 %in% "pH") |>
+    dplyr::filter(EquationType %in% "pH") |>
     # Check the completeness of the input data
-    dplyr::filter(dplyr::if_any(c(pH_win), ~!is.na(.)))
+    dplyr::filter(dplyr::if_any(c(pH_win), ~!is.na(.))) 
   
   if (nrow(dat_pH) > 0){
+    
+    if (match_type %in% "Option 1"){
+      pH_equation2 <- pH_equation
+    } else {
+      y_col <- names(pH_equation)
+      y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+      
+      pH_equation2 <- pH_equation |> 
+        dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))  
+    }
+    
     dat_pH2 <- dat_pH |>
-      dplyr::left_join(pH_equation) |>
+      dplyr::left_join(pH_equation2) |>
       dplyr::mutate(
         MagnitudeValueUpper = purrr::map2_dbl(
           Equation, pH_win,
@@ -861,23 +884,37 @@ magnitude_update <- function(x){
   
   # pH and Hardness
   dat_pH_hardness <- x |>
-    dplyr::filter(Notes2 %in% "pH and Hardness") |>
+    dplyr::filter(EquationType %in% "pH and Hardness") |>
     # Check the completeness of the input data
     dplyr::filter(dplyr::if_any(c(pH_win, Hardness_win), ~!is.na(.)))
   
   # Check if data are available
   if (nrow(dat_pH_hardness) > 0){
+    
+    if (match_type %in% "Option 1"){
+      pH_Hardness_equation2 <- pH_Hardness_equation
+    } else {
+      y_col <- names(pH_Hardness_equation)
+      y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+      
+      pH_Hardness_equation2 <- pH_Hardness_equation |> 
+        dplyr::distinct(dplyr::across(dplyr::all_of(y_col2))) 
+    }
+    
     dat_pH_hardness2 <- dat_pH_hardness |>
-      dplyr::left_join(pH_Hardness_equation) |>
+      dplyr::left_join(pH_Hardness_equation2) |>
       dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
         list("hardness" = Hardness_win,
-             "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-             "E_A" = E_A, "E_B" = E_B),
+             "CF_A" = hardness_param_1, 
+             "CF_B" = hardness_param_2, 
+             "CF_C" = hardness_param_3,
+             "E_A" = hardness_param_4, 
+             "E_B" = hardness_param_5),
         .f = hardness_eq
       )) |>
       dplyr::mutate(MagnitudeValueUpper = if_else(
         pH_win < 7,
-        pmin(87, MagnitudeValueUpper),
+        pmin(hardness_param_6, MagnitudeValueUpper),
         MagnitudeValueUpper
       )) 
   } else {
@@ -886,14 +923,25 @@ magnitude_update <- function(x){
   
   # pH and Temperature
   dat_pH_temperature <- x |>
-    dplyr::filter(Notes2 %in% "pH and Temperature") |>
+    dplyr::filter(EquationType %in% "pH and Temperature") |>
     # Check the completeness of the input data
     dplyr::filter(dplyr::if_any(c(pH_win, Temperature_win), ~!is.na(.)))
   
   # Check if data are available
   if (nrow(dat_pH_temperature) > 0){
+    
+    if (match_type %in% "Option 1"){
+      pH_Temperature__equation2 <- pH_Temperature__equation
+    } else {
+      y_col <- names(pH_equation)
+      y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+      
+      pH_Temperature_equation2 <- pH_Temperature_equation |> 
+        dplyr::distinct(dplyr::across(dplyr::all_of(y_col2))) 
+    }
+    
     dat_pH_temperature2 <- dat_pH_temperature |>
-      dplyr::left_join(pH_Temperature_equation) |>
+      dplyr::left_join(pH_Temperature_equation2) |>
       dplyr::mutate(
         MagnitudeValueUpper = purrr::pmap_dbl(
           list(Equation = Equation, pH = pH_win, Temperature = Temperature_win),
@@ -930,11 +978,11 @@ frequency_summary <- function(x, type){
     "ATTAINS.OrganizationIdentifier",
     "EquationBased",
     "DurationUnit",
-    "DurationAggregation",
+    "DurationMethod",
     "DurationValue",
-    "FrequencyCriteriaValue",
-    "FrequencyCriteriaMethod",
-    "Notes2"
+    "FreqValue",
+    "FreqMethod",
+    "EquationType"
   )
   
   if (type %in% "MLid"){
@@ -948,16 +996,16 @@ frequency_summary <- function(x, type){
   
   # Remove methods not able to be calculated for now
   x2 <- x |>
-    dplyr::filter(FrequencyCriteriaMethod %in% 
+    dplyr::filter(FreqMethod %in% 
                     c("NumberNotMeeting", "n-samples in 3 years",
                       "Percent of samples not meeting", "Percentile"))
   
   # Percentile
   x_P <- x2 |>
-    dplyr::filter(FrequencyCriteriaMethod %in% "Percentile")
+    dplyr::filter(FreqMethod %in% "Percentile")
   
   x_other <- x2 |>
-    dplyr::filter(!FrequencyCriteriaMethod %in% "Percentile")
+    dplyr::filter(!FreqMethod %in% "Percentile")
   
   # Copy the Result_Duration value to E_Value if the frequency 
   # is not the percentile method
@@ -977,9 +1025,9 @@ frequency_summary <- function(x, type){
   if (nrow(x_P) > 0){
     x_P2 <- x_P |>
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
-      dplyr::mutate(FrequencyCriteriaValue = FrequencyCriteriaValue/100) |>
+      dplyr::mutate(FreqValue = FreqValue/100) |>
       dplyr::mutate(Percentile = quantile(Result_Duration,
-                                          probs = first(FrequencyCriteriaValue))) |>
+                                          probs = first(FreqValue))) |>
       dplyr::mutate(E_Value = Percentile) |>
       dplyr::ungroup()
   } else {
@@ -994,18 +1042,18 @@ frequency_summary <- function(x, type){
   x4 <- x3 |> duration_excursion_fun()
   
   # Evaluate the exceedance based on id_cols
-  # Separate x4 based on FrequencyCriteriaMethod
+  # Separate x4 based on FreqMethod
   x4_number <- x4 |>
-    dplyr::filter(FrequencyCriteriaMethod %in% "NumberNotMeeting")
+    dplyr::filter(FreqMethod %in% "NumberNotMeeting")
   
   x4_n3years <- x4 |>
-    dplyr::filter(FrequencyCriteriaMethod %in% "n-samples in 3 years")
+    dplyr::filter(FreqMethod %in% "n-samples in 3 years")
   
   x4_percentage <- x4 |>
-    dplyr::filter(FrequencyCriteriaMethod %in% "Percent of samples not meeting")
+    dplyr::filter(FreqMethod %in% "Percent of samples not meeting")
   
   x4_percentile <- x4 |>
-    dplyr::filter(FrequencyCriteriaMethod %in% "Percentile")
+    dplyr::filter(FreqMethod %in% "Percentile")
   
   # NumberNotMeeting method
   if (nrow(x4_number) > 0){
@@ -1045,7 +1093,7 @@ frequency_summary <- function(x, type){
                        End_Date = max(Window_End_win, na.rm = TRUE),                     
                        Number_of_Excursions = modSum(Duration_Excursion)) |>
       dplyr::mutate(Excursion_Percentage = Number_of_Excursions/Sample_Count * 100) |>
-      dplyr::mutate(Exceedance = ifelse(Excursion_Percentage > FrequencyCriteriaValue, 
+      dplyr::mutate(Exceedance = ifelse(Excursion_Percentage > FreqValue, 
                                         "Exceed", "Not Exceed")) |>
       dplyr::ungroup() |>
       dplyr::mutate(Percentile = NA_real_) |>
@@ -1101,7 +1149,7 @@ frequency_summary <- function(x, type){
   # --- n-samples in 3 years ----------------------------------------------------
   # Assumptions:
   # - x4_n3years has one row per window with columns:
-  #     Window_End_win (date/time), Duration_Excursion (0/1), FrequencyCriteriaValue
+  #     Window_End_win (date/time), Duration_Excursion (0/1), FreqValue
   # - We count windows with Duration_Excursion == 1 within each trailing 3-year span.
   # - We report the "worst" (max excursions) 3-year block per group.
   
@@ -1167,7 +1215,7 @@ frequency_summary <- function(x, type){
         End_Date             <- end_3yr[worst_i]
         
         # compare to allowable count in 3 years
-        allow_n <- suppressWarnings(as.integer(df$FrequencyCriteriaValue[worst_i]))
+        allow_n <- suppressWarnings(as.integer(df$FreqValue[worst_i]))
         # if NA, treat as 0 allowed (or choose your policy)
         if (is.na(allow_n)) allow_n <- 0L
         
@@ -1231,11 +1279,11 @@ simplify_duration_frequency <- function(x){
       .keep = "unused"
     ) |>
     dplyr::mutate(
-      Duration = stringr::str_c(DurationValueUnit, DurationAggregation, sep = " "),
+      Duration = stringr::str_c(DurationValueUnit, DurationMethod, sep = " "),
       .keep = "unused"
     ) |>
     dplyr::mutate(
-      Frequency = stringr::str_c(FrequencyCriteriaValue, FrequencyCriteriaMethod, 
+      Frequency = stringr::str_c(FreqValue, FreqMethod, 
                                  sep = " "),
       .keep = "unused"
     )

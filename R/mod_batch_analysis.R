@@ -207,7 +207,7 @@ mod_batch_analysis_server <- function(id, tadat){
           ATTAINS.UseName,
           AcuteChronic,
           EquationBased,
-          Notes2, # kept for reference, but no longer used for routing
+          EquationType, 
           TADA.CharacteristicName,
           TADA.ResultSampleFractionText,
           TADA.MethodSpeciationName,
@@ -222,9 +222,21 @@ mod_batch_analysis_server <- function(id, tadat){
           MagnitudeValueUpper,
           DurationValue,
           DurationUnit,
-          DurationAggregation,
-          FrequencyCriteriaValue,
-          FrequencyCriteriaMethod
+          DurationMethod,
+          FreqValue,
+          FreqMethod,
+          # Equation coefficient columns
+          Equation,
+          hardness_param_1,
+          hardness_param_2,
+          hardness_param_3,
+          hardness_param_4,
+          hardness_param_5,
+          hardness_param_6,
+          pH_param_1,
+          pH_param_2,
+          pH_param_3,
+          pH_param_4
         ) 
       
       ### Step 3: Separate the dataset based on if criteria exist
@@ -237,17 +249,19 @@ mod_batch_analysis_server <- function(id, tadat){
       
       ## Hardness
       dat_hardness <- dat_yes |>
-        dplyr::filter(Notes2 %in% "Hardness") |>
+        dplyr::filter(EquationType %in% "Hardness") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(Hardness), ~!is.na(.)))
       
       if (nrow(dat_hardness) > 0){
         dat_hardness2 <- dat_hardness |>
-          dplyr::left_join(hardness_equation) |>
           dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
             list("hardness" = Hardness,
-                 "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-                 "E_A" = E_A, "E_B" = E_B),
+                 "CF_A" = hardness_param_1, 
+                 "CF_B" = hardness_param_2, 
+                 "CF_C" = hardness_param_3,
+                 "E_A" = hardness_param_4, 
+                 "E_B" = hardness_param_5),
             .f = hardness_eq
           )) |>
           excursion_fun() |>
@@ -258,13 +272,12 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # pH
       dat_pH <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH") |>
+        dplyr::filter(EquationType %in% "pH") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH), ~!is.na(.)))
       
       if (nrow(dat_pH) > 0){
         dat_pH2 <- dat_pH |>
-          dplyr::left_join(pH_equation) |>
           dplyr::mutate(
             MagnitudeValueUpper = purrr::map2_dbl(
               Equation, pH,
@@ -279,23 +292,25 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # pH and Hardness
       dat_pH_hardness <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH and Hardness") |>
+        dplyr::filter(EquationType %in% "pH and Hardness") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Hardness), ~!is.na(.)))
       
       # Check if data are available
       if (nrow(dat_pH_hardness) > 0){
         dat_pH_hardness2 <- dat_pH_hardness |>
-          dplyr::left_join(pH_Hardness_equation) |>
           dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
-            list("hardness" = Hardness,
-                 "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-                 "E_A" = E_A, "E_B" = E_B),
-            .f = hardness_eq
-          )) |>
+              list("hardness" = Hardness,
+                   "CF_A" = hardness_param_1, 
+                   "CF_B" = hardness_param_2, 
+                   "CF_C" = hardness_param_3,
+                   "E_A" = hardness_param_4, 
+                   "E_B" = hardness_param_5),
+              .f = hardness_eq
+              )) |>
           dplyr::mutate(MagnitudeValueUpper = if_else(
             pH < 7,
-            pmin(87, MagnitudeValueUpper),
+            pmin(hardness_param_6, MagnitudeValueUpper),
             MagnitudeValueUpper
           )) |>
           excursion_fun() |>
@@ -306,14 +321,13 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # pH and Temperature
       dat_pH_temperature <- dat_yes |>
-        dplyr::filter(Notes2 %in% "pH and Temperature") |>
+        dplyr::filter(EquationType %in% "pH and Temperature") |>
         # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Temperature), ~!is.na(.)))
       
       # Check if data are available
       if (nrow(dat_pH_temperature) > 0){
         dat_pH_temperature2 <- dat_pH_temperature |>
-          dplyr::left_join(pH_Temperature_equation) |>
           dplyr::mutate(
             MagnitudeValueUpper = purrr::pmap_dbl(
               list(Equation = Equation, pH = pH, Temperature = Temperature),
@@ -397,7 +411,7 @@ mod_batch_analysis_server <- function(id, tadat){
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |> 
-        magnitude_update() |>
+        magnitude_update(match_type = tadat$join_select) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
@@ -413,7 +427,7 @@ mod_batch_analysis_server <- function(id, tadat){
       dat9_1 <- dat9 |>
         dplyr::rename(Duration_Excursions = Number_of_Excursions,
                       Duration_Percentage = Excursion_Percentage) |>
-        dplyr::select(-Percentile, -EquationBased, -Notes2,
+        dplyr::select(-Percentile, -EquationBased, -EquationType,
                       -Start_Date, -End_Date, -Sample_Count)
       
       dat10 <- dat6 |> dplyr::left_join(dat9_1)
