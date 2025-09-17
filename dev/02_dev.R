@@ -100,9 +100,17 @@ golem::add_module(
   module_template = function(...) ""
 )
 golem::add_module(
-  name = "analysis_plots",
+  name = "analysis_plots_custom",
   with_test = TRUE,
   module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_data_viewer",
+  with_test = TRUE,
+)
+golem::add_module(
+  name = "analysis_data_viewer_custom",
+  with_test = TRUE,
 )
 
 

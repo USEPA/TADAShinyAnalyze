@@ -8,9 +8,6 @@
 #'
 #' @importFrom shiny NS tagList 
 # Load the input data
-data_path1 <- app_sys("extdata/Criteria_Table_Input.RData")
-load(data_path1)
-
 mod_batch_analysis_ui <- function(id) {
   # set module session id
   ns <- NS(id)
@@ -28,17 +25,27 @@ mod_batch_analysis_ui <- function(id) {
       )
     ),
     
-    # Horizontal divider
-    htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
+    
+    fluidRow(
+      column(
+        width = 12,
+        mod_analysis_data_viewer_ui(ns("Batch_Data_Viewer"))
+      )
+    ),
+    
+    htmltools::br(),
+    htmltools::br(),
     
     fluidRow(
       column(
         width = 12,
         column(
           width = 12,
-          htmltools::p("After finalizing the selections, click the 'Run Batch Analysis' button."),
-          shiny::actionButton(ns("Run_Batch"), "Run Batch Analysis", shiny::icon("computer"),
-                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+          htmltools::h4("After finalizing the selections, click the 'Run Batch Analysis' button."),
+          shinyjs::disabled(
+            shiny::actionButton(ns("Run_Batch"), "Run Batch Analysis", shiny::icon("computer"),
+                                style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+            )
           )
         )
       )
@@ -51,7 +58,7 @@ mod_batch_analysis_ui <- function(id) {
         width = 12,
         column(
           width = 12,
-          htmltools::p("Download the batch analysis results by clicking the 'Download Batch Results' button."),
+          htmltools::h4("Download the batch analysis results by clicking the 'Download Batch Results' button."),
           shinyjs::disabled(shiny::downloadButton(
             outputId = ns("download_results"),
             label = "Download Batch Results (.zip)",
@@ -123,7 +130,12 @@ mod_batch_analysis_ui <- function(id) {
 mod_batch_analysis_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+    
+    # Run the Batch_Select
     mod_analysis_selector_server("Batch_Select", tadat)
+    
+    # Run Barch_Data_Viewer
+    mod_analysis_data_viewer_server("Batch_Data_Viewer", tadat)
     
     ### Remove records need to be reviewed in tadat$df_mltoau_input
     shiny::observeEvent(tadat$df_mltoau_input, {
@@ -131,19 +143,9 @@ mod_batch_analysis_server <- function(id, tadat){
         dplyr::filter(Needs_Review == "No")
     })
     
-    ### If the input data are ready, conduct the analysis
-    shiny::observeEvent(input$Run_Batch, {
+    shiny::observe({
       shiny::req(tadat$df_mlid_input, tadat$df_mltoau_input_f, tadat$df_autouse_input,
                  tadat$loc_select, tadat$state_tribe, tadat$uses_select_re, tadat$join_select)
-      
-      # a modal that pops up showing it's working on uploading the dataset from the users file
-      shinybusy::show_modal_spinner(
-        spin = "double-bounce",
-        color = "#0071bc",
-        text = "Running the analysis ...",
-        session = shiny::getDefaultReactiveDomain()
-      )
-      
       ### Get the input data and convert ActivityStartDateTime to dateTime
       dat <- tadat$df_mlid_input
       dat <- dat |>
@@ -241,11 +243,80 @@ mod_batch_analysis_server <- function(id, tadat){
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
-      dat_yes <- dat4_1 |> dplyr::filter(EquationBased %in% "Yes")
+      dat_yes <- dat4_1 |> 
+        dplyr::filter(EquationBased %in% "Yes") |>
+        # Reove Additional Information in the EquationType for now
+        dplyr::filter(!EquationType %in% "Additional Information")
+      
       dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
       
+      # Save the data
+      tadat$dat_yes <- dat_yes
+      tadat$dat_no <- dat_no
+      
+      # Count available parameter
+      dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
+        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+                        TADA.ResultMeasure.MeasureUnitCode)
+      
+      # Get the sample size
+      dat_viewer_count_num <- nrow(dat_match)
+      
+      # # Get the parameter that is not in dat_match, but with the same parameter names
+      # if (tadat$join_select %in% "Option 1"){
+      #   dat_not_match <- dat_na |>
+      #     dplyr::semi_join(dat_match, by = c("TADA.CharacteristicName",
+      #                                               "TADA.ResultSampleFractionText")) |>
+      #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
+      #   dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+      #                   TADA.ResultMeasure.MeasureUnitCode)
+      # } else {
+      #   dat_not_match <- dat_na |>
+      #     dplyr::semi_join(dat_match , by = c("TADA.CharacteristicName")) |>
+      #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
+      #     dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+      #                     TADA.ResultMeasure.MeasureUnitCode)
+      # }
+      
+      # Save the data
+      tadat$available_param_num <- dat_viewer_count_num
+      tadat$dat_match  <- dat_match
+      # tadat$dat_not_match <- dat_not_match
+    })
+    
+    ### Run the analysis if tadat$custom_raw3 is ready
+    shiny::observe({
+      req(tadat$available_param_num)
+      shinyjs::toggleState(id = "Run_Batch", 
+                           condition = tadat$available_param_num > 0)
+    })
+    
+    ### If the input data are ready, conduct the analysis
+    shiny::observeEvent(input$Run_Batch, {
+      shiny::req(tadat$dat_yes, tadat$dat_no)
+      
+      # a modal that pops up showing it's working on uploading the dataset from the users file
+      shinybusy::show_modal_spinner(
+        spin = "double-bounce",
+        color = "#0071bc",
+        text = "Running the analysis ...",
+        session = shiny::getDefaultReactiveDomain()
+      )
+      
+      drop_cols <- c("Equation", 
+                     "hardness_param_1", "hardness_param_2", 
+                     "hardness_param_3", "hardness_param_4",
+                     "hardness_param_5", "hardness_param_6",
+                     "pH_param_1", "pH_param_2", "pH_param_3", "pH_param_4")
+      
+      dat_yes <- tadat$dat_yes
+      dat_no <- tadat$dat_no
+      
       ### Step 4: Compare the dataset that the condition is not based on equation
-      dat_no2 <- dat_no |> excursion_fun()
+      dat_no2 <- dat_no |> 
+        excursion_fun() |>
+        # Drop columns
+        dplyr::select(-dplyr::all_of(drop_cols))
       
       ## Hardness
       dat_hardness <- dat_yes |>
@@ -381,16 +452,10 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$site_AU_table <- site_AU_table
       
-      print("Test 1")
-      print(site_AU_table)
-      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
-      
-      print("Test 2")
-      print(dat6)
       
       # # Save the data to tadat
       # tadat$excurse_summary <- dat6
@@ -398,14 +463,8 @@ mod_batch_analysis_server <- function(id, tadat){
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
-      print("Test 3")
-      print(dat7)
-      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
-      
-      print("Test 4")
-      print(dat8)
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
@@ -443,7 +502,7 @@ mod_batch_analysis_server <- function(id, tadat){
         
         # define zipfile name
         filename = function() {
-          paste0(tadat$default_outfile, ".zip")
+          paste0("Batch_Results_", tadat$default_outfile, ".zip")
           # paste0("Batch_Results_",
           #        format(Sys.time(), "%Y%m%d_%H%M%S"),
           #        ".zip")
@@ -456,7 +515,7 @@ mod_batch_analysis_server <- function(id, tadat){
           temp_dir <- tempdir()
           ml_input_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_ml_input_file.csv"))
           mltoaus_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file.csv"))
-          mltoaus_file_f_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file_filtered.csv"))
+          # mltoaus_file_f_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file_filtered.csv"))
           autouse_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_autouse_input_file.csv"))
           batch_result_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_batch_analysis_result.csv"))
           progress_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_prog.rda"))
@@ -493,14 +552,19 @@ mod_batch_analysis_server <- function(id, tadat){
           # write data frames to csv
           readr::write_csv(x = as.data.frame(tadat$df_ml_input), file = ml_input_file_path)
           readr::write_csv(x = as.data.frame(tadat$df_mltoau_input), file = mltoaus_file_path)
-          readr::write_csv(x = as.data.frame(tadat$df_mltoau_input_f), file = mltoaus_file_f_path)
+          # readr::write_csv(x = as.data.frame(tadat$df_mltoau_input_f), file = mltoaus_file_f_path)
           readr::write_csv(x = as.data.frame(tadat$df_autouse_input), file = autouse_file_path)
           readr::write_csv(x = as.data.frame(tadat$excurse_summary), file = batch_result_path)
           
           
           # zip them
           utils::zip(zipfile = zipfile,
-                     files = c(ml_input_file_path, mltoaus_file_path, mltoaus_file_f_path, autouse_file_path, batch_result_path, progress_file_path),
+                     files = c(ml_input_file_path, 
+                               mltoaus_file_path, 
+                               # mltoaus_file_f_path, 
+                               autouse_file_path, 
+                               batch_result_path, 
+                               progress_file_path),
                      flags = "-j")
           
           # Copy zip to final destination

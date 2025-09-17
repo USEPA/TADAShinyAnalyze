@@ -45,12 +45,20 @@ mod_custom_analysis_ui <- function(id) {
                               multiple = TRUE)
       )
     ),
+    # fluidRow(
+    #   column(
+    #     width = 12,
+    #     mod_analysis_data_viewer_custom_ui(ns("Custom_Data_Viewer"))
+    #   )
+    # ),
     fluidRow(
       column(
         width = 12,
-        htmltools::p("After finalizing the selections, click the 'Run Custom Analysis' button."),
-        shiny::actionButton(ns("Run_Custom"), "Run Custom Analysis", shiny::icon("computer"),
-                            style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+        htmltools::h4("After finalizing the selections, click the 'Run Custom Analysis' button."),
+        shinyjs::disabled(
+          shiny::actionButton(ns("Run_Custom"), "Run Custom Analysis", shiny::icon("computer"),
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+          )
         )
       )
     ),
@@ -58,7 +66,7 @@ mod_custom_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        htmltools::p("Download the custom analysis results by clicking the 'Download Custom Results' button."),
+        htmltools::h4("Download the custom analysis results by clicking the 'Download Custom Results' button."),
         shinyjs::disabled(shiny::downloadButton(
           outputId = ns("download_results_custom"),
           label = "Download Custom Results (.zip)",
@@ -120,7 +128,11 @@ mod_custom_analysis_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
+    # Run the Custom_Select
     mod_analysis_selector_custom_server("Custom_Select", tadat)
+    
+    # # Run Custom_Data_Viewer
+    # mod_analysis_data_viewer_custom_server("Custom_Data_Viewer", tadat)
     
     ### If the input data are ready, conduct the analysis
     shiny::observe({
@@ -183,21 +195,6 @@ mod_custom_analysis_server <- function(id, tadat){
         tidyr::drop_na(TADA.ResultMeasureValue) |>
         tidyr::drop_na(DateTime)
       
-      # Check if dat4 has zero rows and exit
-      if (nrow(dat4) == 0) {
-        # Remove the spinner
-        shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())
-        
-        shiny::showNotification(
-          "No data available after processing. Please check your input criteria.",
-          type = "warning",
-          duration = 5
-        )
-        
-        # Exit the observeEvent
-        return()
-      }
-      
       # Save the data
       tadat$custom_raw <- dat4 
       
@@ -259,24 +256,8 @@ mod_custom_analysis_server <- function(id, tadat){
           dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
       }
       
-    }, ignoreNULL = FALSE)
-
-    ### Run the analysis if tadat$custom_raw3 is ready
-    shiny::observeEvent(input$Run_Custom, {
-      req(tadat$custom_raw3)
-
-      # a modal that pops up showing it's working on uploading the dataset from the users file
-      shinybusy::show_modal_spinner(
-        spin = "double-bounce",
-        color = "#0071bc",
-        text = "Running the analysis ...",
-        session = shiny::getDefaultReactiveDomain()
-      )
-      
-      dat4 <- tadat$custom_raw3
-      
       # Select columns
-      dat4_1 <- dat4 |>
+      dat4_1 <- tadat$custom_raw3 |>
         dplyr::select(
           TADA.MonitoringLocationIdentifier,
           TADA.MonitoringLocationName,
@@ -322,11 +303,59 @@ mod_custom_analysis_server <- function(id, tadat){
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
-      dat_yes <- dat4_1 |> dplyr::filter(EquationBased %in% "Yes")
+      dat_yes <- dat4_1 |> 
+        dplyr::filter(EquationBased %in% "Yes") |>
+        # Reove Additional Information in the EquationType for now
+        dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
       
+      # Save the data
+      tadat$dat_yes_custom <- dat_yes
+      tadat$dat_no_custom <- dat_no
+      
+      # Count available parameter
+      dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
+        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+                        TADA.ResultMeasure.MeasureUnitCode)
+      
+      dat_viewer_count_num <- nrow(dat_match)
+      
+      tadat$available_param_num_custom <- dat_viewer_count_num
+      
+    }, ignoreNULL = FALSE)
+
+    ### Run the analysis if tadat$custom_raw3 is ready
+    shiny::observe({
+      req(tadat$available_param_num_custom)
+      shinyjs::toggleState(id = "Run_Custom", 
+                           condition = tadat$available_param_num_custom > 0)
+    })
+    
+    shiny::observeEvent(input$Run_Custom, {
+      req(tadat$dat_yes_custom, tadat$dat_no_custom)
+
+      # a modal that pops up showing it's working on uploading the dataset from the users file
+      shinybusy::show_modal_spinner(
+        spin = "double-bounce",
+        color = "#0071bc",
+        text = "Running the analysis ...",
+        session = shiny::getDefaultReactiveDomain()
+      )
+      
+      dat_yes <- tadat$dat_yes_custom
+      dat_no <- tadat$dat_no_custom
+      
+      drop_cols <- c("Equation", 
+                     "hardness_param_1", "hardness_param_2", 
+                     "hardness_param_3", "hardness_param_4",
+                     "hardness_param_5", "hardness_param_6",
+                     "pH_param_1", "pH_param_2", "pH_param_3", "pH_param_4")
+      
       ### Step 4: Compare the dataset that the condition is not based on equation
-      dat_no2 <- dat_no |> excursion_fun()
+      dat_no2 <- dat_no |> 
+        excursion_fun() |>
+        # Drop columns
+        dplyr::select(-dplyr::all_of(drop_cols))
       
       ## Hardness
       dat_hardness <- dat_yes |>
@@ -493,12 +522,7 @@ mod_custom_analysis_server <- function(id, tadat){
         
         # define zipfile name
         filename = function() {
-          # Make sure the filename has .zip extension
-          if (!is.null(tadat$default_custom_outfile)) {
-            paste0(tadat$default_custom_outfile, ".zip")
-          } else {
-            paste0("Custom_Results_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".zip")
-          }
+          paste0("Custom_Results_", tadat$default_custom_outfile, ".zip")
         },
         
         # define contents of zipfile
