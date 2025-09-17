@@ -324,7 +324,8 @@ mod_analysis_plots_server <- function(id, tadat){
           # Plot as points
           p <<- p + ggplot2::geom_point(
             data = df_valid,
-            ggplot2::aes_string(x = "ActivityStartDate", y = value_col),
+            ggplot2::aes(x = .data[["ActivityStartDate"]], 
+                         y = .data[[value_col]]),
             color = color,
             shape = shape,
             size = 3,
@@ -338,7 +339,8 @@ mod_analysis_plots_server <- function(id, tadat){
             
             p <<- p + ggplot2::geom_line(
               data = df_group,
-              ggplot2::aes_string(x = "ActivityStartDate", y = value_col),
+              ggplot2::aes(x = .data[["ActivityStartDate"]], 
+                           y = .data[[value_col]]),
               color = color,
               linetype = get_linetype(df_group$AcuteChronic),
               linewidth = 1
@@ -364,7 +366,7 @@ mod_analysis_plots_server <- function(id, tadat){
       p <- p + ggplot2::geom_line(
         data = legend_lines,
         ggplot2::aes(x = ActivityStartDate, y = Value, color = LimitType, linetype = SourceType),
-        size = 1,
+        linewidth = 1,
         show.legend = TRUE,
         inherit.aes = FALSE
       )
