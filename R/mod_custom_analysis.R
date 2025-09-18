@@ -194,17 +194,39 @@ mod_custom_analysis_server <- function(id, tadat){
         tidyr::drop_na(TADA.ResultMeasureValue) |>
         tidyr::drop_na(DateTime)
       
-      # Save the data
-      tadat$custom_raw <- dat4 
+      ### Step 3: Separate the dataset based on if criteria exist
+      dat_na_temp <- dat4 |> dplyr::filter(is.na(EquationBased))
+      dat_yes_temp <- dat4 |> 
+        dplyr::filter(EquationBased %in% "Yes") |>
+        # Reove Additional Information in the EquationType for now
+        dplyr::filter(!EquationType %in% "Additional Information")
+      dat_no_temp <- dat4 |> dplyr::filter(EquationBased %in% "No")
+      
+      # Find available parameter
+      dat4_1 <- dplyr::bind_rows(dat_yes_temp, dat_no_temp)
+      
+      dat_match <- dat4_1 |>
+        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+                        TADA.ResultMeasure.MeasureUnitCode)
+      
+      dat_viewer_count_num <- nrow(dat_match)
       
       # Create a table for the map-table selector
-      site_AU_table <- dat4 |>
+      site_AU_table <- dat4_1 |>
         dplyr::distinct(TADA.MonitoringLocationIdentifier,
                         TADA.MonitoringLocationName,
                         TADA.MonitoringLocationTypeName,
                         TADA.LongitudeMeasure,
                         TADA.LatitudeMeasure,
                         JoinToAU.AssessmentUnitIdentifier)
+      
+      # Save the data
+      tadat$available_param_num_custom <- dat_viewer_count_num
+      
+      tadat$custom_raw <- dat4_1
+      
+      # tadat$dat_yes_custom <- dat_yes
+      # tadat$dat_no_custom <- dat_no
       
       tadat$site_AU_table_custom <- site_AU_table
       
@@ -255,8 +277,29 @@ mod_custom_analysis_server <- function(id, tadat){
           dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
       }
       
-      # Select columns
-      dat4_1 <- tadat$custom_raw3 |>
+    }, ignoreNULL = FALSE)
+
+    ### Run the analysis if tadat$custom_raw3 is ready
+    shiny::observe({
+      req(tadat$custom_raw3)
+      shinyjs::toggleState(id = "Run_Custom", 
+                           condition = nrow(tadat$custom_raw3) > 0)
+    })
+    
+    shiny::observeEvent(input$Run_Custom, {
+      req(tadat$custom_raw3)
+
+      # a modal that pops up showing it's working on uploading the dataset from the users file
+      shinybusy::show_modal_spinner(
+        spin = "double-bounce",
+        color = "#0071bc",
+        text = "Running the analysis ...",
+        session = shiny::getDefaultReactiveDomain()
+      )
+      
+      dat4_2 <- tadat$custom_raw3
+      
+      dat4_3 <- dat4_2 |>
         dplyr::select(
           TADA.MonitoringLocationIdentifier,
           TADA.MonitoringLocationName,
@@ -300,49 +343,11 @@ mod_custom_analysis_server <- function(id, tadat){
           pH_param_4
         ) 
       
-      ### Step 3: Separate the dataset based on if criteria exist
-      dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
-      dat_yes <- dat4_1 |> 
+      dat_yes <- dat4_3 |> 
         dplyr::filter(EquationBased %in% "Yes") |>
         # Reove Additional Information in the EquationType for now
         dplyr::filter(!EquationType %in% "Additional Information")
-      dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
-      
-      # Save the data
-      tadat$dat_yes_custom <- dat_yes
-      tadat$dat_no_custom <- dat_no
-      
-      # Count available parameter
-      dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
-        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-                        TADA.ResultMeasure.MeasureUnitCode)
-      
-      dat_viewer_count_num <- nrow(dat_match)
-      
-      tadat$available_param_num_custom <- dat_viewer_count_num
-      
-    }, ignoreNULL = FALSE)
-
-    ### Run the analysis if tadat$custom_raw3 is ready
-    shiny::observe({
-      req(tadat$available_param_num_custom)
-      shinyjs::toggleState(id = "Run_Custom", 
-                           condition = tadat$available_param_num_custom > 0)
-    })
-    
-    shiny::observeEvent(input$Run_Custom, {
-      req(tadat$dat_yes_custom, tadat$dat_no_custom)
-
-      # a modal that pops up showing it's working on uploading the dataset from the users file
-      shinybusy::show_modal_spinner(
-        spin = "double-bounce",
-        color = "#0071bc",
-        text = "Running the analysis ...",
-        session = shiny::getDefaultReactiveDomain()
-      )
-      
-      dat_yes <- tadat$dat_yes_custom
-      dat_no <- tadat$dat_no_custom
+      dat_no <- dat4_3 |> dplyr::filter(EquationBased %in% "No")
       
       drop_cols <- c("Equation", 
                      "hardness_param_1", "hardness_param_2", 

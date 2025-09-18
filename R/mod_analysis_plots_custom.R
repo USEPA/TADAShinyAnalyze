@@ -485,39 +485,39 @@ mod_analysis_plots_custom_server <- function(id, tadat){
       shinyjs::toggleState("download_timeseries_custom", condition = !is.null(tadat$p_timeseries_custom))
     })
     
-    output$download_boxplot <- downloadHandler(
+    output$download_boxplot_custom <- downloadHandler(
       filename = function() {
-        paste0("custom_boxplot", ".", input$boxplot_format)
+        paste0("custom_boxplot", ".", input$boxplot_format_custom)
       },
       content = function(file) {
-        if (!is.null(tadat$p_boxplot)) {
+        if (!is.null(tadat$p_boxplot_custom)) {
           ggplot2::ggsave(
             file, 
-            plot = tadat$p_boxplot, 
+            plot = tadat$p_boxplot_custom, 
             width = 10, 
             height = 6, 
             dpi = 300,
             units = "in",
-            device = input$boxplot_format
+            device = input$boxplot_format_custom
           )
         }
       }
     )
     
-    output$download_timeseries <- downloadHandler(
+    output$download_timeseries_custom <- downloadHandler(
       filename = function() {
-        paste0("custom_time_series", ".", input$timeseries_format)
+        paste0("custom_time_series", ".", input$timeseries_format_custom)
       },
       content = function(file) {
-        if (!is.null(tadat$p_timeseries)) {
+        if (!is.null(tadat$p_timeseries_custom)) {
           ggplot2::ggsave(
             file, 
-            plot = tadat$p_timeseries, 
+            plot = tadat$p_timeseries_custom, 
             width = 10, 
             height = 6, 
             dpi = 300,
             units = "in",
-            device = input$timeseries_format
+            device = input$timeseries_format_custom
           )
         }
       }
