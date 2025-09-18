@@ -17,6 +17,7 @@ mod_batch_analysis_ui <- function(id) {
     
     # header
     htmltools::h2("2. Batch Analysis"),
+    
     # Components
     fluidRow(
       column(
@@ -150,8 +151,10 @@ mod_batch_analysis_server <- function(id, tadat){
       dat <- tadat$df_mlid_input
       dat <- dat |>
         dplyr::mutate(ActivityStartDateTime = 
+                        suppressWarnings(
                         lubridate::parse_date_time(ActivityStartDateTime, 
-                                                   orders = c("ymd HMS", "ymd HM"))) |>
+                                                   orders = c("ymd HMS", "ymd HM")))
+                      ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime) |>
         # Remove NA in TADA.ResultMeasureValue and DateTime

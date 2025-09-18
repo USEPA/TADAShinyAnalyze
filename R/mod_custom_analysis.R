@@ -28,10 +28,7 @@ mod_custom_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        column(
-          width = 12,
-          mod_map_table_selector_custom_ui(ns("Custom_map_table_selector"))
-        )
+        mod_map_table_selector_custom_ui(ns("Custom_map_table_selector"))
       )
     ),
     fluidRow(
@@ -88,9 +85,9 @@ mod_custom_analysis_ui <- function(id) {
     ),
     # Add to your UI
     fluidRow(
-      htmltools::h3("Summary Maps"),
-      htmltools::p("Use the maps to view the exceedance results with different levels."),
       column(12,
+             htmltools::h3("Summary Maps"),
+             htmltools::p("Use the maps to view the exceedance results with different levels."),
              tabsetPanel(
                tabPanel("Overall Status", 
                         leaflet::leafletOutput(ns("overall_map"))
@@ -145,8 +142,10 @@ mod_custom_analysis_server <- function(id, tadat){
       dat <- tadat$df_mlid_input
       dat <- dat |>
         dplyr::mutate(ActivityStartDateTime = 
+                        suppressWarnings(
                         lubridate::parse_date_time(ActivityStartDateTime, 
-                                                   orders = c("ymd HMS", "ymd HM"))) |>
+                                                   orders = c("ymd HMS", "ymd HM")))
+                        ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime)
       

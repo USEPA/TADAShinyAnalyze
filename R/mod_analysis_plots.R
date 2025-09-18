@@ -221,8 +221,8 @@ mod_analysis_plots_server <- function(id, tadat){
                                       option = "mako") +
           ggplot2::labs(fill = 'Monitoring Location ID') +
           ggplot2::theme(legend.position = "right"
-                         , text = ggplot2::element_text(size = 24)
-                         , axis.text = ggplot2::element_text(size = 22)
+                         , text = ggplot2::element_text(size = 14)
+                         , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       } else {
         tadat$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data3(), ggplot2::aes(x = ATTAINS.UseName,
@@ -243,8 +243,8 @@ mod_analysis_plots_server <- function(id, tadat){
                                       option = "mako") +
           ggplot2::labs(fill = 'Assessment Unit ID') +
           ggplot2::theme(legend.position = "right"
-                         , text = ggplot2::element_text(size = 24)
-                         , axis.text = ggplot2::element_text(size = 22)
+                         , text = ggplot2::element_text(size = 14)
+                         , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       }
       return(tadat$p_boxplot)
@@ -288,8 +288,8 @@ mod_analysis_plots_server <- function(id, tadat){
         }) +
         ggplot2::theme(
           legend.position = "right",
-          text = ggplot2::element_text(size = 24),
-          axis.text = ggplot2::element_text(size = 22),
+          text = ggplot2::element_text(size = 14),
+          axis.text = ggplot2::element_text(size = 12),
           legend.background = ggplot2::element_rect(colour = "gray60", fill = "white", linetype = "dashed")
         )
       
