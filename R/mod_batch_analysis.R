@@ -63,7 +63,7 @@ mod_batch_analysis_ui <- function(id) {
           shinyjs::disabled(shiny::downloadButton(
             outputId = ns("download_results"),
             label = "Download Batch Results (.zip)",
-            style = "color: #fff; background-color: #337ab7; border-color: #2e6da4") # download button
+            style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
           )
         )
       )
@@ -290,7 +290,7 @@ mod_batch_analysis_server <- function(id, tadat){
     ### Run the analysis if tadat$custom_raw3 is ready
     shiny::observe({
       req(tadat$available_param_num)
-      shinyjs::toggleState(id = "Run_Batch", 
+      shinyjs::toggleState(id = "Run_Batch",
                            condition = tadat$available_param_num > 0)
     })
     

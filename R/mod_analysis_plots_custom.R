@@ -247,8 +247,8 @@ mod_analysis_plots_custom_server <- function(id, tadat){
                                       option = "mako") +
           ggplot2::labs(fill = 'Monitoring Location ID') +
           ggplot2::theme(legend.position = "right"
-                         , text = ggplot2::element_text(size = 24)
-                         , axis.text = ggplot2::element_text(size = 22)
+                         , text = ggplot2::element_text(size = 14)
+                         , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       } else if (tadat$loc_select_custom %in% "AU"){
         tadat$p_boxplot_custom <- p + ggplot2::geom_jitter(data = filtered_data3(), ggplot2::aes(x = ATTAINS.UseName,
@@ -269,8 +269,8 @@ mod_analysis_plots_custom_server <- function(id, tadat){
                                       option = "mako") +
           ggplot2::labs(fill = 'Assessment Unit ID') +
           ggplot2::theme(legend.position = "right"
-                         , text = ggplot2::element_text(size = 24)
-                         , axis.text = ggplot2::element_text(size = 22)
+                         , text = ggplot2::element_text(size = 14)
+                         , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       } else if (tadat$loc_select_custom %in% "CG"){
         # For CG, just show points without fill grouping
@@ -289,8 +289,8 @@ mod_analysis_plots_custom_server <- function(id, tadat){
                                ' (', filtered_data2()$TADA.ResultMeasure.MeasureUnitCode[1], ')')) +
           ggplot2::scale_y_log10() +
           ggplot2::theme_bw() +
-          ggplot2::theme(text = ggplot2::element_text(size = 24),
-                         axis.text = ggplot2::element_text(size = 22))
+          ggplot2::theme(text = ggplot2::element_text(size = 14),
+                         axis.text = ggplot2::element_text(size = 12))
       }
       return(tadat$p_boxplot_custom)
     })
@@ -337,8 +337,8 @@ mod_analysis_plots_custom_server <- function(id, tadat){
         }) +
         ggplot2::theme(
           legend.position = "right",
-          text = ggplot2::element_text(size = 24),
-          axis.text = ggplot2::element_text(size = 22),
+          text = ggplot2::element_text(size = 14),
+          axis.text = ggplot2::element_text(size = 12),
           legend.background = ggplot2::element_rect(colour = "gray60", fill = "white", linetype = "dashed")
         )
       

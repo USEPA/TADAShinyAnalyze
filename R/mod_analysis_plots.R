@@ -60,8 +60,46 @@ mod_analysis_plots_ui <- function(id) {
       )
     ),
   fluidRow(
-    column(width = 6, plotOutput(ns("boxplot_view"))),
-    column(width = 6, plotOutput(ns("timeseries_view")))
+    column(width = 6, 
+           plotOutput(ns("boxplot_view")),
+           fluidRow(
+             column(
+               width = 4,
+               radioButtons(
+                 ns("boxplot_format"),
+                 "Download format:",
+                 choices = c("PNG" = "png", "PDF" = "pdf", "SVG" = "svg"),
+                 selected = "png",
+                 inline = TRUE
+               )
+             ),
+             column(
+               width = 4,
+               downloadButton(ns("download_boxplot"), "Download boxplot",
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
+             )
+           )
+    ),
+    column(width = 6, 
+           plotOutput(ns("timeseries_view")),
+           fluidRow(
+             column(
+               width = 4,
+               radioButtons(
+                 ns("timeseries_format"),
+                 "Download format:",
+                 choices = c("PNG" = "png", "PDF" = "pdf", "SVG" = "svg"),
+                 selected = "png",
+                 inline = TRUE
+               )
+             ),
+             column(
+               width = 4,
+               downloadButton(ns("download_timeseries"), "Download time series plot",
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+             )
+           )
+    )
   )
   )
 }
@@ -72,6 +110,10 @@ mod_analysis_plots_ui <- function(id) {
 mod_analysis_plots_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+    
+    # Disable the button
+    shinyjs::disable("download_boxplot")
+    shinyjs::disable("download_timeseries")
  
     # Update selectize inputs when data changes
     shiny::observe({
@@ -383,9 +425,55 @@ mod_analysis_plots_server <- function(id, tadat){
         )
       
       tadat$p_timeseries <- p
+      
       return(p)
     })
     
+    ### Download the plots
+    
+    # Activate the download button if plots are available
+    shiny::observe({
+      shinyjs::toggleState("download_boxplot", condition = !is.null(tadat$p_boxplot))
+      shinyjs::toggleState("download_timeseries", condition = !is.null(tadat$p_timeseries))
+    })
+    
+    output$download_boxplot <- downloadHandler(
+      filename = function() {
+        paste0("batch_boxplot", ".", input$boxplot_format)
+      },
+      content = function(file) {
+        if (!is.null(tadat$p_boxplot)) {
+          ggplot2::ggsave(
+            file, 
+            plot = tadat$p_boxplot, 
+            width = 10, 
+            height = 6, 
+            dpi = 300,
+            units = "in",
+            device = input$boxplot_format
+          )
+        }
+      }
+    )
+    
+    output$download_timeseries <- downloadHandler(
+      filename = function() {
+        paste0("batch_time_series", ".", input$timeseries_format)
+      },
+      content = function(file) {
+        if (!is.null(tadat$p_timeseries)) {
+          ggplot2::ggsave(
+            file, 
+            plot = tadat$p_timeseries, 
+            width = 10, 
+            height = 6, 
+            dpi = 300,
+            units = "in",
+            device = input$timeseries_format
+          )
+        }
+      }
+    )
     
   })
 }
