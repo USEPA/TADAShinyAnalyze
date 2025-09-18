@@ -1,0 +1,10 @@
+name: TADAShinyAnalyze
+title: TADAShiny Module 3 Analyze
+username: Cristina
+account: Cristina
+server: rstudio-connect.dmap-stage.aws.epa.gov
+hostUrl: https://rstudio-connect.dmap-stage.aws.epa.gov/__api__
+appId: 1025
+bundleId: 7917
+url: https://rstudio-connect.dmap-stage.aws.epa.gov/content/019dcc7e-863b-426a-a2a5-1813f53f5702/
+version: 1
