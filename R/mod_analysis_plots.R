@@ -12,7 +12,7 @@ mod_analysis_plots_ui <- function(id) {
   tagList(
   fluidRow(
     column(
-      width = 6,
+      width = 4,
       # Parameter selectize input (single selection)
       shiny::selectizeInput(
         inputId = ns("parameter_box_select"),
@@ -27,7 +27,38 @@ mod_analysis_plots_ui <- function(id) {
         )
       ),
     column(
-      width = 6,
+      width = 4,
+      # Parameter selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("fraction_box_select"),
+        label = "Select the fraction",
+        choices = NULL,
+        selected = NULL,
+        multiple = FALSE,
+        options = list(
+          placeholder = "Select the fraction",
+          create = FALSE
+        )
+      )
+    ),
+    column(
+      width = 4,
+      # Uses selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("unit_box_select"),
+        label = "Select the unit",
+        choices = NULL,
+        selected = NULL,
+        multiple = FALSE,
+        options = list(
+          placeholder = "Select the units",
+          create = FALSE
+        )
+      )
+    ),
+  fluidRow(
+    column(
+      width = 4,
       # Uses selectize input (multiple selection)
       shiny::selectizeInput(
         inputId = ns("uses_box_select"),
@@ -38,13 +69,43 @@ mod_analysis_plots_ui <- function(id) {
         options = list(
           placeholder = "Select the uses",
           create = FALSE
-          )
         )
       )
     ),
+    column(
+      width = 4,
+      # Uses selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("season_box_select"),
+        label = "Select the season",
+        choices = NULL,
+        selected = NULL,
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select the season",
+          create = FALSE
+        )
+      )
+    ),
+    column(
+      width = 4,
+      # Uses selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("unique_box_select"),
+        label = "Select the unique criteria",
+        choices = NULL,
+        selected = NULL,
+        multiple = TRUE,
+        options = list(
+          placeholder = "Select the unique criteria",
+          create = FALSE
+        )
+      )
+    )
+  ),
   fluidRow(
     column(
-      width = 6,
+      width = 4,
       # Uses selectize input (multiple selection)
       shiny::selectizeInput(
         inputId = ns("loc_box_select"),
@@ -55,10 +116,10 @@ mod_analysis_plots_ui <- function(id) {
         options = list(
           placeholder = "Select location",
           create = FALSE
-          )
         )
       )
-    ),
+    )
+  ),
   fluidRow(
     column(width = 6, 
            plotOutput(ns("boxplot_view")),
@@ -100,8 +161,7 @@ mod_analysis_plots_ui <- function(id) {
              )
            )
     )
-  )
-  )
+  )))
 }
     
 #' analysis_plots Server Functions
@@ -151,8 +211,64 @@ mod_analysis_plots_server <- function(id, tadat){
     shiny::observe({
       shiny::req(filtered_data1())
       
+      # Get unique values for Fraction dropdown
+      fraction_choices <- sort(unique(filtered_data1()$TADA.ResultSampleFractionText))
+      
+      # Update Uses selectize
+      shiny::updateSelectizeInput(
+        session = session,
+        inputId = "fraction_box_select",
+        choices = fraction_choices,
+        selected = NULL,
+        server = TRUE
+      )
+      
+    })
+    
+    # Reactive to filter data based on selections
+    filtered_data1_1 <- shiny::reactive({
+      shiny::req(filtered_data1())
+      
+      # Filter by selected fraction
+      dat2 <- filtered_data1() |>
+        dplyr::filter(TADA.ResultSampleFractionText %in% input$fraction_box_select)
+      
+      return(dat2)
+    })
+    
+    shiny::observe({
+      shiny::req(filtered_data1_1())
+      
+      # Get unique values for Unit dropdown
+      unit_choices <- sort(unique(filtered_data1_1()$TADA.ResultMeasure.MeasureUnitCode))
+      
+      # Update Uses selectize
+      shiny::updateSelectizeInput(
+        session = session,
+        inputId = "unit_box_select",
+        choices = unit_choices,
+        selected = NULL,
+        server = TRUE
+      )
+      
+    })
+    
+    # Reactive to filter data based on selections
+    filtered_data1_2 <- shiny::reactive({
+      shiny::req(filtered_data1_1())
+      
+      # Filter by selected unit
+      dat2 <- filtered_data1_1() |>
+        dplyr::filter(TADA.ResultMeasure.MeasureUnitCode %in% input$unit_box_select)
+      
+      return(dat2)
+    })
+    
+    shiny::observe({
+      shiny::req(filtered_data1_2())
+      
       # Get unique values for Uses dropdown
-      uses_choices <- sort(unique(filtered_data1()$ATTAINS.UseName))
+      uses_choices <- sort(unique(filtered_data1_2()$ATTAINS.UseName))
       
       # Update Uses selectize
       shiny::updateSelectizeInput(
@@ -165,15 +281,73 @@ mod_analysis_plots_server <- function(id, tadat){
       
     })
     
+    # # Reactive to filter data based on selections
+    # filtered_data1_3 <- shiny::reactive({
+    #   shiny::req(filtered_data1_2())
+    #   
+    #   # Filter by selected uses
+    #   dat2 <- filtered_data1_2() |>
+    #     dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
+    #   
+    #   return(dat2)
+    # })
+    # 
+    # shiny::observe({
+    #   shiny::req(filtered_data1_3())
+    #   
+    #   # Get unique values for Season dropdown
+    #   season_choices <- sort(unique(filtered_data1_3()$Season))
+    #   
+    #   # Update Uses selectize
+    #   shiny::updateSelectizeInput(
+    #     session = session,
+    #     inputId = "season_box_select",
+    #     choices = season_choices,
+    #     selected = NULL,
+    #     server = TRUE
+    #   )
+    #   
+    # })
+    # 
+    # # Reactive to filter data based on selections
+    # filtered_data1_4 <- shiny::reactive({
+    #   shiny::req(filtered_data1_3())
+    #   
+    #   # Filter by selected season
+    #   dat2 <- filtered_data1_3() |>
+    #     dplyr::filter(Season %in% input$season_box_select)
+    #   
+    #   return(dat2)
+    # })
+    # 
+    # shiny::observe({
+    #   shiny::req(filtered_data1_4())
+    #   
+    #   # Get unique values for unique dropdown
+    #   unique_choices <- sort(unique(filtered_data1_4()$UniqueSpatialCriteria))
+    #   
+    #   # Update Uses selectize
+    #   shiny::updateSelectizeInput(
+    #     session = session,
+    #     inputId = "unique_box_select",
+    #     choices = unique_choices,
+    #     selected = NULL,
+    #     server = TRUE
+    #   )
+    #   
+    # })
     
     # Reactive to filter data based on selections
     filtered_data2 <- shiny::reactive({
-      shiny::req(filtered_data1())
-      shiny::req(input$uses_box_select)
+      shiny::req(filtered_data1_2())
       
-      # Filter by selected uses
-      dat2 <- filtered_data1() |>
-        dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
+      # # Filter by selected season
+      # dat2 <- filtered_data1_4() |>
+      #   dplyr::filter(UniqueSpatialCriteria %in% input$unique_box_select)
+      
+        # Filter by selected uses
+        dat2 <- filtered_data1_2() |>
+          dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
       
       return(dat2)
     })

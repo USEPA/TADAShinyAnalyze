@@ -144,7 +144,7 @@ mod_custom_analysis_server <- function(id, tadat){
         dplyr::mutate(ActivityStartDateTime = 
                         suppressWarnings(
                         lubridate::parse_date_time(ActivityStartDateTime, 
-                                                   orders = c("ymd HMS", "ymd HM")))
+                                                   orders = c("ymd HMS", "ymd HM", "ymd")))
                         ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime)
@@ -310,6 +310,8 @@ mod_custom_analysis_server <- function(id, tadat){
           ATTAINS.ParameterName,
           ATTAINS.UseName,
           AcuteChronic,
+          UniqueSpatialCriteria,
+          Season,
           EquationBased,
           EquationType, 
           TADA.CharacteristicName,
