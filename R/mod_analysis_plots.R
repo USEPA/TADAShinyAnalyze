@@ -309,7 +309,7 @@ mod_analysis_plots_server <- function(id,
     # Reactive to filter data based on location selections
     filtered_data3 <- shiny::reactive({
       shiny::req(filtered_data2())
-      shiny::req(input$loc_box_select)
+      shiny::req(loc_select())
       
       # Filter by selected location
       if (loc_select() %in% "MLid"){
