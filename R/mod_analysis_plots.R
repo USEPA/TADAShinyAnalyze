@@ -43,22 +43,6 @@ mod_analysis_plots_ui <- function(id) {
     ),
     column(
       width = 4,
-      # Uses selectize input (single selection)
-      shiny::selectizeInput(
-        inputId = ns("unit_box_select"),
-        label = "Select the unit",
-        choices = NULL,
-        selected = NULL,
-        multiple = FALSE,
-        options = list(
-          placeholder = "Select the units",
-          create = FALSE
-        )
-      )
-    ),
-  fluidRow(
-    column(
-      width = 4,
       # Uses selectize input (multiple selection)
       shiny::selectizeInput(
         inputId = ns("uses_box_select"),
@@ -72,6 +56,7 @@ mod_analysis_plots_ui <- function(id) {
         )
       )
     ),
+  fluidRow(
     column(
       width = 4,
       # Uses selectize input (single selection)
@@ -101,9 +86,7 @@ mod_analysis_plots_ui <- function(id) {
           create = FALSE
         )
       )
-    )
-  ),
-  fluidRow(
+    ),
     column(
       width = 4,
       # Uses selectize input (multiple selection)
@@ -239,36 +222,8 @@ mod_analysis_plots_server <- function(id, tadat){
     shiny::observe({
       shiny::req(filtered_data1_1())
       
-      # Get unique values for Unit dropdown
-      unit_choices <- sort(unique(filtered_data1_1()$TADA.ResultMeasure.MeasureUnitCode))
-      
-      # Update Uses selectize
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "unit_box_select",
-        choices = unit_choices,
-        selected = NULL,
-        server = TRUE
-      )
-      
-    })
-    
-    # Reactive to filter data based on selections
-    filtered_data1_2 <- shiny::reactive({
-      shiny::req(filtered_data1_1())
-      
-      # Filter by selected unit
-      dat2 <- filtered_data1_1() |>
-        dplyr::filter(TADA.ResultMeasure.MeasureUnitCode %in% input$unit_box_select)
-      
-      return(dat2)
-    })
-    
-    shiny::observe({
-      shiny::req(filtered_data1_2())
-      
       # Get unique values for Uses dropdown
-      uses_choices <- sort(unique(filtered_data1_2()$ATTAINS.UseName))
+      uses_choices <- sort(unique(filtered_data1_1()$ATTAINS.UseName))
       
       # Update Uses selectize
       shiny::updateSelectizeInput(
@@ -339,14 +294,14 @@ mod_analysis_plots_server <- function(id, tadat){
     
     # Reactive to filter data based on selections
     filtered_data2 <- shiny::reactive({
-      shiny::req(filtered_data1_2())
+      shiny::req(filtered_data1_1())
       
       # # Filter by selected season
       # dat2 <- filtered_data1_4() |>
       #   dplyr::filter(UniqueSpatialCriteria %in% input$unique_box_select)
       
         # Filter by selected uses
-        dat2 <- filtered_data1_2() |>
+        dat2 <- filtered_data1_1() |>
           dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
       
       return(dat2)
