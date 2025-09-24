@@ -59,36 +59,6 @@ mod_analysis_plots_ui <- function(id) {
   fluidRow(
     column(
       width = 4,
-      # Uses selectize input (single selection)
-      shiny::selectizeInput(
-        inputId = ns("season_box_select"),
-        label = "Select the season",
-        choices = NULL,
-        selected = NULL,
-        multiple = TRUE,
-        options = list(
-          placeholder = "Select the season",
-          create = FALSE
-        )
-      )
-    ),
-    column(
-      width = 4,
-      # Uses selectize input (single selection)
-      shiny::selectizeInput(
-        inputId = ns("unique_box_select"),
-        label = "Select the unique criteria",
-        choices = NULL,
-        selected = NULL,
-        multiple = TRUE,
-        options = list(
-          placeholder = "Select the unique criteria",
-          create = FALSE
-        )
-      )
-    ),
-    column(
-      width = 4,
       # Uses selectize input (multiple selection)
       shiny::selectizeInput(
         inputId = ns("loc_box_select"),
@@ -98,6 +68,36 @@ mod_analysis_plots_ui <- function(id) {
         multiple = TRUE,
         options = list(
           placeholder = "Select location",
+          create = FALSE
+        )
+      )
+    ),
+    column(
+      width = 4,
+      # Uses selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("unique_box_select"),
+        label = "Select the unique criteria (Optional)",
+        choices = NULL,
+        selected = NULL,
+        multiple = FALSE,
+        options = list(
+          placeholder = "Select the unique criteria",
+          create = FALSE
+        )
+      )
+    ),
+    column(
+      width = 4,
+      # Uses selectize input (single selection)
+      shiny::selectizeInput(
+        inputId = ns("season_box_select"),
+        label = "Select the season (Optional)",
+        choices = NULL,
+        selected = NULL,
+        multiple = FALSE,
+        options = list(
+          placeholder = "Select the season",
           create = FALSE
         )
       )
@@ -157,6 +157,14 @@ mod_analysis_plots_server <- function(id, tadat){
     # Disable the button
     shinyjs::disable("download_boxplot")
     shinyjs::disable("download_timeseries")
+    
+    # Disable the filters for UniquSpatialCriteria and Season
+    shinyjs::disable("unique_box_select")
+    shinyjs::disable("season_box_select")
+    
+    # Set the initial flag of UniquSpatialCriteria and Season
+    tadat$unique_flag <- FALSE
+    tadat$season_flag <- FALSE
  
     # Update selectize inputs when data changes
     shiny::observe({
@@ -186,6 +194,8 @@ mod_analysis_plots_server <- function(id, tadat){
       
       # Filter by selected parameter
       dat2 <- tadat$excurse_dat_filtered |>
+        # Replace NA in TADA.ResultSampleFractionText for now
+        tidyr::replace_na(list(TADA.ResultSampleFractionText = "None")) |>
         dplyr::filter(TADA.CharacteristicName %in% input$parameter_box_select)
       
       return(dat2)
@@ -236,73 +246,13 @@ mod_analysis_plots_server <- function(id, tadat){
       
     })
     
-    # # Reactive to filter data based on selections
-    # filtered_data1_3 <- shiny::reactive({
-    #   shiny::req(filtered_data1_2())
-    #   
-    #   # Filter by selected uses
-    #   dat2 <- filtered_data1_2() |>
-    #     dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
-    #   
-    #   return(dat2)
-    # })
-    # 
-    # shiny::observe({
-    #   shiny::req(filtered_data1_3())
-    #   
-    #   # Get unique values for Season dropdown
-    #   season_choices <- sort(unique(filtered_data1_3()$Season))
-    #   
-    #   # Update Uses selectize
-    #   shiny::updateSelectizeInput(
-    #     session = session,
-    #     inputId = "season_box_select",
-    #     choices = season_choices,
-    #     selected = NULL,
-    #     server = TRUE
-    #   )
-    #   
-    # })
-    # 
-    # # Reactive to filter data based on selections
-    # filtered_data1_4 <- shiny::reactive({
-    #   shiny::req(filtered_data1_3())
-    #   
-    #   # Filter by selected season
-    #   dat2 <- filtered_data1_3() |>
-    #     dplyr::filter(Season %in% input$season_box_select)
-    #   
-    #   return(dat2)
-    # })
-    # 
-    # shiny::observe({
-    #   shiny::req(filtered_data1_4())
-    #   
-    #   # Get unique values for unique dropdown
-    #   unique_choices <- sort(unique(filtered_data1_4()$UniqueSpatialCriteria))
-    #   
-    #   # Update Uses selectize
-    #   shiny::updateSelectizeInput(
-    #     session = session,
-    #     inputId = "unique_box_select",
-    #     choices = unique_choices,
-    #     selected = NULL,
-    #     server = TRUE
-    #   )
-    #   
-    # })
-    
     # Reactive to filter data based on selections
     filtered_data2 <- shiny::reactive({
       shiny::req(filtered_data1_1())
       
-      # # Filter by selected season
-      # dat2 <- filtered_data1_4() |>
-      #   dplyr::filter(UniqueSpatialCriteria %in% input$unique_box_select)
-      
-        # Filter by selected uses
-        dat2 <- filtered_data1_1() |>
-          dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
+      # Filter by selected uses
+      dat2 <- filtered_data1_1() |>
+        dplyr::filter(ATTAINS.UseName %in% input$uses_box_select)
       
       return(dat2)
     })
@@ -341,7 +291,7 @@ mod_analysis_plots_server <- function(id, tadat){
         dat2 <- filtered_data2() |>
           dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% input$loc_box_select)
       }
-      #add filtered_data4 - change 0 values to 0,000001
+      #add filtered_data3 - change 0 values to 0,000001
       dat2 <- dat2 |>
         dplyr::mutate(TADA.ResultMeasureValue = ifelse(TADA.ResultMeasureValue == 0,
                                                        0.000001, TADA.ResultMeasureValue))
@@ -349,12 +299,108 @@ mod_analysis_plots_server <- function(id, tadat){
       return(dat2)
     })
     
+    # Optional filters in UniqueSpatialCriteria and Season
+
+    # Check if there are multiple values in UniqueSpatialCriteria in filtered_data3
+    shiny::observe({
+      shiny::req(filtered_data3)
+
+      # Get unique values for unique dropdown
+      unique_choices <- sort(unique(filtered_data3()$UniqueSpatialCriteria))
+
+      tadat$unique_flag <- any(!is.na(unique_choices))
+
+      shinyjs::toggleState(id = "unique_box_select",
+                           condition = tadat$unique_flag)
+
+      if (tadat$unique_flag){
+        # Update Uses selectize
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "unique_box_select",
+          choices = unique_choices,
+          selected = NULL,
+          server = TRUE
+        )
+      } else {
+        # Update Uses selectize
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = ns("unique_box_select"),
+          label = "Select the unique criteria (Optional)",
+          choices = NULL,
+          selected = NULL,
+          options = list(
+            placeholder = "Select the unique criteria",
+            create = FALSE
+          )
+        )
+      }
+    })
+
+    
+    # Check if there are multiple values in Season in filtered_data3
+    shiny::observe({
+      shiny::req(filtered_data3())
+
+      # Get unique values for unique dropdown
+      season_choices <- sort(unique(filtered_data3()$Season))
+
+      tadat$season_flag <- any(!is.na(season_choices))
+
+      shinyjs::toggleState(id = "season_box_select",
+                           condition = tadat$season_flag)
+
+      if (tadat$season_flag){
+        # Update Uses selectize
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "season_box_select",
+          choices = season_choices,
+          selected = NULL,
+          server = TRUE
+        )
+      } else {
+        # Update Uses selectize
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = ns("season_box_select"),
+          label = "Select the season (Optional)",
+          choices = NULL,
+          selected = NULL,
+          options = list(
+            placeholder = "Select the season",
+            create = FALSE
+          )
+        )
+      }
+    })
+    
+    # Filter filtered_data3 based on UniqueSpatialCriteria and Season if needed
+    filtered_data4 <- shiny::reactive({
+      shiny::req(filtered_data3())
+      
+      if (isTRUE(tadat$unique_flag)){
+        dat2 <- filtered_data3() |>
+          dplyr::filter(UniqueSpatialCriteria %in% input$unique_box_select)
+      } else {
+        dat2 <- filtered_data3()
+      }
+      
+      if (isTRUE(tadat$season_flag)){
+        dat3 <- dat2 |>
+          dplyr::filter(Season %in% input$season_box_select)
+      } else {
+        dat3 <- dat2
+      }
+
+      return(dat3)
+    })
 
     # Create boxplot
     output$boxplot_view <- shiny::renderPlot({
-      shiny::req(filtered_data2())
-      shiny::req(filtered_data3())
-      
+      shiny::req(filtered_data4())
+
       options(scipen=999)
       
       # Check if there's data to plot
@@ -383,8 +429,8 @@ mod_analysis_plots_server <- function(id, tadat){
                                       width = 0.2,
                                       alpha = 0.8) +
           ggplot2::xlab('Uses') +
-          ggplot2::ylab(paste0(unique(filtered_data2()$TADA.CharacteristicName), 
-                               ' (', filtered_data2()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
+          ggplot2::ylab(paste0(unique(filtered_data4()$TADA.CharacteristicName), 
+                               ' (', filtered_data4()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
@@ -405,8 +451,8 @@ mod_analysis_plots_server <- function(id, tadat){
                                       width = 0.2,
                                       alpha = 0.8) +
           ggplot2::xlab('Uses') +
-          ggplot2::ylab(paste0(filtered_data2()$TADA.CharacteristicName,
-                               ' (', filtered_data2()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
+          ggplot2::ylab(paste0(filtered_data4()$TADA.CharacteristicName,
+                               ' (', filtered_data4()$TADA.ResultMeasure.MeasureUnitCode, ')')) +
           ggplot2::scale_y_log10() +
           ggplot2::scale_x_discrete(name = "") +
           ggplot2::theme_bw() +
@@ -423,9 +469,8 @@ mod_analysis_plots_server <- function(id, tadat){
     
     
     output$timeseries_view <- shiny::renderPlot({
-      shiny::req(filtered_data2())
-      shiny::req(filtered_data3())
-      
+      shiny::req(filtered_data4())
+
       options(scipen = 999)
       
       if (nrow(filtered_data3()) == 0) {
@@ -449,7 +494,7 @@ mod_analysis_plots_server <- function(id, tadat){
                             color = "black", shape = 21, size = 3.5, alpha = 0.8) +
         ggplot2::scale_y_log10() +
         ggplot2::xlab("Time") +
-        ggplot2::ylab(paste0(filtered_data2()$TADA.CharacteristicName[1], " (", filtered_data2()$TADA.ResultMeasure.MeasureUnitCode[1], ")")) +
+        ggplot2::ylab(paste0(filtered_data4()$TADA.CharacteristicName[1], " (", filtered_data4()$TADA.ResultMeasure.MeasureUnitCode[1], ")")) +
         ggplot2::theme_bw() +
         viridis::scale_fill_viridis(discrete = TRUE, option = "mako") +
         ggplot2::labs(fill = if (tadat$loc_select %in% c("MLid")) {
