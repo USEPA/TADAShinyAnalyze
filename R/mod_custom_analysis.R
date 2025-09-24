@@ -112,7 +112,7 @@ mod_custom_analysis_ui <- function(id) {
         width = 12,
         htmltools::h3("Plots"),
         htmltools::p("Use filters to view the results"),
-        mod_analysis_plots_custom_ui(ns("Analysis_Plots_Custom"))
+        mod_analysis_plots_ui(ns("Analysis_Plots_Custom"))
       )
     )
   )
@@ -582,9 +582,6 @@ mod_custom_analysis_server <- function(id, tadat){
       
     })
     
-    mod_exceedance_viewer_custom_server("Summary_View_Custom", tadat)
-    mod_analysis_plots_custom_server("Analysis_Plots_Custom", tadat)
-    
     # Render the summary maps
     # Render the summary maps
     output$overall_map <- leaflet::renderLeaflet({
@@ -653,6 +650,13 @@ mod_custom_analysis_server <- function(id, tadat){
       updateSelectInput(session, "selected_param", choices = params, selected = params[1])
       updateSelectInput(session, "selected_use_param", choices = uses, selected = uses[1])
     })
+    
+    mod_exceedance_viewer_custom_server("Summary_View_Custom", tadat)
+    mod_analysis_plots_server("Analysis_Plots_Custom",
+                              excurse_dat = reactive(tadat$excurse_dat_custom_filtered),
+                              excurse_summary = reactive(tadat$exceed_summary_custom),
+                              loc_select = reactive(tadat$loc_select_custom),
+                              tabname = "custom")
 
   })
   

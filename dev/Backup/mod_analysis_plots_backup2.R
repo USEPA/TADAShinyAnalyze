@@ -174,19 +174,6 @@ mod_analysis_plots_server <- function(id,
     shinyjs::disable("download_boxplot")
     shinyjs::disable("download_timeseries")
     
-    # Observe changes to loc_select_custom to enable/disable uses dropdown
-    shiny::observe({
-      shiny::req(loc_select())
-      
-      if (loc_select() %in% "CG") {
-        # Disable the uses dropdown using shinyjs
-        shinyjs::disable("loc_box_select")
-      } else {
-        # Enable the uses dropdown using shinyjs
-        shinyjs::enable("loc_box_select")
-      }
-    })
-    
     # Disable the filters for UniquSpatialCriteria and Season
     shinyjs::disable("unique_box_select")
     shinyjs::disable("season_box_select")
@@ -286,13 +273,10 @@ mod_analysis_plots_server <- function(id,
     shiny::observe({
       shiny::req(filtered_data2())
       shiny::req(loc_select())
-      if (loc_select() %in% "MLid"){
+      if (loc_select() %in% c("MLid")){
         loc_choices <- sort(unique(filtered_data2()$TADA.MonitoringLocationIdentifier))
-      } else if (loc_select() %in% "AU"){
-        loc_choices <- sort(unique(filtered_data2()$JoinToAU.AssessmentUnitIdentifier))
       } else {
-        # For Custom Grouping, clear the choices and selection
-        loc_choices <- NULL
+        loc_choices <- sort(unique(filtered_data2()$JoinToAU.AssessmentUnitIdentifier))
       }
       
       # Update location selectize
@@ -312,14 +296,12 @@ mod_analysis_plots_server <- function(id,
       shiny::req(input$loc_box_select)
       
       # Filter by selected location
-      if (loc_select() %in% "MLid"){
+      if (loc_select() %in% c("MLid")){
         dat2 <- filtered_data2() |>
           dplyr::filter(TADA.MonitoringLocationIdentifier %in% input$loc_box_select)
-      } else if (loc_select() %in% "AU"){
+      } else {
         dat2 <- filtered_data2() |>
           dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% input$loc_box_select)
-      } else {
-        dat2 <- filtered_data2()
       }
       #add filtered_data3 - change 0 values to 0,000001
       dat2 <- dat2 |>
@@ -449,7 +431,7 @@ mod_analysis_plots_server <- function(id,
                               color = 'gray30',
                               outlier.shape = NA) 
       
-      if (loc_select() %in% "MLid"){
+      if (loc_select() %in% c("MLid")){
         rv$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
                                                                             , fill = TADA.MonitoringLocationIdentifier),
@@ -471,7 +453,7 @@ mod_analysis_plots_server <- function(id,
                          , text = ggplot2::element_text(size = 14)
                          , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
-      } else if (loc_select() %in% "AU"){
+      } else {
         rv$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
                                                                             , fill = JoinToAU.AssessmentUnitIdentifier),
@@ -493,25 +475,6 @@ mod_analysis_plots_server <- function(id,
                          , text = ggplot2::element_text(size = 14)
                          , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
-      } else {
-          # For CG, just show points without fill grouping
-          rv$p_boxplot <- p + 
-            ggplot2::geom_jitter(data = filtered_data4(), 
-                                 ggplot2::aes(x = ATTAINS.UseName,
-                                              y = TADA.ResultMeasureValue),
-                                 color = 'darkblue',
-                                 shape = 21,
-                                 fill = 'lightblue',
-                                 size = 3.5,
-                                 width = 0.2,
-                                 alpha = 0.8) +
-            ggplot2::xlab('Uses') +
-            ggplot2::ylab(paste0(unique(filtered_data4()$TADA.CharacteristicName), 
-                                 ' (', filtered_data4()$TADA.ResultMeasure.MeasureUnitCode[1], ')')) +
-            ggplot2::scale_y_log10() +
-            ggplot2::theme_bw() +
-            ggplot2::theme(text = ggplot2::element_text(size = 14),
-                           axis.text = ggplot2::element_text(size = 12))
       }
       return(rv$p_boxplot)
     })
@@ -531,12 +494,10 @@ mod_analysis_plots_server <- function(id,
       
       df <- filtered_data4()
       
-      if (loc_select() %in% "MLid") {
-        df$fill_var <- df$TADA.MonitoringLocationIdentifier
-      } else if (loc_select() %in% "AU"){
-        df$fill_var <- df$JoinToAU.AssessmentUnitIdentifier
+      fill_var <- if (loc_select() %in% c("MLid")) {
+        df$TADA.MonitoringLocationIdentifier
       } else {
-        df$fill_var <- "Custom Group"
+        df$JoinToAU.AssessmentUnitIdentifier
       }
       
       # Base plot
@@ -548,12 +509,10 @@ mod_analysis_plots_server <- function(id,
         ggplot2::ylab(paste0(filtered_data4()$TADA.CharacteristicName[1], " (", filtered_data4()$TADA.ResultMeasure.MeasureUnitCode[1], ")")) +
         ggplot2::theme_bw() +
         viridis::scale_fill_viridis(discrete = TRUE, option = "mako") +
-        ggplot2::labs(fill = if (loc_select() %in% "MLid") {
+        ggplot2::labs(fill = if (loc_select() %in% c("MLid")) {
           "Monitoring Location ID"
-        } else if (loc_select() %in% "AU"){
-          "Assessment Unit ID"
         } else {
-          "Custom Group"
+          "Assessment Unit ID"
         }) +
         ggplot2::theme(
           legend.position = "right",
