@@ -59,6 +59,8 @@ mod_custom_analysis_ui <- function(id) {
         )
       )
     ),
+    
+    htmltools::br(),
 
     fluidRow(
       column(
