@@ -151,24 +151,32 @@ mod_analysis_plots_ui <- function(id) {
 #'
 #' @noRd 
 mod_analysis_plots_server <- function(id, 
-                                      # Excursion dataset
-                                      excurse_dat, 
-                                      # Excursion summary
+                                      # The excurse dataset
+                                      excurse_dat,
+                                      # The excurse summary
                                       excurse_summary,
-                                      # Location selection
-                                      loc_select, 
-                                      # Tab names
+                                      # Location type
+                                      loc_select,
+                                      # Tab name for saving plots
                                       tabname){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
-    # Set the initial state
-    rv <- shiny::reactiveValues(
-      unique_flag = FALSE,
-      season_flag = FALSE,
-      p_boxplot   = NULL,
-      p_timeseries= NULL
-    )
+    excurse_dat <- reactive({excurse_dat})
+    excurse_summary <- reactive({excurse_summary})
+    loc_select <- reactive({loc_select})
+    
+    shiny::observe({
+      print("Test 1")
+      print(excurse_dat())
+      print("Test 2")
+      print(excurse_summary())
+      print("Test 3")
+      print(loc_select())
+    })
+    
+    # Create a reactive list to save objects
+    tadat_plot <- shiny::reactiveValues()
     
     # Disable the button
     shinyjs::disable("download_boxplot")
@@ -177,6 +185,10 @@ mod_analysis_plots_server <- function(id,
     # Disable the filters for UniquSpatialCriteria and Season
     shinyjs::disable("unique_box_select")
     shinyjs::disable("season_box_select")
+    
+    # Set the initial flag of UniquSpatialCriteria and Season
+    tadat_plot$unique_flag <- FALSE
+    tadat_plot$season_flag <- FALSE
     
     # Update selectize inputs when data changes
     shiny::observe({
@@ -315,17 +327,17 @@ mod_analysis_plots_server <- function(id,
 
     # Check if there are multiple values in UniqueSpatialCriteria in filtered_data3
     shiny::observe({
-      shiny::req(filtered_data3)
+      shiny::req(filtered_data3())
 
       # Get unique values for unique dropdown
       unique_choices <- sort(unique(filtered_data3()$UniqueSpatialCriteria))
 
-      rv$unique_flag <- any(!is.na(unique_choices))
+      tadat_plot$unique_flag <- any(!is.na(unique_choices))
 
       shinyjs::toggleState(id = "unique_box_select",
-                           condition = rv$unique_flag)
+                           condition = tadat_plot$unique_flag)
 
-      if (rv$unique_flag){
+      if (tadat_plot$unique_flag){
         # Update Uses selectize
         shiny::updateSelectizeInput(
           session = session,
@@ -358,12 +370,12 @@ mod_analysis_plots_server <- function(id,
       # Get unique values for unique dropdown
       season_choices <- sort(unique(filtered_data3()$Season))
 
-      rv$season_flag <- any(!is.na(season_choices))
+      tadat_plot$season_flag <- any(!is.na(season_choices))
 
       shinyjs::toggleState(id = "season_box_select",
-                           condition = rv$season_flag)
+                           condition = tadat_plot$season_flag)
 
-      if (rv$season_flag){
+      if (tadat_plot$season_flag){
         # Update Uses selectize
         shiny::updateSelectizeInput(
           session = session,
@@ -392,14 +404,14 @@ mod_analysis_plots_server <- function(id,
     filtered_data4 <- shiny::reactive({
       shiny::req(filtered_data3())
       
-      if (isTRUE(rv$unique_flag)){
+      if (isTRUE(tadat_plot$unique_flag)){
         dat2 <- filtered_data3() |>
           dplyr::filter(UniqueSpatialCriteria %in% input$unique_box_select)
       } else {
         dat2 <- filtered_data3()
       }
       
-      if (isTRUE(rv$season_flag)){
+      if (isTRUE(tadat_plot$season_flag)){
         dat3 <- dat2 |>
           dplyr::filter(Season %in% input$season_box_select)
       } else {
@@ -432,7 +444,7 @@ mod_analysis_plots_server <- function(id,
                               outlier.shape = NA) 
       
       if (loc_select() %in% c("MLid")){
-        rv$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
+        tadat_plot$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
                                                                             , fill = TADA.MonitoringLocationIdentifier),
                                       color = 'black',
@@ -454,7 +466,7 @@ mod_analysis_plots_server <- function(id,
                          , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       } else {
-        rv$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
+        tadat_plot$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
                                                                             , fill = JoinToAU.AssessmentUnitIdentifier),
                                       color = 'black',
@@ -476,7 +488,7 @@ mod_analysis_plots_server <- function(id,
                          , axis.text = ggplot2::element_text(size = 12)
                          , legend.background = ggplot2::element_rect(colour = 'gray60', fill = 'white', linetype='dashed'))
       }
-      return(rv$p_boxplot)
+      return(tadat_plot$p_boxplot)
     })
     
     
@@ -610,7 +622,7 @@ mod_analysis_plots_server <- function(id,
           values = c("Acute" = "dotted", "Chronic" = "dashed", "Other" = "solid")
         )
       
-      rv$p_timeseries <- p
+      tadat_plot$p_timeseries <- p
       
       return(p)
     })
@@ -619,8 +631,8 @@ mod_analysis_plots_server <- function(id,
     
     # Activate the download button if plots are available
     shiny::observe({
-      shinyjs::toggleState("download_boxplot", condition = !is.null(rv$p_boxplot))
-      shinyjs::toggleState("download_timeseries", condition = !is.null(rv$p_timeseries))
+      shinyjs::toggleState("download_boxplot", condition = !is.null(tadat_plot$p_boxplot))
+      shinyjs::toggleState("download_timeseries", condition = !is.null(tadat_plot$p_timeseries))
     })
     
     output$download_boxplot <- downloadHandler(
@@ -628,10 +640,10 @@ mod_analysis_plots_server <- function(id,
         paste0(tabname, "_boxplot", ".", input$boxplot_format)
       },
       content = function(file) {
-        if (!is.null(rv$p_boxplot)) {
+        if (!is.null(tadat_plot$p_boxplot)) {
           ggplot2::ggsave(
             file, 
-            plot = rv$p_boxplot, 
+            plot = tadat_plot$p_boxplot, 
             width = 10, 
             height = 6, 
             dpi = 300,
@@ -644,13 +656,13 @@ mod_analysis_plots_server <- function(id,
     
     output$download_timeseries <- downloadHandler(
       filename = function() {
-        paste0(tabname, "_time_series", ".", input$timeseries_format)
+        paste0(tabname, "batch_time_series", ".", input$timeseries_format)
       },
       content = function(file) {
-        if (!is.null(rv$p_timeseries)) {
+        if (!is.null(tadat_plot$p_timeseries)) {
           ggplot2::ggsave(
             file, 
-            plot = rv$p_timeseries, 
+            plot = tadat_plot$p_timeseries, 
             width = 10, 
             height = 6, 
             dpi = 300,

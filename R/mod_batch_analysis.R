@@ -744,7 +744,11 @@ mod_batch_analysis_server <- function(id, tadat){
     
     mod_excursion_viewer_server("Summary_View", tadat)
     
-    mod_analysis_plots_server("Analysis_Plots", tadat)
+    mod_analysis_plots_server("Analysis_Plots",
+                              excurse_dat = reactive(tadat$excurse_dat_filtered),
+                              excurse_summary = reactive(tadat$excurse_summary_f),
+                              loc_select = reactive(tadat$loc_select),
+                              tabname = "batch")
     
     # mod_exceedance_viewer_server("Summary_Exceed_View", tadat)
     
