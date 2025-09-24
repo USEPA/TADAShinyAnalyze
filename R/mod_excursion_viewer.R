@@ -18,31 +18,20 @@ mod_excursion_viewer_ui <- function(id) {
 #' excursion_viewer Server Functions
 #'
 #' @noRd 
-mod_excursion_viewer_server <- function(id, tadat){
+mod_excursion_viewer_server <- function(id, summary_dat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
     ### Show the data as a data table
-    shiny::observeEvent(tadat$excurse_summary_f, {
+    shiny::observeEvent(summary_dat(), {
 
       # Handle NULL or empty data - clear the table
-      if (is.null(tadat$excurse_summary_f) || nrow(tadat$excurse_summary_f) == 0) {
+      if (is.null(summary_dat()) || nrow(summary_dat()) == 0) {
         output$excurse_table <- DT::renderDT(NULL)
         return()
       }
       
-      # # Simplify the table when tadat$loc_select == AU_group
-      # if (tadat$loc_select %in% "AU"){
-      #   dat <- tadat$excurse_summary_f |>
-      #     dplyr::select(-TADA.MonitoringLocationIdentifier,
-      #                   -TADA.MonitoringLocationName,
-      #                   -TADA.LongitudeMeasure,
-      #                   -TADA.LatitudeMeasure) |>
-      #     dplyr::distinct()
-      # } else {
-      #   dat <- tadat$excurse_summary_f
-      # }
-      dat <- tadat$excurse_summary_f
+      dat <- summary_dat()
 
       dat <- dat |> 
         dplyr::mutate(Excursion_Percentage = Excursion_Percentage/100) |>

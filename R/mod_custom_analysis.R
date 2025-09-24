@@ -79,8 +79,7 @@ mod_custom_analysis_ui <- function(id) {
       column(
         width = 12,
         htmltools::h3("Summary Table"),
-        htmltools::p("The table shows the summary of excursion (individual sample in comparison to the standard) and exceedance (evaluated based on the duration and frequency information)."),
-        mod_exceedance_viewer_custom_ui(ns("Summary_View_Custom"))
+        mod_excursion_viewer_ui(ns("Summary_View_Custom"))
       )
     ),
     # Add to your UI
@@ -651,7 +650,8 @@ mod_custom_analysis_server <- function(id, tadat){
       updateSelectInput(session, "selected_use_param", choices = uses, selected = uses[1])
     })
     
-    mod_exceedance_viewer_custom_server("Summary_View_Custom", tadat)
+    mod_excursion_viewer_server("Summary_View_Custom", 
+                                summary_dat = reactive(tadat$exceed_summary_custom))
     mod_analysis_plots_server("Analysis_Plots_Custom",
                               excurse_dat = reactive(tadat$excurse_dat_custom_filtered),
                               excurse_summary = reactive(tadat$exceed_summary_custom),
