@@ -90,12 +90,12 @@ mod_batch_analysis_ui <- function(id) {
         column(
           width = 12,
           shiny::selectizeInput(inputId = ns("parameter_filter"),
-                         label = "Filter parameter to view the results",
-                         choices = NULL,
-                         multiple = TRUE)
+                                label = "Filter parameter to view the results",
+                                choices = NULL,
+                                multiple = TRUE)
         )
       )
-
+      
     ),
     fluidRow(
       column(
@@ -124,7 +124,7 @@ mod_batch_analysis_ui <- function(id) {
     # )
   )
 }
-    
+
 #' batch_analysis Server Functions
 #'
 #' @noRd 
@@ -152,9 +152,9 @@ mod_batch_analysis_server <- function(id, tadat){
       dat <- dat |>
         dplyr::mutate(ActivityStartDateTime = 
                         suppressWarnings(
-                        lubridate::parse_date_time(ActivityStartDateTime, 
-                                                   orders = c("ymd HMS", "ymd HM", "ymd")))
-                      ) |>
+                          lubridate::parse_date_time(ActivityStartDateTime, 
+                                                     orders = c("ymd HMS", "ymd HM", "ymd")))
+        ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime) |>
         # Remove NA in TADA.ResultMeasureValue and DateTime
@@ -376,14 +376,14 @@ mod_batch_analysis_server <- function(id, tadat){
       if (nrow(dat_pH_hardness) > 0){
         dat_pH_hardness2 <- dat_pH_hardness |>
           dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
-              list("hardness" = Hardness,
-                   "CF_A" = hardness_param_1, 
-                   "CF_B" = hardness_param_2, 
-                   "CF_C" = hardness_param_3,
-                   "E_A" = hardness_param_4, 
-                   "E_B" = hardness_param_5),
-              .f = hardness_eq
-              )) |>
+            list("hardness" = Hardness,
+                 "CF_A" = hardness_param_1, 
+                 "CF_B" = hardness_param_2, 
+                 "CF_C" = hardness_param_3,
+                 "E_A" = hardness_param_4, 
+                 "E_B" = hardness_param_5),
+            .f = hardness_eq
+          )) |>
           dplyr::mutate(MagnitudeValueUpper = if_else(
             pH < 7,
             pmin(hardness_param_6, MagnitudeValueUpper),
@@ -501,7 +501,7 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # Save the data to tadat
       tadat$excurse_summary <- dat11
-        
+      
       ### Step 10. Download the batch analysis results
       output$download_results <- shiny::downloadHandler(
         
@@ -755,9 +755,9 @@ mod_batch_analysis_server <- function(id, tadat){
     
   })
 }
-    
+
 ## To be copied in the UI
 # mod_batch_analysis_ui("batch_analysis_1")
-    
+
 ## To be copied in the server
 # mod_batch_analysis_server("batch_analysis_1")
