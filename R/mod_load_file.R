@@ -558,19 +558,26 @@ mod_load_file_server <- function(id, tadat){
     
     # enable second tab to be selected once input data is processed
     shiny::observe({
-      if (files_loaded$mlid & files_loaded$mltoau & files_loaded$autouse){
-      shinyjs::enable(selector = '.nav li a[data-value="Batch"]') # also custom!
+      if (files_loaded$mlid){
+      shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
       } else {
-      shinyjs::disable(selector = '.nav li a[data-value="Batch"]') # also custom!
+      shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
       }})
     
     # enable the third tab to be selected once input data is processed
     shiny::observe({
-      if (files_loaded$mlid & files_loaded$mltoau & files_loaded$autouse){
-        shinyjs::enable(selector = '.nav li a[data-value="Custom"]') # also custom!
+      if (files_loaded$mlid){
+        shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
       } else {
-        shinyjs::disable(selector = '.nav li a[data-value="Custom"]') # also custom!
+        shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
       }})
+    
+    # Save files_loaded to tadat
+    shiny::observe({
+      tadat$files_loaded_mlid <- files_loaded$mlid
+      tadat$files_loaded_mltoau <- files_loaded$mltoau
+      tadat$files_loaded_autouse <- files_loaded$autouse
+    })
 
   }) # end of moduleServer
 } # end of server function

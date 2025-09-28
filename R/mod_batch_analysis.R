@@ -145,8 +145,9 @@ mod_batch_analysis_server <- function(id, tadat){
     })
     
     shiny::observe({
-      shiny::req(tadat$df_mlid_input, tadat$df_mltoau_input_f, tadat$df_autouse_input,
+      shiny::req(tadat$df_mlid_input, tadat$use_type_batch,
                  tadat$loc_select, tadat$state_tribe, tadat$uses_select_re, tadat$join_select)
+      
       ### Get the input data and convert ActivityStartDateTime to dateTime
       dat <- tadat$df_mlid_input
       dat <- dat |>
@@ -168,83 +169,111 @@ mod_batch_analysis_server <- function(id, tadat){
         hardness_fun()
       
       ### Step 2: Join the criteria table
-      criteria_table_f1 <- criteria_table |>
-        dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
       
-      # Filter the AU_Use based on available_uses_s
-      AU_Use <- tadat$df_autouse_input
-      AU_MLID <- tadat$df_mltoau_input_f |>
-        dplyr::mutate(TADA.MonitoringLocationIdentifier = 
-                        stringr::str_to_upper(MonitoringLocationIdentifier))
+      if (tadat$use_type_batch %in% "Option 1"){
+        req(tadat$df_mltoau_input_f, tadat$df_autouse_input)
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
+          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+        
+        # Filter the AU_Use based on available_uses_s
+        AU_Use <- tadat$df_autouse_input
+        AU_MLID <- tadat$df_mltoau_input_f |>
+          dplyr::mutate(TADA.MonitoringLocationIdentifier = 
+                          stringr::str_to_upper(MonitoringLocationIdentifier))
+        
+        AU_Use_f1 <- AU_Use |>
+          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+        
+        # Filter the AU_MLID based on AU_Use_f1
+        AU_MLID_f1 <- AU_MLID |>
+          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
+                          AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
+        
+        # Filter the input data based on AU_MLID_f1
+        dat3 <- dat2 |>
+          dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
+                          AU_MLID_f1$TADA.MonitoringLocationIdentifier)
+        
+        # Join the criteria_table_f1 and AU_MLID_f1 to dat2
+        dat4 <- dat3 |>
+          dplyr::left_join(AU_MLID_f1) |>
+          dplyr::left_join(AU_Use_f1, 
+                           by = "JoinToAU.AssessmentUnitIdentifier",
+                           relationship = "many-to-many") |>
+          criteria_join(criteria_table_f1, 
+                        match_type = tadat$join_select,
+                        use_type = tadat$use_type_batch) 
+        
+      } else {
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
+          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+        
+        # Join the criteria_table_f1 and AU_MLID_f1 to dat2
+        dat4 <- dat2 |>
+          criteria_join(criteria_table_f1, 
+                        match_type = tadat$join_select,
+                        use_type = tadat$use_type_batch) 
+      }
       
-      AU_Use_f1 <- AU_Use |>
-        dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+      # Construct the selected columns
+      selected_cols <- c(
+        "TADA.MonitoringLocationIdentifier",
+        "TADA.MonitoringLocationName",
+        "TADA.LongitudeMeasure",
+        "TADA.LatitudeMeasure",
+        "ATTAINS.OrganizationIdentifier",
+        "ATTAINS.ParameterName",
+        "ATTAINS.UseName",
+        "AcuteChronic",
+        "UniqueSpatialCriteria",
+        "Season",
+        "EquationBased",
+        "EquationType", 
+        "TADA.CharacteristicName",
+        "TADA.ResultSampleFractionText",
+        "TADA.MethodSpeciationName",
+        "TADA.ResultMeasure.MeasureUnitCode",
+        "TADA.ResultMeasureValue",
+        "ActivityStartDate",
+        "DateTime",
+        "pH",
+        "Temperature",
+        "Hardness",
+        "MagnitudeValueLower",
+        "MagnitudeValueUpper",
+        "DurationValue",
+        "DurationUnit",
+        "DurationMethod",
+        "FreqValue",
+        "FreqMethod",
+        # Equation coefficient columns
+        "Equation",
+        "hardness_param_1",
+        "hardness_param_2",
+        "hardness_param_3",
+        "hardness_param_4",
+        "hardness_param_5",
+        "hardness_param_6",
+        "pH_param_1",
+        "pH_param_2",
+        "pH_param_3",
+        "pH_param_4"
+      )
       
-      # Filter the AU_MLID based on AU_Use_f1
-      AU_MLID_f1 <- AU_MLID |>
-        dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
-                        AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
-      
-      # Filter the input data based on AU_MLID_f1
-      dat3 <- dat2 |>
-        dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
-                        AU_MLID_f1$TADA.MonitoringLocationIdentifier)
-      
-      # Join the criteria_table_f1 and AU_MLID_f1 to dat2
-      dat4 <- dat3 |>
-        dplyr::left_join(AU_MLID_f1) |>
-        dplyr::left_join(AU_Use_f1, 
-                         by = "JoinToAU.AssessmentUnitIdentifier",
-                         relationship = "many-to-many") |>
-        criteria_join(criteria_table_f1, match_type = tadat$join_select) 
+      if (tadat$use_type_batch %in% "Option 1"){
+        selected_cols <- c(selected_cols[1:4], 
+                           "JoinToAU.AssessmentUnitIdentifier",
+                           selected_cols[5:40])
+      } else {
+        selected_cols <- selected_cols
+      }
       
       # Select columns
-      dat4_1 <- dat4 |>
-        dplyr::select(
-          TADA.MonitoringLocationIdentifier,
-          TADA.MonitoringLocationName,
-          TADA.LongitudeMeasure,
-          TADA.LatitudeMeasure,
-          JoinToAU.AssessmentUnitIdentifier,
-          ATTAINS.OrganizationIdentifier,
-          ATTAINS.ParameterName,
-          ATTAINS.UseName,
-          AcuteChronic,
-          UniqueSpatialCriteria,
-          Season,
-          EquationBased,
-          EquationType, 
-          TADA.CharacteristicName,
-          TADA.ResultSampleFractionText,
-          TADA.MethodSpeciationName,
-          TADA.ResultMeasure.MeasureUnitCode,
-          TADA.ResultMeasureValue,
-          ActivityStartDate,
-          DateTime,
-          pH,
-          Temperature,
-          Hardness,
-          MagnitudeValueLower,
-          MagnitudeValueUpper,
-          DurationValue,
-          DurationUnit,
-          DurationMethod,
-          FreqValue,
-          FreqMethod,
-          # Equation coefficient columns
-          Equation,
-          hardness_param_1,
-          hardness_param_2,
-          hardness_param_3,
-          hardness_param_4,
-          hardness_param_5,
-          hardness_param_6,
-          pH_param_1,
-          pH_param_2,
-          pH_param_3,
-          pH_param_4
-        ) 
+      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -443,17 +472,21 @@ mod_batch_analysis_server <- function(id, tadat){
       tadat$excurse_dat <- dat5
       tadat$excurse_dat_filtered <- tadat$excurse_dat
       
-      # if (nrow(dat5) == 0){
-      #   return()
-      # }
-      
-      # Create a table for the map-table selector
-      site_AU_table <- dat5 |>
-        dplyr::distinct(TADA.MonitoringLocationIdentifier,
-                        TADA.MonitoringLocationName,
-                        TADA.LongitudeMeasure,
-                        TADA.LatitudeMeasure,
-                        JoinToAU.AssessmentUnitIdentifier)
+      if (tadat$use_type_batch %in% "Option 1"){
+        # Create a table for the map-table selector
+        site_AU_table <- dat5 |>
+          dplyr::distinct(TADA.MonitoringLocationIdentifier,
+                          TADA.MonitoringLocationName,
+                          TADA.LongitudeMeasure,
+                          TADA.LatitudeMeasure,
+                          JoinToAU.AssessmentUnitIdentifier)
+      } else {
+        site_AU_table <- dat5 |>
+          dplyr::distinct(TADA.MonitoringLocationIdentifier,
+                          TADA.MonitoringLocationName,
+                          TADA.LongitudeMeasure,
+                          TADA.LatitudeMeasure)
+      }
       
       tadat$site_AU_table <- site_AU_table
       
@@ -751,7 +784,6 @@ mod_batch_analysis_server <- function(id, tadat){
                               loc_select = reactive(tadat$loc_select),
                               tabname = "batch")
     
-    # mod_exceedance_viewer_server("Summary_Exceed_View", tadat)
     
   })
 }

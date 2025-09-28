@@ -55,11 +55,19 @@ mod_map_table_selector_server <- function(id, tadat){
         
         dat <- tadat$site_AU_table
         
-        temp_dat <- dat |>
-          # Create a label column
-          dplyr::mutate(label = paste0("Site ID: ", "<strong>", TADA.MonitoringLocationIdentifier, "</strong>", "<br/>",
-                                       "Site Name: ", "<strong>", TADA.MonitoringLocationName, "</strong>", "<br/>",
-                                       "AU ID: ", "<strong>", JoinToAU.AssessmentUnitIdentifier,  "</strong>", "<br/>")) 
+        if (tadat$use_type_batch %in% "Option 1"){
+          temp_dat <- dat |>
+            # Create a label column
+            dplyr::mutate(label = paste0("Site ID: ", "<strong>", TADA.MonitoringLocationIdentifier, "</strong>", "<br/>",
+                                         "Site Name: ", "<strong>", TADA.MonitoringLocationName, "</strong>", "<br/>",
+                                         "AU ID: ", "<strong>", JoinToAU.AssessmentUnitIdentifier,  "</strong>", "<br/>")) 
+        } else {
+          temp_dat <- dat |>
+            # Create a label column
+            dplyr::mutate(label = paste0("Site ID: ", "<strong>", TADA.MonitoringLocationIdentifier, "</strong>", "<br/>",
+                                         "Site Name: ", "<strong>", TADA.MonitoringLocationName, "</strong>", "<br/>")) 
+        }
+        
         
         labs <- as.list(temp_dat$label)
         

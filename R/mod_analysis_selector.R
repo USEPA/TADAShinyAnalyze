@@ -64,7 +64,7 @@ mod_analysis_selector_server <- function(id, tadat){
     ns <- session$ns
     
     # Update the Select state/tribe menu
-    shiny::observeEvent(tadat$df_mltoau_input, {
+    shiny::observeEvent(tadat$df_mlid_input, {
       shiny::updateSelectizeInput(
         session = session,
         inputId = "state_tribe",
@@ -74,26 +74,66 @@ mod_analysis_selector_server <- function(id, tadat){
       )
     }, ignoreNULL = TRUE)
     
+    # An observe block to determine the use_type
+    shiny::observe({
+      # Case 1: Only data are available
+      if (isTRUE(tadat$files_loaded_mlid) & ( 
+          !isTRUE(tadat$files_loaded_mltoau) | 
+          !isTRUE(tadat$files_loaded_autouse))){
+        use_type <- "Option 2"
+      } else if (isTRUE(input$state_tribe %in% "D")){
+        # Case 2: User select the default criteria table
+        use_type <- "Option 2"
+        # All other cases
+      } else {
+        use_type <- "Option 1"
+      }
+      
+      tadat$use_type_batch <- use_type
+      
+      print("Test 2")
+      print(tadat$use_type_batch)
+      
+    })
+    
     # Update the available uses
-    shiny::observeEvent(c(input$state_tribe, tadat$df_autouse_input), {
+    shiny::observe({
       req(input$state_tribe)
-      req(tadat$df_autouse_input)
+      req(tadat$use_type_batch)
       
-      criteria_table_f1 <- criteria_table |>
-        dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe)
-      
-      # Get the list of available uses from criteria_table_f1
-      criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
-      
-      AU_Use_uses <- unique(tadat$df_autouse_input$ATTAINS.UseName)
-      
-      # Find the intersection
-      available_uses <- base::intersect(criteria_uses, AU_Use_uses)
+      if (tadat$use_type_batch %in% "Option 1"){
+        req(tadat$df_autouse_input)
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe)
+        
+        # Get the list of available uses from criteria_table_f1
+        criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
+        
+        AU_Use_uses <- unique(tadat$df_autouse_input$ATTAINS.UseName)
+        
+        # Find the intersection
+        available_uses <- base::intersect(criteria_uses, AU_Use_uses)
+        
+      } else {
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe)
+        
+        # Get the list of available uses from criteria_table_f1
+        criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
+        
+        print("Test 1")
+        print(criteria_uses)
+        
+        # Find the intersection
+        available_uses <- criteria_uses
+      }
       
       # Save available_uses to tadat
       tadat$available_uses <- available_uses
       
-    }, ignoreNULL = TRUE)
+    })
     
     # Initialize uses_select_re
     shiny::observe({

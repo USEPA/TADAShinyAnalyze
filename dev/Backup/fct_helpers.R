@@ -7,60 +7,43 @@
 #' @noRd
 
 ### A function to join the criteria
-criteria_join <- function(x, y, match_type = "Option 2",
-                          use_type = "Option 1",
-                          filter_type = TRUE){
-
+criteria_join <- function(x, y, match_type = "Option 2", filter_type = TRUE){
+  
   # Add flags to criteria table
   y2 <- y |> dplyr::mutate(Matched = "Yes")
-
-  # Build join expression as a string
-  join_cols <- c(
-    "TADA.CharacteristicName",
-    "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
-  )
-
-  # Conditionally add columns
-  if (use_type == "Option 1") {
-    join_cols <- c(join_cols, "ATTAINS.UseName")
-  }
-
-  if (match_type == "Option 1") {
-    join_cols <- c(join_cols, "TADA.ResultSampleFractionText")
-  }
-
-  # Build and evaluate the join_by expression
-  join_expr <- paste0("dplyr::join_by(", paste(join_cols, collapse = ", "), ")")
-  by <- eval(parse(text = join_expr))
-
-  # Handle x table modifications for Option 2 (no use)
-  # In this case, the final ATTAINS.UseName is from the criteria table
-  if (use_type == "Option 2") {
-    x_col <- names(x)
-    x_col2 <- x_col[!x_col %in% "ATTAINS.UseName"]
-    x2 <- x |> dplyr::select((dplyr::all_of(x_col2)))
-  } else {
-    x2 <- x
-  }
   
-  # Handle y table modifications for Option 2 (no fraction)
-  if (match_type == "Option 2") {
+  if (match_type %in% "Option 1"){  # Join Option 1: Including Fraction
+    by <- dplyr::join_by("TADA.CharacteristicName",
+                         "TADA.ResultSampleFractionText",
+                         "TADA.ResultMeasure.MeasureUnitCode" == "MagnitudeUnit",
+                         "ATTAINS.UseName")
+    
+    x2 <- x |>
+      dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
+      dplyr::mutate(Matched = ifelse(is.na(Matched), "No", Matched))
+    
+    
+  } else { # Join Option 2: No Fraction
+    by <- dplyr::join_by("TADA.CharacteristicName",
+                         "TADA.ResultMeasure.MeasureUnitCode" == "MagnitudeUnit",
+                         "ATTAINS.UseName")
+    
     y_col <- names(y2)
     y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-    y2 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
+    
+    y3 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
+    
+    x2 <- x |>
+      dplyr::left_join(y3, by = by, relationship = "many-to-many") |>
+      dplyr::mutate(Matched = ifelse(is.na(Matched), "No", Matched))
   }
-
-  # Perform the join
-  x3 <- x2 |>
-    dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
-    dplyr::mutate(Matched = ifelse(is.na(Matched), "No", Matched))
-
-  # Apply filter if requested
-  if (filter_type) {
-    x3 <- x3 |> dplyr::filter(Matched == "Yes")
-  }
-
-  return(x3)
+  
+  if (filter_type){ # filter_type = TRUE: Only keep records with Matched as "Yes 
+    x2 <- x2 |>
+      dplyr::filter(Matched %in% "Yes")
+  } 
+  
+  return(x2)
 }
 
 ### A function to join the pH data
@@ -201,10 +184,7 @@ excursion_fun <- function(x){
 # A function to return NA if all values are NA, otherwise
 # DO sum(x, na.rm = TRUE)
 modSum <- function(x){
-  # Handle empty or NULL inputs
-  if(is.null(x) || length(x) == 0){
-    y <- NA
-  } else if(all(is.na(x))){
+  if(all(is.na(x))){
     y <- NA
   } else {
     y <- sum(x, na.rm = TRUE)
@@ -217,18 +197,12 @@ excursion_summary <- function(x, type){
   
   # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
   # "JoinToAU.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
-  
-  x_cols <- names(x)
-  
-  coords_cols <- c("TADA.MonitoringLocationIdentifier",
-                  "TADA.MonitoringLocationName",
-                  "JoinToAU.AssessmentUnitIdentifier",
-                  "TADA.LongitudeMeasure",
-                  "TADA.LatitudeMeasure")
-  
-  dist_cols <- base::intersect(x_cols, coords_cols)
-  
-  coords <- x |> dplyr::distinct(dplyr::across(dplyr::all_of(dist_cols)))
+  coords <- dplyr::distinct(x, 
+                            TADA.MonitoringLocationIdentifier,
+                            TADA.MonitoringLocationName,
+                            JoinToAU.AssessmentUnitIdentifier,
+                            TADA.LongitudeMeasure,
+                            TADA.LatitudeMeasure)
   
   id_cols <- c(
     "ATTAINS.ParameterName",
@@ -250,21 +224,25 @@ excursion_summary <- function(x, type){
     "EquationType"
   )
   
-  if (type %in% "MLid"){
-    id_cols <- c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
-                  "TADA.LongitudeMeasure", "TADA.LatitudeMeasure", "JoinToAU.AssessmentUnitIdentifier",
-                  id_cols)
-  } else if (type %in% "AU") {
-    id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
+  if(type %in% "MLid"){
+    x2 <- x |>
+      dplyr::group_by(dplyr::across(
+        dplyr::all_of(c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
+                        "TADA.LongitudeMeasure", "TADA.LatitudeMeasure", "JoinToAU.AssessmentUnitIdentifier",
+                        id_cols))))
+  } else if (type %in% "AU"){
+    x2 <- x |>
+      dplyr::group_by(dplyr::across(
+        dplyr::all_of(c("JoinToAU.AssessmentUnitIdentifier", id_cols)))
+      )
   } else {
-    id_cols <- id_cols
+    x2 <- x |>
+      dplyr::group_by(dplyr::across(
+        dplyr::all_of(id_cols))
+      )
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
-  id_cols2 <- base::intersect(x_cols, id_cols)
-
-  x2 <- x |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+  x3 <- x2 |>
     dplyr::summarize(Sample_Count = dplyr::n(),
                      Start_Date = min(ActivityStartDate, na.rm = TRUE),
                      End_Date = max(ActivityStartDate, na.rm = TRUE),
@@ -275,7 +253,7 @@ excursion_summary <- function(x, type){
                      .groups = "drop") |>
     dplyr::mutate(Excursion_Percentage = Number_of_Excursions/Sample_Count * 100)
   
-  ans <- list(data = x2, coords = coords)
+  ans <- list(data = x3, coords = coords)
   
   return(ans)
 }
@@ -628,8 +606,6 @@ time_aggregate <- function(x, type){
     dplyr::rename(Date = ActivityStartDate) |>
     dplyr::mutate(DateTime = lubridate::as_datetime(DateTime))
   
-  x_cols <- names(x)
-  
   id_cols <- c(
     "ATTAINS.ParameterName",
     "TADA.CharacteristicName",
@@ -659,12 +635,9 @@ time_aggregate <- function(x, type){
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
-  id_cols2 <- base::intersect(x_cols, id_cols)
-  
   # Collapse duplicate samples at the SAME DateTime (per id_cols) via mean
   collapsed <- x |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(c(id_cols2, "Date", "DateTime")))) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(id_cols, "Date", "DateTime")))) |>
     dplyr::summarise(
       Value                 = if (all(is.na(TADA.ResultMeasureValue))) NA_real_ else mean(TADA.ResultMeasureValue, na.rm = TRUE),
       MagnitudeValueLower   = if (all(is.na(MagnitudeValueLower)))     NA_real_ else mean(MagnitudeValueLower,    na.rm = TRUE),
@@ -683,7 +656,7 @@ time_aggregate <- function(x, type){
   # Daily canonical series (mean of timestamp-collapsed values per day)
   daily <- collapsed |>
     dplyr::filter(DurationUnit %in% c("n-day", "n-season", "n-month")) |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(c(id_cols2, "Date")))) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(c(id_cols, "Date")))) |>
     dplyr::summarise(
       Value                = if (all(is.na(Value))) NA_real_ else mean(Value, na.rm = TRUE),
       MagnitudeValueLower  = if (all(is.na(MagnitudeValueLower))) NA_real_ else mean( MagnitudeValueLower, na.rm = TRUE),
@@ -703,7 +676,7 @@ time_aggregate <- function(x, type){
   result <- dplyr::bind_rows(hourly, daily)
   
   result <- result |>
-    dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), DateTime)
+    dplyr::arrange(dplyr::across(dplyr::all_of(id_cols)), DateTime)
   
   
   return(result)
@@ -716,8 +689,6 @@ duration_cal <- function(x, type, complete_windows = TRUE){
     dplyr::mutate(Window_Start = DateTime) |>
     dplyr::mutate(Window_End = DateTime) |>
     dplyr::mutate(DurationMethod_norm = trimws(tolower(DurationMethod)))
-  
-  x_cols <- names(x)
   
   id_cols <- c(
     "ATTAINS.ParameterName",
@@ -748,14 +719,11 @@ duration_cal <- function(x, type, complete_windows = TRUE){
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
-  id_cols2 <- base::intersect(x_cols, id_cols)
-  
   x_ordered <- x |>
-    dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), Window_Start)
+    dplyr::arrange(dplyr::across(dplyr::all_of(id_cols)), Window_Start)
   
   result <- x_ordered |>
-    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+    dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
     dplyr::mutate(G_ID = dplyr::cur_group_id()) |>
     dplyr::group_modify(function(x2, keys){
       df <- x2 |>
@@ -765,11 +733,6 @@ duration_cal <- function(x, type, complete_windows = TRUE){
       before_per <- window_before_period(df$DurationUnit[1], df$DurationValue[1])
       agg_raw    <- df$DurationMethod[1]
       agg_norm   <- df$DurationMethod_norm[1]
-      
-      # Handle NA in agg_norm
-      if(is.na(agg_norm)) {
-        agg_norm <- "arithmetic mean"  # Default value
-      }
       
       # Measurement windows (compute multiple stats so we can map by label)
       win_mean   <- slider::slide_index_dbl(df$Value, idx, na_mean,  .before = before_per, .complete = complete_windows)
@@ -797,11 +760,10 @@ duration_cal <- function(x, type, complete_windows = TRUE){
       
       # Counts & explicit bounds
       N_in_Window      <- slider::slide_index_int(!is.na(df$Value), idx, sum, .before = before_per, .complete = complete_windows)
-      
       Window_Start_win <- slider::slide_index_vec(idx, idx, 
                                                   function(x){
-                                                    if (length(x) > 0){
-                                                      return(min(x, na.rm = TRUE)) 
+                                                    if (length(x)){
+                                                      return(min(x)) 
                                                     } else {
                                                       return(as.POSIXct(NA))
                                                     }},
@@ -815,13 +777,6 @@ duration_cal <- function(x, type, complete_windows = TRUE){
         TRUE                                            ~ "complete"
       )
       
-      # Handle step_label more safely
-      window_step_value <- tryCatch({
-        step_label(df$DurationUnit[1])
-      }, error = function(e) {
-        "1 day"  # Default value if step_label fails
-      })
-      
       dplyr::tibble(
         G_ID = df$G_ID[1],
         # keep canonical point value for reference
@@ -829,7 +784,7 @@ duration_cal <- function(x, type, complete_windows = TRUE){
         # window metadata
         Window_Start_win   = Window_Start_win,
         Window_End_win     = Window_End_win,
-        Window_Step        = window_step_value,
+        Window_Step        = step_label(df$DurationUnit[1]),
         N_in_Window        = N_in_Window,
         Stat_Method        = agg_raw,
         # windowed measurement
@@ -837,8 +792,8 @@ duration_cal <- function(x, type, complete_windows = TRUE){
         Value_win_min      = Value_win_min,
         Value_win_max      = Value_win_max,
         # thresholds (non-equation)
-        Threshold_Lower_win = if(length(df$MagnitudeValueLower) > 0) df$MagnitudeValueLower[1] else NA_real_,
-        Threshold_Upper_win = if(length(df$MagnitudeValueUpper) > 0) df$MagnitudeValueUpper[1] else NA_real_,
+        Threshold_Lower_win = df$MagnitudeValueLower[1],
+        Threshold_Upper_win = df$MagnitudeValueUpper[1],
         # windowed covariates
         pH_win             = pH_win,
         Temperature_win    = Temperature_win,
@@ -1038,8 +993,6 @@ frequency_summary <- function(x, type){
     "EquationType"
   )
   
-  x_cols <- names(x)
-  
   if (type %in% "MLid"){
     id_cols <- c("TADA.MonitoringLocationIdentifier", "JoinToAU.AssessmentUnitIdentifier", 
                  id_cols)
@@ -1048,9 +1001,6 @@ frequency_summary <- function(x, type){
   } else {
     id_cols <- id_cols
   }
-  
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
-  id_cols2 <- base::intersect(x_cols, id_cols)
   
   # Remove methods not able to be calculated for now
   x2 <- x |>
@@ -1082,7 +1032,7 @@ frequency_summary <- function(x, type){
   # Percentile: Calculate the percentile
   if (nrow(x_P) > 0){
     x_P2 <- x_P |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
       dplyr::mutate(FreqValue = FreqValue/100) |>
       dplyr::mutate(Percentile = quantile(Result_Duration,
                                           probs = first(FreqValue))) |>
@@ -1116,7 +1066,7 @@ frequency_summary <- function(x, type){
   # NumberNotMeeting method
   if (nrow(x4_number) > 0){
     x4_number2 <- x4_number |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
       dplyr::summarize(Sample_Count = dplyr::n(),
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE),                     
@@ -1128,7 +1078,7 @@ frequency_summary <- function(x, type){
       dplyr::mutate(Sufficient_Data = "Yes")
   } else {
     x4_number2 <- x4_number |>
-      dplyr::select(dplyr::all_of(id_cols2)) |>
+      dplyr::select(dplyr::all_of(id_cols)) |>
       dplyr::mutate(
         Sample_Count = NA_integer_,
         Start_Date = as.POSIXct(NA),
@@ -1145,7 +1095,7 @@ frequency_summary <- function(x, type){
   # Percent of samples not meeting Method
   if (nrow(x4_percentage) > 0){
     x4_percentage2 <- x4_percentage |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
       dplyr::summarize(Sample_Count = dplyr::n(),
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE),                     
@@ -1158,7 +1108,7 @@ frequency_summary <- function(x, type){
       dplyr::mutate(Sufficient_Data = "Yes")
   } else {
     x4_percentage2 <- x4_percentage |>
-      dplyr::select(dplyr::all_of(id_cols2)) |>
+      dplyr::select(dplyr::all_of(id_cols)) |>
       dplyr::mutate(
         Sample_Count = NA_integer_,
         Start_Date = as.POSIXct(NA),
@@ -1175,7 +1125,7 @@ frequency_summary <- function(x, type){
   # Percentile Method
   if (nrow(x4_percentile) > 0){
     x4_percentile2 <- x4_percentile |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
       dplyr::summarize(Sample_Count = dplyr::n(),
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE), 
@@ -1188,7 +1138,7 @@ frequency_summary <- function(x, type){
       dplyr::mutate(Sufficient_Data = "Yes")
   } else {
     x4_percentile2 <- x4_percentile |>
-      dplyr::select(dplyr::all_of(id_cols2)) |>
+      dplyr::select(dplyr::all_of(id_cols)) |>
       dplyr::mutate(
         Sample_Count = NA_integer_,
         Start_Date = as.POSIXct(NA),
@@ -1219,8 +1169,8 @@ frequency_summary <- function(x, type){
     nz <- function(z) ifelse(is.na(z), 0L, as.integer(z))
     
     x4_n3years2 <- x4_n3years |>
-      dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), Window_End_win) |>
-      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+      dplyr::arrange(dplyr::across(dplyr::all_of(id_cols)), Window_End_win) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(id_cols))) |>
       dplyr::group_modify(function(df, keys) {
         idx <- df$Window_End_win
         
@@ -1293,7 +1243,7 @@ frequency_summary <- function(x, type){
       dplyr::ungroup()
   } else {
     x4_n3years2 <- x4_n3years |>
-      dplyr::select(dplyr::all_of(id_cols2)) |>
+      dplyr::select(dplyr::all_of(id_cols)) |>
       dplyr::mutate(
         Sample_Count = NA_integer_,
         Start_Date = as.POSIXct(NA),
@@ -1316,21 +1266,13 @@ frequency_summary <- function(x, type){
 # Helper functions for duration and frequency analysis
 window_before_period <- function(unit, value) {
   if (is.na(value)) value <- 1
-  if (is.na(unit)) unit <- "n-day"
   if (unit == "n-hour")   return(lubridate::hours(max(value, 1) - 1))
   if (unit == "n-day")    return(lubridate::days(max(value, 1) - 1))
   if (unit == "n-month")  return(lubridate::months(max(value, 1)) - lubridate::days(1))
   if (unit == "n-season") return(lubridate::months(3L * max(value, 1)) - lubridate::days(1))
   lubridate::days(max(value, 1) - 1)
 }
-
-
-step_label <- function(step) {
-  if(is.na(step)) return("1 day")
-  if(step == "n-hour") return("1 hour")
-  return("1 day")
-}
-
+step_label <- function(step) ifelse(step == "n-hour", "1 hour", "1 day")
 na_mean  <- function(x) { x <- x[!is.na(x)]; if (!length(x)) NA_real_ else mean(x) }
 na_min   <- function(x) { x <- x[!is.na(x)]; if (!length(x)) NA_real_ else min(x)  }
 na_max   <- function(x) { x <- x[!is.na(x)]; if (!length(x)) NA_real_ else max(x)  }
