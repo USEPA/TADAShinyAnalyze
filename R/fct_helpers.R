@@ -416,7 +416,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
                "AU" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
                              "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
-               "CG" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
+               "CG" = paste0(#"<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
                paste0(paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"))),
@@ -518,7 +518,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       radius = 8,
       popup = ~paste0(
         "<b>Location:</b> ", TADA.MonitoringLocationName, "<br>",
-        ifelse(type %in% c("AU", "CG"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse(type %in% c("AU"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
         "<b>Use:</b> ", selected_use, "<br>",
         "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
         # "<b>Parameters Exceeding:</b> ", params_exceeding_count, "/", total_params, "<br>",
@@ -609,7 +609,7 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
       radius = ~pmin(sqrt(num_excursions) * 3 + 5, 20),
       popup = ~paste0(
         "<b>Location:</b> ", TADA.MonitoringLocationName, "<br>",
-        ifelse(type %in% c("AU", "CG"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse(type %in% c("AU"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
         "<b>Parameter:</b> ", selected_param, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
         # "<b>Total Excursions:</b> ", num_excursions, "<br>",

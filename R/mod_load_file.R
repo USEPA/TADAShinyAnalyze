@@ -40,12 +40,15 @@ mod_load_file_ui <- function(id) {
         Portal or use the", htmltools::a("TADAShinyApp."
                                          , href = "https://rconnect-public.epa.gov/TADAShiny/"
                                          , target = "_blank")),
-        htmltools::p("Second, upload a Monitoring Location to AU crosswalk table (Step 1b)."),
-        htmltools::p("Third, upload an AU to Designated Uses crosswalk table (Step 1c).
+        htmltools::p("Second, upload a Monitoring Location to AU crosswalk table (Step 1b, optional)."),
+        htmltools::p("Third, upload an AU to Designated Uses crosswalk table (Step 1c, optionl).
         The files for Steps 1b and 1c can be supplied from an organization 
         or generated using the", htmltools::a("TADAShinyJoinToAU App."
             , href = "https://tetratech-wtr-wne.shinyapps.io/TADAShinyJoinToAU/"
             , target = "_blank")),
+        htmltools::p("Users need to at least upload the water 
+        quality data to proceed to the Batch and Custom Analysis tab. If the tables in the Steps 1b or 1c are not available, 
+                     the tool will not match the ATTAINS.UseName from the criteria table to the assessment units."),
         htmltools::h2("1a. Load Water Quality Data File"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
@@ -91,7 +94,7 @@ mod_load_file_ui <- function(id) {
       # instructions column
       shiny::column(
         width = 4,
-        htmltools::h2("1b. Load ML ID to AU ID Crosswalk File"),
+        htmltools::h2("1b. Load ML ID to AU ID Crosswalk File (Optional)"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
           inputId = ns("mltoau_separator"),
@@ -136,7 +139,7 @@ mod_load_file_ui <- function(id) {
       # instructions column
       shiny::column(
         width = 4,
-        htmltools::h2("1c. Load AU ID to Uses Crosswalk File"),
+        htmltools::h2("1c. Load AU ID to Uses Crosswalk File (Optional)"),
         htmltools::h3("Select file parameters"),
         shiny::radioButtons(
           inputId = ns("autouse_separator"),

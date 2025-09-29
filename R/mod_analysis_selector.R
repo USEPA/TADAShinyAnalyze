@@ -15,6 +15,10 @@ mod_analysis_selector_ui <- function(id) {
       column(
         width = 12,
         htmltools::p("Determine the spatial unit, state/tribe of the criteria, and the uses included in the analysis."),
+        htmltools::p("If only Water Quality Data File is available 
+                     or if users select the EPA 304(a) option in the 'Select state/tribe of the criteria',
+                     The AU option would not be available for the 'Batch Analyzed by the spatial unit'. In this case, 
+                     the tool will not match the ATTAINS.UseName from the criteria table to the assessment units.")
       )
     ),
     fluidRow(

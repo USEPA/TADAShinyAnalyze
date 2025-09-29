@@ -35,7 +35,12 @@ mod_excursion_viewer_server <- function(id, summary_dat){
 
       dat <- dat |> 
         dplyr::mutate(Excursion_Percentage = Excursion_Percentage/100) |>
-        dplyr::mutate(Duration_Percentage = Duration_Percentage/100)
+        dplyr::mutate(Duration_Percentage = Duration_Percentage/100) |>
+        # Recode the organization names
+        dplyr::left_join(org, by = "ATTAINS.OrganizationIdentifier") |>
+        dplyr::select(-ATTAINS.OrganizationIdentifier) |>
+        dplyr::rename(ATTAINS.OrganizationIdentifier = `Display Name`) |>
+        dplyr::relocate(ATTAINS.OrganizationIdentifier, .before = "ATTAINS.ParameterName")
 
       output$excurse_table <- DT::renderDT(
         DT::datatable(
