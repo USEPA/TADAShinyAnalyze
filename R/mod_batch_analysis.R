@@ -204,7 +204,10 @@ mod_batch_analysis_server <- function(id, tadat){
                            relationship = "many-to-many") |>
           criteria_join(criteria_table_f1, 
                         match_type = tadat$join_select,
-                        use_type = tadat$use_type_batch) 
+                        use_type = tadat$use_type_batch) |>
+          # Remove NA in TADA.ResultMeasureValue and DateTime
+          tidyr::drop_na(TADA.ResultMeasureValue) |>
+          tidyr::drop_na(DateTime)
         
       } else {
         
@@ -216,7 +219,10 @@ mod_batch_analysis_server <- function(id, tadat){
         dat4 <- dat2 |>
           criteria_join(criteria_table_f1, 
                         match_type = tadat$join_select,
-                        use_type = tadat$use_type_batch) 
+                        use_type = tadat$use_type_batch) |>
+          # Remove NA in TADA.ResultMeasureValue and DateTime
+          tidyr::drop_na(TADA.ResultMeasureValue) |>
+          tidyr::drop_na(DateTime)
       }
       
       # Construct the selected columns

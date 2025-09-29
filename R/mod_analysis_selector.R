@@ -91,9 +91,6 @@ mod_analysis_selector_server <- function(id, tadat){
       
       tadat$use_type_batch <- use_type
       
-      print("Test 2")
-      print(tadat$use_type_batch)
-      
     })
     
     # Update the available uses
@@ -122,9 +119,6 @@ mod_analysis_selector_server <- function(id, tadat){
         
         # Get the list of available uses from criteria_table_f1
         criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
-        
-        print("Test 1")
-        print(criteria_uses)
         
         # Find the intersection
         available_uses <- criteria_uses

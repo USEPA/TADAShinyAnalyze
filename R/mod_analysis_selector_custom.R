@@ -75,37 +75,84 @@ mod_analysis_selector_custom_server <- function(id, tadat){
       )
     }, ignoreNULL = TRUE)
     
-    # Update the available uses
-    shiny::observeEvent(c(input$state_tribe_custom, tadat$df_autouse_input), {
+    # An observe block to determine the use_type
+    shiny::observe({
+      # Case 1: Only data are available
+      if (isTRUE(tadat$files_loaded_mlid) & ( 
+        !isTRUE(tadat$files_loaded_mltoau) | 
+        !isTRUE(tadat$files_loaded_autouse))){
+        use_type <- "Option 2"
+      } else if (isTRUE(input$state_tribe_custom %in% "D")){
+        # Case 2: User select the default criteria table
+        use_type <- "Option 2"
+        # All other cases
+      } else {
+        use_type <- "Option 1"
+      }
+      
+      tadat$use_type_custom <- use_type
+      
+      print("tadat$use_type_custom")
+      print(tadat$use_type_custom)
+      
+    })
+    
+    # Update the available uses when state/tribe changes
+    shiny::observeEvent(c(input$state_tribe_custom, tadat$use_type_custom), {
       req(input$state_tribe_custom)
-      req(tadat$df_autouse_input)
+      req(tadat$use_type_custom)
       
-      criteria_table_f1 <- criteria_table |>
-        dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe_custom)
-      
-      # Get the list of available uses from criteria_table_f1
-      criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
-      
-      AU_Use_uses <- unique(tadat$df_autouse_input$ATTAINS.UseName)
-      
-      # Find the intersection
-      available_uses <- base::intersect(criteria_uses, AU_Use_uses)
+      if (tadat$use_type_custom %in% "Option 1"){
+        req(tadat$df_autouse_input)
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe_custom)
+        
+        # Get the list of available uses from criteria_table_f1
+        criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
+        
+        AU_Use_uses <- unique(tadat$df_autouse_input$ATTAINS.UseName)
+        
+        # Find the intersection
+        available_uses <- base::intersect(criteria_uses, AU_Use_uses)
+        
+      } else {
+        
+        criteria_table_f1 <- criteria_table |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe_custom)
+        
+        # Get the list of available uses from criteria_table_f1
+        criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
+        
+        # Find the intersection
+        available_uses <- criteria_uses
+        
+      }
       
       # Save available_uses to tadat
       tadat$available_uses_custom <- available_uses
       
-    }, ignoreNULL = TRUE)
-    
-    # Initialize uses_select_re
-    shiny::observe({
-      req(tadat$available_uses_custom)
-      if (is.null(tadat$uses_select_re_custom)) {
-        tadat$uses_select_re_custom <- if(isolate(input$uses_all_custom)) {
-          tadat$available_uses_custom
+      # Reset uses selection when state/tribe changes
+      if (input$uses_all_custom) {
+        tadat$uses_select_re_custom <- available_uses
+      } else {
+        # Keep only uses that are still available
+        current_uses <- isolate(tadat$uses_select_re_custom)
+        if (!is.null(current_uses) && length(current_uses) > 0) {
+          valid_uses <- intersect(current_uses, available_uses)
+          tadat$uses_select_re_custom <- if(length(valid_uses) > 0) valid_uses else available_uses[1]
         } else {
-          character(0)
+          tadat$uses_select_re_custom <- if(length(available_uses) > 0) available_uses[1] else character(0)
         }
       }
+      
+      # Update the UI
+      shinyWidgets::updateVirtualSelect(
+        session = session,
+        inputId = "uses_select_custom",
+        choices = sort(available_uses),
+        selected = tadat$uses_select_re_custom
+      )
     })
     
     # Handle checkbox changes
@@ -124,23 +171,34 @@ mod_analysis_selector_custom_server <- function(id, tadat){
         )
       } else {
         shinyjs::enable("uses_select_custom")
+        # When unchecking, maintain current selection if valid, otherwise select first
+        if (!is.null(tadat$uses_select_re_custom) && length(tadat$uses_select_re_custom) > 0) {
+          selected_uses <- tadat$uses_select_re_custom
+        } else if (length(tadat$available_uses_custom) > 0) {
+          selected_uses <- tadat$available_uses_custom[1]
+        } else {
+          selected_uses <- character(0)
+        }
+        
         shinyWidgets::updateVirtualSelect(
           session = session,
           inputId = "uses_select_custom",
           choices = sort(tadat$available_uses_custom),
-          selected = tadat$uses_select_re_custom  # Maintain current selection
+          selected = selected_uses
         )
-        # Don't update tadat$uses_select_re here
+        tadat$uses_select_re_custom <- selected_uses
       }
-    }, ignoreInit = FALSE)
+    }, ignoreInit = TRUE)
     
     # Handle uses_select changes separately
     shiny::observeEvent(input$uses_select_custom, {
-      # Only update when checkbox is unchecked AND uses_select is not disabled
-      if (!input$uses_all_custom && !is.null(input$uses_select_custom)) {
-        tadat$uses_select_re_custom <- input$uses_select_custom
+      # Only update when checkbox is unchecked
+      if (!input$uses_all_custom) {
+        if (!is.null(input$uses_select_custom) && length(input$uses_select_custom) > 0) {
+          tadat$uses_select_re_custom <- input$uses_select_custom
+        }
       }
-    }, ignoreNULL = FALSE)  # Important: Allow empty selections
+    }, ignoreNULL = FALSE)
     
     ### Save the selected loc_select, state_tribe and uses to tadat
     shiny::observe({
@@ -153,6 +211,6 @@ mod_analysis_selector_custom_server <- function(id, tadat){
 
 ## To be copied in the UI
 # mod_analysis_selector_custom_ui("analysis_selector_custom_1")
-    
+
 ## To be copied in the server
 # mod_analysis_selector_custom_server("analysis_selector_custom_1")
