@@ -75,30 +75,77 @@ mod_analysis_selector_server <- function(id, tadat){
     }, ignoreNULL = TRUE)
     
     # An observe block to determine the use_type
+    # An observe block to determine the use_type
     shiny::observe({
-      # Case 1: Only data are available
-      if (isTRUE(tadat$files_loaded_mlid) & ( 
-          !isTRUE(tadat$files_loaded_mltoau) | 
-          !isTRUE(tadat$files_loaded_autouse))){
+      # Check if all three files are loaded
+      if (isTRUE(tadat$files_loaded_mlid) && 
+          isTRUE(tadat$files_loaded_mltoau) && 
+          isTRUE(tadat$files_loaded_autouse)) {
+        # All files are loaded - check if user selected default criteria
+        if (isTRUE(input$state_tribe %in% "D")) {
+          use_type <- "Option 2"  # Default criteria selected
+        } else {
+          use_type <- "Option 1"  # Use crosswalk files
+        }
+      } else if (isTRUE(tadat$files_loaded_mlid)) {
+        # Only main file is loaded, crosswalk files missing or incomplete
         use_type <- "Option 2"
-      } else if (isTRUE(input$state_tribe %in% "D")){
-        # Case 2: User select the default criteria table
-        use_type <- "Option 2"
-        # All other cases
       } else {
-        use_type <- "Option 1"
+        # No files loaded yet
+        use_type <- "Option 2"
       }
       
       tadat$use_type_batch <- use_type
       
+      print(paste("use_type_batch:", tadat$use_type_batch))
+      print(paste("files loaded - mlid:", tadat$files_loaded_mlid, 
+                  "mltoau:", tadat$files_loaded_mltoau, 
+                  "autouse:", tadat$files_loaded_autouse))
     })
     
-    # Update the available uses
-    shiny::observe({
+    # Update the loc_select choices based on use_type
+    shiny::observeEvent(tadat$use_type_batch, {
+      if (tadat$use_type_batch %in% "Option 2") {
+        # Remove AU option when Option 2
+        choices <- c("Monitoring Location ID" = "MLid")
+        
+        # Check if current selection is AU and change it to MLid
+        current_selection <- isolate(input$loc_select)
+        if (!is.null(current_selection) && current_selection %in% "AU") {
+          selected <- "MLid"
+        } else if (!is.null(current_selection) && current_selection %in% "MLid") {
+          selected <- current_selection
+        } else {
+          selected <- "MLid"
+        }
+      } else {
+        # Include AU option when Option 1
+        choices <- c("Monitoring Location ID" = "MLid",
+                     "Assessment Unit" = "AU")
+        
+        # Keep current selection if valid
+        current_selection <- isolate(input$loc_select)
+        if (!is.null(current_selection) && current_selection %in% c("MLid", "AU")) {
+          selected <- current_selection
+        } else {
+          selected <- "MLid"
+        }
+      }
+      
+      shiny::updateRadioButtons(
+        session = session,
+        inputId = "loc_select",
+        choices = choices,
+        selected = selected
+      )
+    })
+    
+    # Update the available uses 
+    shiny::observeEvent(c(input$state_tribe, tadat$use_type_batch), {
       req(input$state_tribe)
       req(tadat$use_type_batch)
       
-      if (tadat$use_type_batch %in% "Option 1"){
+      if (tadat$use_type_batch == "Option 1"){
         req(tadat$df_autouse_input)
         
         criteria_table_f1 <- criteria_table |>
@@ -126,6 +173,28 @@ mod_analysis_selector_server <- function(id, tadat){
       
       # Save available_uses to tadat
       tadat$available_uses <- available_uses
+      
+      # Reset uses selection when state/tribe changes
+      if (input$uses_all) {
+        tadat$uses_select_re <- available_uses
+      } else {
+        # Keep only uses that are still available
+        current_uses <- isolate(tadat$uses_select_re)
+        if (!is.null(current_uses) && length(current_uses) > 0) {
+          valid_uses <- intersect(current_uses, available_uses)
+          tadat$uses_select_re <- if(length(valid_uses) > 0) valid_uses else available_uses[1]
+        } else {
+          tadat$uses_select_re <- if(length(available_uses) > 0) available_uses[1] else character(0)
+        }
+      }
+      
+      # Update the UI
+      shinyWidgets::updateVirtualSelect(
+        session = session,
+        inputId = "uses_select",
+        choices = sort(available_uses),
+        selected = tadat$uses_select_re
+      )
       
     })
     

@@ -76,25 +76,83 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     }, ignoreNULL = TRUE)
     
     # An observe block to determine the use_type
+    shiny::observeEvent(list(tadat$df_mlid_input, tadat$files_loaded_mlid), {
+      if (isTRUE(tadat$files_loaded_mlid)) {
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "state_tribe_custom",
+          options = list(placeholder = "Select the state/tribe", maxItems = 1),
+          selected = character(0),
+          choices = org_options
+        )
+      }
+    }, ignoreNULL = TRUE)
+    
+    # An observe block to determine the use_type
     shiny::observe({
-      # Case 1: Only data are available
-      if (isTRUE(tadat$files_loaded_mlid) & ( 
-        !isTRUE(tadat$files_loaded_mltoau) | 
-        !isTRUE(tadat$files_loaded_autouse))){
+      # Check if all three files are loaded
+      if (isTRUE(tadat$files_loaded_mlid) && 
+          isTRUE(tadat$files_loaded_mltoau) && 
+          isTRUE(tadat$files_loaded_autouse)) {
+        # All files are loaded - check if user selected default criteria
+        if (isTRUE(input$state_tribe_custom %in% "D")) {
+          use_type <- "Option 2"  # Default criteria selected
+        } else {
+          use_type <- "Option 1"  # Use crosswalk files
+        }
+      } else if (isTRUE(tadat$files_loaded_mlid)) {
+        # Only main file is loaded, crosswalk files missing or incomplete
         use_type <- "Option 2"
-      } else if (isTRUE(input$state_tribe_custom %in% "D")){
-        # Case 2: User select the default criteria table
-        use_type <- "Option 2"
-        # All other cases
       } else {
-        use_type <- "Option 1"
+        # No files loaded yet
+        use_type <- "Option 2"
       }
       
       tadat$use_type_custom <- use_type
       
-      print("tadat$use_type_custom")
-      print(tadat$use_type_custom)
+      print(paste("use_type_custom:", tadat$use_type_custom))
+      print(paste("files loaded - mlid:", tadat$files_loaded_mlid, 
+                  "mltoau:", tadat$files_loaded_mltoau, 
+                  "autouse:", tadat$files_loaded_autouse))
+    })
+    
+    # Update the loc_select_custom choices based on use_type
+    shiny::observeEvent(tadat$use_type_custom, {
+      if (tadat$use_type_custom %in% "Option 2") {
+        # Remove AU option when Option 2
+        choices <- c("Monitoring Location ID" = "MLid",
+                     "Custom Grouping (Use the following map-table selector to select sites to group)" = "CG")
+        
+        # Check if current selection is AU and change it to MLid
+        current_selection <- isolate(input$loc_select_custom)
+        if (!is.null(current_selection) && current_selection %in% "AU") {
+          selected <- "MLid"
+        } else if (!is.null(current_selection) && current_selection %in% c("MLid", "CG")) {
+          selected <- current_selection
+        } else {
+          selected <- "MLid"
+        }
+      } else {
+        # Include AU option when Option 1
+        choices <- c("Monitoring Location ID" = "MLid",
+                     "Assessment Unit" = "AU",
+                     "Custom Grouping (Use the following map-table selector to select sites to group)" = "CG")
+        
+        # Keep current selection if valid
+        current_selection <- isolate(input$loc_select_custom)
+        if (!is.null(current_selection) && current_selection %in% c("MLid", "AU", "CG")) {
+          selected <- current_selection
+        } else {
+          selected <- "MLid"
+        }
+      }
       
+      shiny::updateRadioButtons(
+        session = session,
+        inputId = "loc_select_custom",
+        choices = choices,
+        selected = selected
+      )
     })
     
     # Update the available uses when state/tribe changes

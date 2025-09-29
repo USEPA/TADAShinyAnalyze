@@ -135,193 +135,249 @@ mod_batch_analysis_server <- function(id, tadat){
     # Run the Batch_Select
     mod_analysis_selector_server("Batch_Select", tadat)
     
+    # Clear all dependent data immediately when state/tribe or uses change
+    shiny::observeEvent(c(tadat$state_tribe, tadat$uses_select_re), {
+      # Clear all analysis results
+      tadat$site_AU_table <- NULL
+      tadat$available_param_num <- NULL
+      tadat$exceed_summary <- NULL
+      tadat$exceed_summary_f <- NULL
+      tadat$duration_table <- NULL
+      tadat$excurse_dat <- NULL
+      tadat$excurse_dat_filtered <- NULL
+      tadat$excurse_summary <- NULL
+      tadat$excursion_summary2 <- NULL
+      
+      # Clear intermediate data
+      tadat$dat_yes <- NULL
+      tadat$dat_no <- NULL
+      tadat$dat_match <- NULL
+      
+      # # Reset the filtered crosswalk
+      # if (!is.null(tadat$df_mltoau_input)) {
+      #   tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
+      #     dplyr::filter(Needs_Review == "No")
+      # } else {
+      #   tadat$df_mltoau_input_f <- NULL
+      # }
+    }, priority = 100)
+    
     # Run Barch_Data_Viewer
     mod_analysis_data_viewer_server("Batch_Data_Viewer", tadat)
     
-    ### Remove records need to be reviewed in tadat$df_mltoau_input
-    shiny::observeEvent(tadat$df_mltoau_input, {
-      tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
-        dplyr::filter(Needs_Review == "No")
-    })
+    # ### Remove records need to be reviewed in tadat$df_mltoau_input
+    # shiny::observe({
+    #   # Only proceed if we need the crosswalk (Option 1)
+    #   if (!is.null(tadat$use_type_batch) && tadat$use_type_batch == "Option 1") {
+    #     if (!is.null(tadat$df_mltoau_input)) {
+    #       tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
+    #         dplyr::filter(Needs_Review == "No")
+    #     } else {
+    #       tadat$df_mltoau_input_f <- NULL
+    #     }
+    #   } else {
+    #     # Clear if not using Option 1
+    #     tadat$df_mltoau_input_f <- NULL
+    #   }
+    # })
+    
+    # shiny::observeEvent(tadat$df_mltoau_input, {
+    #   tadat$df_mltoau_input <- tadat$df_mltoau_input |>
+    #     dplyr::filter(Needs_Review == "No")
+    # })
     
     shiny::observe({
       shiny::req(tadat$df_mlid_input, tadat$use_type_batch,
                  tadat$loc_select, tadat$state_tribe, tadat$uses_select_re, tadat$join_select)
       
-      ### Get the input data and convert ActivityStartDateTime to dateTime
-      dat <- tadat$df_mlid_input
-      dat <- dat |>
-        dplyr::mutate(ActivityStartDateTime = 
-                        suppressWarnings(
-                          lubridate::parse_date_time(ActivityStartDateTime, 
-                                                     orders = c("ymd HMS", "ymd HM", "ymd")))
-        ) |>
-        dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
-        dplyr::mutate(DateTime = ActivityStartDateTime) |>
-        # Remove NA in TADA.ResultMeasureValue and DateTime
-        tidyr::drop_na(TADA.ResultMeasureValue) |>
-        tidyr::drop_na(DateTime)
+      # Check if uses are selected, if not, don't proceed
+      if (is.null(tadat$uses_select_re) || length(tadat$uses_select_re) == 0) {
+        tadat$dat_yes <- NULL
+        tadat$dat_no <- NULL
+        tadat$site_AU_table <- NULL
+        tadat$available_param_num <- NULL
+        return()
+      }
       
-      ### Step 1: Join pH, Temperature, and Hardness data
-      dat2 <- dat |> 
-        pH_fun() |>
-        Temperature_fun() |>
-        hardness_fun()
-      
-      ### Step 2: Join the criteria table
-      
-      if (tadat$use_type_batch %in% "Option 1"){
-        req(tadat$df_mltoau_input_f, tadat$df_autouse_input)
-        
-        criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
-          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
-        
-        # Filter the AU_Use based on available_uses_s
-        AU_Use <- tadat$df_autouse_input
-        AU_MLID <- tadat$df_mltoau_input_f |>
-          dplyr::mutate(TADA.MonitoringLocationIdentifier = 
-                          stringr::str_to_upper(MonitoringLocationIdentifier))
-        
-        AU_Use_f1 <- AU_Use |>
-          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
-        
-        # Filter the AU_MLID based on AU_Use_f1
-        AU_MLID_f1 <- AU_MLID |>
-          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
-                          AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
-        
-        # Filter the input data based on AU_MLID_f1
-        dat3 <- dat2 |>
-          dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
-                          AU_MLID_f1$TADA.MonitoringLocationIdentifier)
-        
-        # Join the criteria_table_f1 and AU_MLID_f1 to dat2
-        dat4 <- dat3 |>
-          dplyr::left_join(AU_MLID_f1) |>
-          dplyr::left_join(AU_Use_f1, 
-                           by = "JoinToAU.AssessmentUnitIdentifier",
-                           relationship = "many-to-many") |>
-          criteria_join(criteria_table_f1, 
-                        match_type = tadat$join_select,
-                        use_type = tadat$use_type_batch) |>
+      isolate({
+        ### Get the input data and convert ActivityStartDateTime to dateTime
+        dat <- tadat$df_mlid_input
+        dat <- dat |>
+          dplyr::mutate(ActivityStartDateTime = 
+                          suppressWarnings(
+                            lubridate::parse_date_time(ActivityStartDateTime, 
+                                                       orders = c("ymd HMS", "ymd HM", "ymd")))
+          ) |>
+          dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
+          dplyr::mutate(DateTime = ActivityStartDateTime) |>
           # Remove NA in TADA.ResultMeasureValue and DateTime
           tidyr::drop_na(TADA.ResultMeasureValue) |>
           tidyr::drop_na(DateTime)
         
-      } else {
+        ### Step 1: Join pH, Temperature, and Hardness data
+        dat2 <- dat |> 
+          pH_fun() |>
+          Temperature_fun() |>
+          hardness_fun()
         
-        criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
-          dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+        ### Step 2: Join the criteria table
         
-        # Join the criteria_table_f1 and AU_MLID_f1 to dat2
-        dat4 <- dat2 |>
-          criteria_join(criteria_table_f1, 
-                        match_type = tadat$join_select,
-                        use_type = tadat$use_type_batch) |>
-          # Remove NA in TADA.ResultMeasureValue and DateTime
-          tidyr::drop_na(TADA.ResultMeasureValue) |>
-          tidyr::drop_na(DateTime)
-      }
-      
-      # Construct the selected columns
-      selected_cols <- c(
-        "TADA.MonitoringLocationIdentifier",
-        "TADA.MonitoringLocationName",
-        "TADA.LongitudeMeasure",
-        "TADA.LatitudeMeasure",
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName",
-        "ATTAINS.UseName",
-        "AcuteChronic",
-        "UniqueSpatialCriteria",
-        "Season",
-        "EquationBased",
-        "EquationType", 
-        "TADA.CharacteristicName",
-        "TADA.ResultSampleFractionText",
-        "TADA.MethodSpeciationName",
-        "TADA.ResultMeasure.MeasureUnitCode",
-        "TADA.ResultMeasureValue",
-        "ActivityStartDate",
-        "DateTime",
-        "pH",
-        "Temperature",
-        "Hardness",
-        "MagnitudeValueLower",
-        "MagnitudeValueUpper",
-        "DurationValue",
-        "DurationUnit",
-        "DurationMethod",
-        "FreqValue",
-        "FreqMethod",
-        # Equation coefficient columns
-        "Equation",
-        "hardness_param_1",
-        "hardness_param_2",
-        "hardness_param_3",
-        "hardness_param_4",
-        "hardness_param_5",
-        "hardness_param_6",
-        "pH_param_1",
-        "pH_param_2",
-        "pH_param_3",
-        "pH_param_4"
-      )
-      
-      if (tadat$use_type_batch %in% "Option 1"){
-        selected_cols <- c(selected_cols[1:4], 
-                           "JoinToAU.AssessmentUnitIdentifier",
-                           selected_cols[5:40])
-      } else {
-        selected_cols <- selected_cols
-      }
-      
-      # Select columns
-      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
-      
-      ### Step 3: Separate the dataset based on if criteria exist
-      dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
-      dat_yes <- dat4_1 |> 
-        dplyr::filter(EquationBased %in% "Yes") |>
-        # Reove Additional Information in the EquationType for now
-        dplyr::filter(!EquationType %in% "Additional Information")
-      
-      dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
-      
-      # Save the data
-      tadat$dat_yes <- dat_yes
-      tadat$dat_no <- dat_no
-      
-      # Count available parameter
-      dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
-        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-                        TADA.ResultMeasure.MeasureUnitCode)
-      
-      # Get the sample size
-      dat_viewer_count_num <- nrow(dat_match)
-      
-      # # Get the parameter that is not in dat_match, but with the same parameter names
-      # if (tadat$join_select %in% "Option 1"){
-      #   dat_not_match <- dat_na |>
-      #     dplyr::semi_join(dat_match, by = c("TADA.CharacteristicName",
-      #                                               "TADA.ResultSampleFractionText")) |>
-      #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
-      #   dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-      #                   TADA.ResultMeasure.MeasureUnitCode)
-      # } else {
-      #   dat_not_match <- dat_na |>
-      #     dplyr::semi_join(dat_match , by = c("TADA.CharacteristicName")) |>
-      #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
-      #     dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-      #                     TADA.ResultMeasure.MeasureUnitCode)
-      # }
-      
-      # Save the data
-      tadat$available_param_num <- dat_viewer_count_num
-      tadat$dat_match  <- dat_match
-      # tadat$dat_not_match <- dat_not_match
+        if (tadat$use_type_batch %in% "Option 1"){
+          req(tadat$df_mltoau_input, tadat$df_autouse_input)
+          
+          criteria_table_f1 <- criteria_table |>
+            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
+            dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+          
+          # Filter the AU_Use based on available_uses_s
+          AU_Use <- tadat$df_autouse_input
+          AU_MLID <- tadat$df_mltoau_input |>
+            dplyr::mutate(TADA.MonitoringLocationIdentifier = 
+                            stringr::str_to_upper(MonitoringLocationIdentifier))
+          
+          AU_Use_f1 <- AU_Use |>
+            dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+          
+          # Filter the AU_MLID based on AU_Use_f1
+          AU_MLID_f1 <- AU_MLID |>
+            dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
+                            AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
+          
+          # Filter the input data based on AU_MLID_f1
+          dat3 <- dat2 |>
+            dplyr::filter(TADA.MonitoringLocationIdentifier %in% 
+                            AU_MLID_f1$TADA.MonitoringLocationIdentifier)
+          
+          # Join the criteria_table_f1 and AU_MLID_f1 to dat2
+          dat4 <- dat3 |>
+            dplyr::left_join(AU_MLID_f1) |>
+            dplyr::left_join(AU_Use_f1, 
+                             by = "JoinToAU.AssessmentUnitIdentifier",
+                             relationship = "many-to-many") |>
+            criteria_join(criteria_table_f1, 
+                          match_type = tadat$join_select,
+                          use_type = tadat$use_type_batch) |>
+            # Remove NA in TADA.ResultMeasureValue and DateTime
+            tidyr::drop_na(TADA.ResultMeasureValue) |>
+            tidyr::drop_na(DateTime)
+          
+        } else {
+          
+          criteria_table_f1 <- criteria_table |>
+            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
+            dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+          
+          # Join the criteria_table_f1 and AU_MLID_f1 to dat2
+          dat4 <- dat2 |>
+            criteria_join(criteria_table_f1, 
+                          match_type = tadat$join_select,
+                          use_type = tadat$use_type_batch) |>
+            # Remove NA in TADA.ResultMeasureValue and DateTime
+            tidyr::drop_na(TADA.ResultMeasureValue) |>
+            tidyr::drop_na(DateTime)
+        }
+        
+        # Construct the selected columns
+        selected_cols <- c(
+          "TADA.MonitoringLocationIdentifier",
+          "TADA.MonitoringLocationName",
+          "TADA.LongitudeMeasure",
+          "TADA.LatitudeMeasure",
+          "ATTAINS.OrganizationIdentifier",
+          "ATTAINS.ParameterName",
+          "ATTAINS.UseName",
+          "AcuteChronic",
+          "UniqueSpatialCriteria",
+          "Season",
+          "EquationBased",
+          "EquationType", 
+          "TADA.CharacteristicName",
+          "TADA.ResultSampleFractionText",
+          "TADA.MethodSpeciationName",
+          "TADA.ResultMeasure.MeasureUnitCode",
+          "TADA.ResultMeasureValue",
+          "ActivityStartDate",
+          "DateTime",
+          "pH",
+          "Temperature",
+          "Hardness",
+          "MagnitudeValueLower",
+          "MagnitudeValueUpper",
+          "DurationValue",
+          "DurationUnit",
+          "DurationMethod",
+          "FreqValue",
+          "FreqMethod",
+          # Equation coefficient columns
+          "Equation",
+          "hardness_param_1",
+          "hardness_param_2",
+          "hardness_param_3",
+          "hardness_param_4",
+          "hardness_param_5",
+          "hardness_param_6",
+          "pH_param_1",
+          "pH_param_2",
+          "pH_param_3",
+          "pH_param_4"
+        )
+        
+        if (tadat$use_type_batch %in% "Option 1"){
+          selected_cols <- c(selected_cols[1:4], 
+                             "JoinToAU.AssessmentUnitIdentifier",
+                             selected_cols[5:40])
+        } else {
+          selected_cols <- selected_cols
+        }
+        
+        # Select columns
+        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+        
+        print("dat4_1")
+        print(dat4_1)
+        
+        ### Step 3: Separate the dataset based on if criteria exist
+        dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
+        dat_yes <- dat4_1 |> 
+          dplyr::filter(EquationBased %in% "Yes") |>
+          # Reove Additional Information in the EquationType for now
+          dplyr::filter(!EquationType %in% "Additional Information")
+        
+        dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
+        
+        # Save the data
+        tadat$dat_yes <- dat_yes
+        tadat$dat_no <- dat_no
+        
+        # Count available parameter
+        dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
+          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+                          TADA.ResultMeasure.MeasureUnitCode)
+        
+        # Get the sample size
+        dat_viewer_count_num <- nrow(dat_match)
+        
+        # # Get the parameter that is not in dat_match, but with the same parameter names
+        # if (tadat$join_select %in% "Option 1"){
+        #   dat_not_match <- dat_na |>
+        #     dplyr::semi_join(dat_match, by = c("TADA.CharacteristicName",
+        #                                               "TADA.ResultSampleFractionText")) |>
+        #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
+        #   dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+        #                   TADA.ResultMeasure.MeasureUnitCode)
+        # } else {
+        #   dat_not_match <- dat_na |>
+        #     dplyr::semi_join(dat_match , by = c("TADA.CharacteristicName")) |>
+        #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
+        #     dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+        #                     TADA.ResultMeasure.MeasureUnitCode)
+        # }
+        
+        # Save the data
+        tadat$available_param_num <- dat_viewer_count_num
+        tadat$dat_match  <- dat_match
+        # tadat$dat_not_match <- dat_not_match
+      })
     })
     
     ### Run the analysis if tadat$custom_raw3 is ready
@@ -496,19 +552,28 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$site_AU_table <- site_AU_table
       
+      print("tadat$site_AU_table")
+      print(tadat$site_AU_table)
+      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
       
-      # # Save the data to tadat
-      # tadat$excurse_summary <- dat6
+      print("dat6")
+      print(dplyr::glimpse(dat6))
       
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
+      print("dat7")
+      print(dplyr::glimpse(dat7))
+      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
+      
+      print("dat8")
+      print(dplyr::glimpse(dat8))
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
@@ -524,6 +589,9 @@ mod_batch_analysis_server <- function(id, tadat){
       ### Step 9. Conduct frequency summary
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select)
       
+      print("dat9")
+      print(dplyr::glimpse(dat9))
+      
       tadat$exceed_summary <- dat9
       
       ### Step 10. Join the data
@@ -535,8 +603,14 @@ mod_batch_analysis_server <- function(id, tadat){
       
       dat10 <- dat6 |> dplyr::left_join(dat9_1)
       
+      print("dat10")
+      print(dplyr::glimpse(dat10))
+      
       ### Step 11. Prepare the output
       dat11 <- dat10 |> simplify_duration_frequency()
+      
+      print("dat11")
+      print(dplyr::glimpse(dat11))
       
       # Save the data to tadat
       tadat$excurse_summary <- dat11
@@ -573,7 +647,7 @@ mod_batch_analysis_server <- function(id, tadat){
             job_id <- tadat$job_id
             df_ml_input <- tadat$df_mlid_input
             df_mltoau_input <- tadat$df_mltoau_input
-            df_mltoau_input_f <- tadat$df_mltoau_input_f
+            # df_mltoau_input_f <- tadat$df_mltoau_input_f
             df_autouse_input <- tadat$df_autouse_input
             df_batch_result <- tadat$excurse_summary
             temp_dir <- tadat$temp_dir
@@ -583,7 +657,7 @@ mod_batch_analysis_server <- function(id, tadat){
                  job_id,
                  df_ml_input,
                  df_mltoau_input,
-                 df_mltoau_input_f,
+                 # df_mltoau_input_f,
                  df_autouse_input,
                  df_batch_result,
                  temp_dir,

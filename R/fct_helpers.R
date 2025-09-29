@@ -220,6 +220,9 @@ excursion_summary <- function(x, type){
   
   x_cols <- names(x)
   
+  print("Test 1")
+  print(x_cols)
+  
   coords_cols <- c("TADA.MonitoringLocationIdentifier",
                   "TADA.MonitoringLocationName",
                   "JoinToAU.AssessmentUnitIdentifier",
@@ -411,8 +414,8 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
                "MLid" = paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
                                "<b>Site Name:</b> ", TADA.MonitoringLocationName, "<br>"),
                "AU" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
-                               "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
-                               "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
+                             "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+                             "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
                "CG" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
                paste0(paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
@@ -651,8 +654,13 @@ time_aggregate <- function(x, type){
   )
   
   if (type %in% "MLid"){
-    id_cols <- c("TADA.MonitoringLocationIdentifier", "JoinToAU.AssessmentUnitIdentifier", 
-                 id_cols)
+    base_id_cols <- c("TADA.MonitoringLocationIdentifier")
+    # Only add JoinToAU if it exists
+    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    } else {
+      id_cols <- c(base_id_cols, id_cols)
+    }
   } else if (type %in% "AU"){
     id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
   } else {
@@ -740,8 +748,13 @@ duration_cal <- function(x, type, complete_windows = TRUE){
   )
   
   if (type %in% "MLid"){
-    id_cols <- c("TADA.MonitoringLocationIdentifier", "JoinToAU.AssessmentUnitIdentifier", 
-                 id_cols)
+    base_id_cols <- c("TADA.MonitoringLocationIdentifier")
+    # Only add JoinToAU if it exists
+    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    } else {
+      id_cols <- c(base_id_cols, id_cols)
+    }
   } else if (type %in% "AU"){
     id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
   } else {
@@ -1041,8 +1054,13 @@ frequency_summary <- function(x, type){
   x_cols <- names(x)
   
   if (type %in% "MLid"){
-    id_cols <- c("TADA.MonitoringLocationIdentifier", "JoinToAU.AssessmentUnitIdentifier", 
-                 id_cols)
+    base_id_cols <- c("TADA.MonitoringLocationIdentifier")
+    # Only add JoinToAU if it exists
+    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    } else {
+      id_cols <- c(base_id_cols, id_cols)
+    }
   } else if (type %in% "AU"){
     id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
   } else {
@@ -1149,7 +1167,8 @@ frequency_summary <- function(x, type){
       dplyr::summarize(Sample_Count = dplyr::n(),
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE),                     
-                       Number_of_Excursions = modSum(Duration_Excursion)) |>
+                       Number_of_Excursions = modSum(Duration_Excursion),
+                       FreqValue = first(FreqValue)) |>
       dplyr::mutate(Excursion_Percentage = Number_of_Excursions/Sample_Count * 100) |>
       dplyr::mutate(Exceedance = ifelse(Excursion_Percentage > FreqValue, 
                                         "Exceed", "Not Exceed")) |>
