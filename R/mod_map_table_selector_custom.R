@@ -13,8 +13,9 @@ mod_map_table_selector_custom_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        htmltools::h4("Choose sites to combine for the analysis"),
+        htmltools::h4("Choose sites for the analysis"),
         htmltools::p("Select the sites on the map or in the table to conduct analysis. Use the checkbox to select all sites"),
+        htmltools::p("If users select 'Custom Gouping' in the 'Custom Analyzed by the spatial unit' menu, selected site will be grouped for the analysis."),
         shiny::checkboxInput(inputId = ns("select_all_checkbox_custom"), label = "Select All Sites")
       )
     ),

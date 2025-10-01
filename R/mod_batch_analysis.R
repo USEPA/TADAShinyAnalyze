@@ -151,7 +151,6 @@ mod_batch_analysis_server <- function(id, tadat){
       # Clear intermediate data
       tadat$dat_yes <- NULL
       tadat$dat_no <- NULL
-      tadat$dat_match <- NULL
       
       # # Reset the filtered crosswalk
       # if (!is.null(tadat$df_mltoau_input)) {
@@ -347,12 +346,13 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$dat_no <- dat_no
         
         # Count available parameter
-        dat_match <- dplyr::bind_rows(dat_yes, dat_no) |>
+        dat_match <- dplyr::bind_rows(dat_yes, dat_no)
+        dat_match2 <- dat_match |>
           dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
                           TADA.ResultMeasure.MeasureUnitCode)
         
         # Get the sample size
-        dat_viewer_count_num <- nrow(dat_match)
+        dat_viewer_count_num <- nrow(dat_match2)
         
         # # Get the parameter that is not in dat_match, but with the same parameter names
         # if (tadat$join_select %in% "Option 1"){
@@ -372,7 +372,7 @@ mod_batch_analysis_server <- function(id, tadat){
         
         # Save the data
         tadat$available_param_num <- dat_viewer_count_num
-        tadat$dat_match  <- dat_match
+        # tadat$dat_match  <- dat_match
         # tadat$dat_not_match <- dat_not_match
       })
     })
@@ -597,9 +597,6 @@ mod_batch_analysis_server <- function(id, tadat){
         # define zipfile name
         filename = function() {
           paste0("Batch_Results_", tadat$default_outfile, ".zip")
-          # paste0("Batch_Results_",
-          #        format(Sys.time(), "%Y%m%d_%H%M%S"),
-          #        ".zip")
         },
         
         # define contents of zipfile
@@ -734,7 +731,7 @@ mod_batch_analysis_server <- function(id, tadat){
           session = session,
           inputId = "parameter_filter",
           choices = params,
-          selected = params  # Select all by default
+          selected = params
         )
       } else {
         # Clear the parameter filter if no data

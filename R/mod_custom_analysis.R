@@ -34,20 +34,12 @@ mod_custom_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        # shiny::checkboxInput(inputId = ns("custom_group"),
-        #                      label = "Group the ML/AU ID for analysis"),
         shiny::selectizeInput(inputId = ns("parameter_filter_custom"),
                               label = "Filter parameter to view the results",
                               choices = NULL,
                               multiple = TRUE)
       )
     ),
-    # fluidRow(
-    #   column(
-    #     width = 12,
-    #     mod_analysis_data_viewer_custom_ui(ns("Custom_Data_Viewer"))
-    #   )
-    # ),
     fluidRow(
       column(
         width = 12,
@@ -302,23 +294,24 @@ mod_custom_analysis_server <- function(id, tadat){
       
       dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
       
-      dat_match <- dat4_1 |>
+      dat_match <- dplyr::bind_rows(dat_yes, dat_no)
+      dat_match2 <- dat_match |>
         dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
                         TADA.ResultMeasure.MeasureUnitCode)
       
-      dat_viewer_count_num <- nrow(dat_match)
+      dat_viewer_count_num <- nrow(dat_match2)
       
       # Create a table for the map-table selector
       if (tadat$use_type_custom %in% "Option 1"){
         # Create a table for the map-table selector
-        site_AU_table <- dat4_1 |>
+        site_AU_table <- dat_match |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
                           TADA.LatitudeMeasure,
                           JoinToAU.AssessmentUnitIdentifier)
       } else {
-        site_AU_table <- dat4_1 |>
+        site_AU_table <- dat_match |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
@@ -327,8 +320,8 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Save the data
       tadat$available_param_num_custom <- dat_viewer_count_num
-      
-      tadat$custom_raw <- dat4_1
+
+      tadat$custom_raw <- dat_match
       
       # tadat$dat_yes_custom <- dat_yes
       # tadat$dat_no_custom <- dat_no
@@ -343,27 +336,30 @@ mod_custom_analysis_server <- function(id, tadat){
     # Filter tadat$custom_raw based on selected monitoring locations
     shiny::observeEvent(tadat$selected_monitoring_locations_custom, {
       req(tadat$custom_raw)
+      req(tadat$selected_monitoring_locations_custom)
+      req(length(tadat$selected_monitoring_locations_custom) > 0)
+
+      # Filter the data based on selected sites
+      tadat$custom_raw2 <- tadat$custom_raw |>
+        dplyr::filter(TADA.MonitoringLocationIdentifier %in% tadat$selected_monitoring_locations_custom)
       
-      # Get selected monitoring locations
-      selected_sites <- tadat$selected_monitoring_locations_custom
-      
-      # If no sites selected, use all sites
-      if (is.null(selected_sites) || length(selected_sites) == 0) {
-        tadat$custom_raw2 <- tadat$custom_raw
-      } else {
-        # Filter the data based on selected sites
-        tadat$custom_raw2 <- tadat$custom_raw |>
-          dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_sites)
-      }
+      params <- sort(unique(tadat$custom_raw2$TADA.CharacteristicName))
       
       # Update parameter filter choices based on filtered data
-      if (!is.null(tadat$custom_raw2) && nrow(tadat$custom_raw2) > 0) {
-        available_params <- unique(tadat$custom_raw2$TADA.CharacteristicName)
+      if (length(params) > 0) {
         shiny::updateSelectizeInput(
           session = session,
           inputId = "parameter_filter_custom",
-          choices = sort(available_params),
-          selected = NULL
+          choices = params,
+          selected = params
+        )
+      } else {
+        # Clear the parameter filter if no data
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "parameter_filter_custom",
+          choices = character(0),
+          selected = character(0)
         )
       }
     }, ignoreNULL = FALSE)
