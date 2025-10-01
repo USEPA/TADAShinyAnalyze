@@ -220,9 +220,6 @@ excursion_summary <- function(x, type){
   
   x_cols <- names(x)
   
-  print("Test 1")
-  print(x_cols)
-  
   coords_cols <- c("TADA.MonitoringLocationIdentifier",
                   "TADA.MonitoringLocationName",
                   "JoinToAU.AssessmentUnitIdentifier",
@@ -405,7 +402,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
       lng = ~TADA.LongitudeMeasure,
       lat = ~TADA.LatitudeMeasure,
       color = ~ifelse(has_exceedance, "black", "black"),
-      fillColor = ~ifelse(has_exceedance, "red", "blue"),
+      fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.7,
       weight = 1,
       radius = 8,
@@ -416,26 +413,20 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
                "AU" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
                              "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
-               "CG" = paste0(#"<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
-                             "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
-               paste0(paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
-                             "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"))),
-        # ifelse(type %in% "MLid", 
-        #        paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
-        #               "<b>Site Name:</b> ", TADA.MonitoringLocationName, "<br>"),
-        #        paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
-        #               "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
-        #               "<b>Sites in AU:</b> ", sites_in_au, "<br>")),
+               "CG" = ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data),
+                             paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
+                                    "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
+                             paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")),
+               paste0(paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"))),
         "<b>Status:</b> ", ifelse(has_exceedance, "Exceeding", "Meeting"), "<br>",
-        # "<b>Parameters Exceeding:</b> ", params_exceeding, "/", total_params, "<br>",
         ifelse(nchar(use_param_exceeding) > 0, 
                paste0("<b>Use-Parameter Exceedances:</b><br>", use_param_exceeding), "")
       )
     ) |>
     leaflet::addLegend(
       position = "bottomright",
-      colors = c("blue", "red"),
-      labels = c("Meeting Criteria", "Exceeding Criteria"),
+      colors = c("#FF6600", "#0066CC"),
+      labels = c("Exceeding Criteria", "Meeting Criteria"),
       title = paste("Status by", ifelse(type %in% "MLid", "Monitoring Location", "Assessment Unit"))
     )
 }
@@ -512,13 +503,14 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       lng = ~TADA.LongitudeMeasure,
       lat = ~TADA.LatitudeMeasure,
       color = ~ifelse(has_exceedance, "black", "black"),
-      fillColor = ~ifelse(has_exceedance, "red", "blue"),
+      fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.7,
       weight = 1,
       radius = 8,
       popup = ~paste0(
-        "<b>Location:</b> ", TADA.MonitoringLocationName, "<br>",
-        ifelse(type %in% c("AU"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data), 
+               paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
         "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
         # "<b>Parameters Exceeding:</b> ", params_exceeding_count, "/", total_params, "<br>",
@@ -527,8 +519,8 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
     ) |>
     leaflet::addLegend(
       position = "bottomright",
-      colors = c("blue", "red"),
-      labels = c("Meeting Criteria", "Exceeding Criteria"),
+      colors = c("#FF6600", "#0066CC"),
+      labels = c("Exceeding Criteria", "Meeting Criteria"),
       title = paste("Use:", selected_use)
     )
 }
@@ -602,14 +594,15 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
     leaflet::addCircleMarkers(
       lng = ~TADA.LongitudeMeasure,
       lat = ~TADA.LatitudeMeasure,
-      color = ~ifelse(has_exceedance, "darkred", "darkblue"),
-      fillColor = ~ifelse(has_exceedance, "red", "blue"),
+      color = ~ifelse(has_exceedance, "black", "black"),
+      fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.6,
       weight = 1,
       radius = ~pmin(sqrt(num_excursions) * 3 + 5, 20),
       popup = ~paste0(
-        "<b>Location:</b> ", TADA.MonitoringLocationName, "<br>",
-        ifelse(type %in% c("AU"), paste0("<b>AU:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data), 
+               paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Parameter:</b> ", selected_param, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
         # "<b>Total Excursions:</b> ", num_excursions, "<br>",
@@ -619,8 +612,8 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
     ) |>
     leaflet::addLegend(
       position = "bottomright",
-      colors = c("blue", "red"),
-      labels = c("Meeting Standard", "Exceeding Standard"),
+      colors = c("#FF6600", "#0066CC"),
+      labels = c("Exceeding Criteria", "Meeting Criteria"),
       title = paste(selected_param, "<br>", selected_use)
     )
 }

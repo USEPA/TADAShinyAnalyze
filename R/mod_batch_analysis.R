@@ -333,9 +333,6 @@ mod_batch_analysis_server <- function(id, tadat){
         # Select columns
         dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
         
-        print("dat4_1")
-        print(dat4_1)
-        
         ### Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
         dat_yes <- dat4_1 |> 
@@ -552,28 +549,16 @@ mod_batch_analysis_server <- function(id, tadat){
       
       tadat$site_AU_table <- site_AU_table
       
-      print("tadat$site_AU_table")
-      print(tadat$site_AU_table)
-      
       ### Step 6: Summarize the data
       dat6 <- dat5 |> 
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
       
-      print("dat6")
-      print(dplyr::glimpse(dat6))
-      
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
-      print("dat7")
-      print(dplyr::glimpse(dat7))
-      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
-      
-      print("dat8")
-      print(dplyr::glimpse(dat8))
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
@@ -589,9 +574,6 @@ mod_batch_analysis_server <- function(id, tadat){
       ### Step 9. Conduct frequency summary
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select)
       
-      print("dat9")
-      print(dplyr::glimpse(dat9))
-      
       tadat$exceed_summary <- dat9
       
       ### Step 10. Join the data
@@ -603,14 +585,8 @@ mod_batch_analysis_server <- function(id, tadat){
       
       dat10 <- dat6 |> dplyr::left_join(dat9_1)
       
-      print("dat10")
-      print(dplyr::glimpse(dat10))
-      
       ### Step 11. Prepare the output
       dat11 <- dat10 |> simplify_duration_frequency()
-      
-      print("dat11")
-      print(dplyr::glimpse(dat11))
       
       # Save the data to tadat
       tadat$excurse_summary <- dat11
