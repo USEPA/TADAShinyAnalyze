@@ -671,8 +671,8 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Filter data to check if there are any results
       filtered_data <- tadat$exceed_summary_custom |>
-        dplyr::filter(TADA.CharacteristicName == input$selected_param,
-                      ATTAINS.UseName == input$selected_use_param)
+        dplyr::filter(TADA.CharacteristicName %in% input$selected_param,
+                      ATTAINS.UseName %in% input$selected_use_param)
       
       # Only create map if filtered data has rows
       if (nrow(filtered_data) > 0) {
@@ -700,14 +700,25 @@ mod_custom_analysis_server <- function(id, tadat){
     # Update dropdown choices
     observe({
       req(tadat$exceed_summary_custom)
-
-      uses <- sort(unique(tadat$exceed_summary_custom$ATTAINS.UseName))  
+      
       params <- sort(unique(tadat$exceed_summary_custom$TADA.CharacteristicName))
-      uses_with_all <- uses 
+      uses <- sort(unique(tadat$exceed_summary_custom$ATTAINS.UseName))  
       
       updateSelectInput(session, "selected_use", choices = uses, selected = uses[1])
       updateSelectInput(session, "selected_param", choices = params, selected = params[1])
-      updateSelectInput(session, "selected_use_param", choices = uses, selected = uses[1])
+    })
+    
+    observe({
+      req(tadat$exceed_summary_custom)
+      req(input$selected_param)
+      
+      # Get the uses after selecting the param
+      filtered_data <- tadat$exceed_summary_custom |>
+        dplyr::filter(TADA.CharacteristicName %in% input$selected_param)
+      
+      use_param <- sort(unique(filtered_data$ATTAINS.UseName))  
+      
+      updateSelectInput(session, "selected_use_param", choices = use_param, selected = use_param[1])
     })
     
     mod_excursion_viewer_server("Summary_View_Custom", 
