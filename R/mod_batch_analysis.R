@@ -205,7 +205,8 @@ mod_batch_analysis_server <- function(id, tadat){
           dplyr::mutate(ActivityStartDateTime = 
                           suppressWarnings(
                             lubridate::parse_date_time(ActivityStartDateTime, 
-                                                       orders = c("ymd HMS", "ymd HM", "ymd")))
+                                                       orders = c("ymd HMS", "ymd HM", 
+                                                                  "ymd", "mdy")))
           ) |>
           dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
           dplyr::mutate(DateTime = ActivityStartDateTime) |>
@@ -604,13 +605,14 @@ mod_batch_analysis_server <- function(id, tadat){
           
           # define file paths
           temp_dir <- tempdir()
-          ml_input_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_ml_input_file.csv"))
-          mltoaus_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file.csv"))
-          # mltoaus_file_f_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_mltoau_input_file_filtered.csv"))
-          autouse_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_copy_autouse_input_file.csv"))
-          batch_result_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_batch_analysis_result.csv"))
-          progress_file_path <- file.path(temp_dir, paste0("TADAShinyAnalyze_prog.rda"))
-          zipfile <- file.path(temp_dir, paste0(tadat$default_outfile, ".zip"))
+          batch_result_path <- file.path(temp_dir, "TADAShinyAnalyze_batch_analysis_result.csv")
+          batch_summary_path <- file.path(temp_dir, "TADAShinyAnalyze_batch_analysis_summary.csv")
+          progress_file_path <- file.path(temp_dir, "TADAShinyAnalyze_prog.rda")
+          
+          # Load the DOCX file
+          batch_docx_source <- app_sys("extdata/ReadMe_Batch.docx")
+          batch_docx_path <- file.path(temp_dir, "ReadMe_Batch.docx")
+          file.copy(batch_docx_source, batch_docx_path)
           
           # function to save tadat values
           write_tadat_file <- function(tadat, filename) {
@@ -618,21 +620,15 @@ mod_batch_analysis_server <- function(id, tadat){
             # define file variables to be saved
             default_outfile <- tadat$default_outfile
             job_id <- tadat$job_id
-            df_ml_input <- tadat$df_mlid_input
-            df_mltoau_input <- tadat$df_mltoau_input
-            # df_mltoau_input_f <- tadat$df_mltoau_input_f
-            df_autouse_input <- tadat$df_autouse_input
-            df_batch_result <- tadat$excurse_summary
+            df_batch_result <- tadat$duration_table
+            df_batch_summary <- tadat$excurse_summary
             temp_dir <- tadat$temp_dir
             
             # save file
             save(default_outfile,
                  job_id,
-                 df_ml_input,
-                 df_mltoau_input,
-                 # df_mltoau_input_f,
-                 df_autouse_input,
                  df_batch_result,
+                 df_batch_summary,
                  temp_dir,
                  file = filename)
           }
@@ -641,25 +637,15 @@ mod_batch_analysis_server <- function(id, tadat){
           write_tadat_file(tadat, progress_file_path)
           
           # write data frames to csv
-          readr::write_csv(x = as.data.frame(tadat$df_ml_input), file = ml_input_file_path)
-          readr::write_csv(x = as.data.frame(tadat$df_mltoau_input), file = mltoaus_file_path)
-          # readr::write_csv(x = as.data.frame(tadat$df_mltoau_input_f), file = mltoaus_file_f_path)
-          readr::write_csv(x = as.data.frame(tadat$df_autouse_input), file = autouse_file_path)
-          readr::write_csv(x = as.data.frame(tadat$excurse_summary), file = batch_result_path)
+          readr::write_csv(x = as.data.frame(tadat$duration_table), file = batch_result_path)
+          readr::write_csv(x = as.data.frame(tadat$excurse_summary), file = batch_summary_path)
           
           
           # zip them
-          utils::zip(zipfile = zipfile,
-                     files = c(ml_input_file_path, 
-                               mltoaus_file_path, 
-                               # mltoaus_file_f_path, 
-                               autouse_file_path, 
-                               batch_result_path, 
-                               progress_file_path),
+          utils::zip(zipfile = file,
+                     files = c(batch_result_path, batch_summary_path, 
+                               progress_file_path, batch_docx_path),
                      flags = "-j")
-          
-          # Copy zip to final destination
-          file.copy(zipfile, file)
         }
       ) # END ~ downloadHandler
       

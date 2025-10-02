@@ -131,7 +131,7 @@ mod_custom_analysis_server <- function(id, tadat){
       tadat$exceed_summary_custom <- NULL
       tadat$exceed_summary_coords_custom <- NULL
       tadat$excurse_dat_custom_filtered <- NULL
-      tadat$duration_table <- NULL
+      tadat$duration_table_custom <- NULL
     }, priority = 100)
     
     # # Run Custom_Data_Viewer
@@ -158,7 +158,8 @@ mod_custom_analysis_server <- function(id, tadat){
         dplyr::mutate(ActivityStartDateTime = 
                         suppressWarnings(
                         lubridate::parse_date_time(ActivityStartDateTime, 
-                                                   orders = c("ymd HMS", "ymd HM", "ymd")))
+                                                   orders = c("ymd HMS", "ymd HM", 
+                                                              "ymd", "mdy")))
                         ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime)
@@ -558,10 +559,10 @@ mod_custom_analysis_server <- function(id, tadat){
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
       
-      tadat$duration_table <- dat8_3
+      tadat$duration_table_custom <- dat8_3
       
       ### Step 9. Conduct frequency summary
-      dat9 <- dat8 |> frequency_summary(type = tadat$loc_select_custom)
+      dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select_custom)
       
       ### Step 10. Join the data
       dat9_1 <- dat9 |>
@@ -583,7 +584,7 @@ mod_custom_analysis_server <- function(id, tadat){
         
         # define zipfile name
         filename = function() {
-          paste0("Custom_Results_", tadat$default_custom_outfile, ".zip")
+          paste0("Custom_Results_", tadat$default_outfile, ".zip")
         },
         
         # define contents of zipfile
@@ -594,13 +595,18 @@ mod_custom_analysis_server <- function(id, tadat){
           custom_summary_path <- file.path(temp_dir, "TADAShinyAnalyze_custom_analysis_summary.csv")
           progress_file_custom_path <- file.path(temp_dir, "TADAShinyAnalyze_custom_prog.rda")
           
+          # Load the DOCX file
+          custom_docx_source <- app_sys("extdata/ReadMe_Custom.docx")
+          custom_docx_path <- file.path(temp_dir, "ReadMe_Custom.docx")
+          file.copy(custom_docx_source, custom_docx_path)
+          
           # function to save tadat values
           write_tadat_file <- function(tadat, filename) {
             
             # define file variables to be saved
             default_outfile <- tadat$default_outfile
             job_id <- tadat$job_id
-            df_custom_result <- tadat$duration_table
+            df_custom_result <- tadat$duration_table_custom
             df_custom_summary <- tadat$exceed_summary_custom
             temp_dir <- tadat$temp_dir
             
@@ -617,13 +623,14 @@ mod_custom_analysis_server <- function(id, tadat){
           write_tadat_file(tadat, progress_file_custom_path)
           
           # write data frames to csv
-          readr::write_csv(x = as.data.frame(tadat$duration_table), file = custom_result_path)
+          readr::write_csv(x = as.data.frame(tadat$duration_table_custom), file = custom_result_path)
           readr::write_csv(x = as.data.frame(tadat$exceed_summary_custom), file = custom_summary_path)
           
           
           # zip them
           utils::zip(zipfile = file,
-                     files = c(custom_result_path, custom_summary_path, progress_file_custom_path),
+                     files = c(custom_result_path, custom_summary_path, 
+                               progress_file_custom_path, custom_docx_path),
                      flags = "-j")
         },
         contentType = "application/zip"
