@@ -637,8 +637,10 @@ mod_batch_analysis_server <- function(id, tadat){
           write_tadat_file(tadat, progress_file_path)
           
           # write data frames to csv
-          readr::write_csv(x = as.data.frame(tadat$duration_table), file = batch_result_path)
-          readr::write_csv(x = as.data.frame(tadat$excurse_summary), file = batch_summary_path)
+          readr::write_csv(x = as.data.frame(tadat$duration_table), 
+                           file = batch_result_path, na = "")
+          readr::write_csv(x = as.data.frame(tadat$excurse_summary), 
+                           file = batch_summary_path, na = "")
           
           
           # zip them

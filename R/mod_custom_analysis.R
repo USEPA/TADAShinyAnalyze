@@ -623,8 +623,10 @@ mod_custom_analysis_server <- function(id, tadat){
           write_tadat_file(tadat, progress_file_custom_path)
           
           # write data frames to csv
-          readr::write_csv(x = as.data.frame(tadat$duration_table_custom), file = custom_result_path)
-          readr::write_csv(x = as.data.frame(tadat$exceed_summary_custom), file = custom_summary_path)
+          readr::write_csv(x = as.data.frame(tadat$duration_table_custom), 
+                           file = custom_result_path, na = "")
+          readr::write_csv(x = as.data.frame(tadat$exceed_summary_custom), 
+                           file = custom_summary_path, na = "")
           
           
           # zip them
