@@ -373,7 +373,7 @@ mod_batch_analysis_server <- function(id, tadat){
         
         # Save the data
         tadat$available_param_num <- dat_viewer_count_num
-        # tadat$dat_match  <- dat_match
+        tadat$dat_match  <- dat_match2
         # tadat$dat_not_match <- dat_not_match
       })
     })
