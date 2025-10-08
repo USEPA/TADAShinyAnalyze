@@ -25,7 +25,7 @@ mod_analysis_selector_ui <- function(id) {
       column(
         width = 6,
         shiny::radioButtons(inputId = ns("loc_select"),
-                            label = "Batch Analyzed by the spatial unit: ",
+                            label = "Batch analyzed by the spatial unit: ",
                             choices = c("Monitoring Location ID" = "MLid",
                                         "Assessment Unit" = "AU"))
       ),

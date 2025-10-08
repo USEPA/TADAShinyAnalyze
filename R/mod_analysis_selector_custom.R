@@ -25,7 +25,7 @@ mod_analysis_selector_custom_ui <- function(id) {
       column(
         width = 6,
         shiny::radioButtons(inputId = ns("loc_select_custom"),
-                            label = "Custom Analyzed by the spatial unit: ",
+                            label = "Custom analyzed by the spatial unit: ",
                             choices = c("Monitoring Location ID" = "MLid",
                                         "Assessment Unit" = "AU",
                                         "Custom Gouping (Use the following map-table selector to select sites to group)" = "CG"))
