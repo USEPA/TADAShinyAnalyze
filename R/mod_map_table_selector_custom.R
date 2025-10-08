@@ -16,7 +16,15 @@ mod_map_table_selector_custom_ui <- function(id) {
         htmltools::h4("Choose sites for the analysis"),
         htmltools::p("Select the sites on the map or in the table to conduct analysis. Use the checkbox to select all sites"),
         htmltools::p("If users select 'Custom Grouping' in the 'Custom Analyzed by the spatial unit' menu, selected site will be grouped for the analysis."),
-        shiny::checkboxInput(inputId = ns("select_all_checkbox_custom"), label = "Select All Sites")
+        htmltools::div(
+          style = "margin-bottom: 30px;",
+          shinyjs::disabled(
+            shiny::actionButton(inputId = ns("select_all_sites"), label = "Select All Sites", shiny::icon("circle-check"),
+                                style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"),
+            shiny::actionButton(inputId = ns("deselect_all_sites"), label = "Deselect All Sites", shiny::icon("circle"),
+                                style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
+          )
+        )
       )
     ),
     fluidRow(
@@ -41,10 +49,6 @@ mod_map_table_selector_custom_server <- function(id, tadat){
     
     # Initialize reactive value for tracking selected indices
     selected_idx <- reactiveVal(integer(0))
-    
-    # Flag to prevent circular updates between checkbox and selection
-    updating_from_checkbox <- reactiveVal(FALSE)
-    updating_checkbox <- reactiveVal(FALSE)
   
     shiny::observe({
       req(tadat$state_tribe_custom, tadat$uses_select_re_custom)
@@ -109,45 +113,45 @@ mod_map_table_selector_custom_server <- function(id, tadat){
       map_selector_custom_proxy   <- leaflet::leafletProxy("map_selector_custom", session = session)
       table_selector_custom_proxy <- DT::dataTableProxy("table_selector_custom", session = session)
       
+      # Activate the action button
+      shiny::observe({
+        shinyjs::toggleState(id = "select_all_sites",
+                             condition = !is.null(tadat$site_AU_table_custom))
+        shinyjs::toggleState(id = "deselect_all_sites",
+                             condition = !is.null(tadat$site_AU_table_custom))
+      })
+      
       # Handle the checkbox
-      observeEvent(input$select_all_checkbox_custom, {
+      observeEvent(input$select_all_sites, {
         req(is.data.frame(tadat$site_AU_table_custom))
         req(nrow(tadat$site_AU_table_custom) > 0)
         
-        # Set flag to prevent circular updates
-        updating_from_checkbox(TRUE)
+        # Select all rows
+        all_rows <- seq_len(nrow(tadat$site_AU_table_custom))
+        selected_idx(all_rows)
+        table_selector_custom_proxy |> DT::selectRows(all_rows)
         
-        if (input$select_all_checkbox_custom) {
-          # Select all rows
-          all_rows <- seq_len(nrow(tadat$site_AU_table_custom))
-          selected_idx(all_rows)
-          table_selector_custom_proxy |> DT::selectRows(all_rows)
-          
-          # Highlight all points on map
-          map_selector_custom_proxy |> leaflet::clearGroup("highlighted_point")
-          map_selector_custom_proxy |>
-            leaflet::addCircleMarkers(
-              lng = tadat$site_AU_table_custom$TADA.LongitudeMeasure,
-              lat = tadat$site_AU_table_custom$TADA.LatitudeMeasure,
-              layerId = paste0(tadat$site_AU_table_custom$TADA.MonitoringLocationIdentifier, "_new"),
-              radius = 9, stroke = TRUE, weight = 1,
-              color = "black", fillColor = "red",
-              fillOpacity = 1, opacity = 0.8,
-              group = "highlighted_point"
-            )
-        } else {
-          # Clear all selections
-          selected_idx(integer(0))
-          table_selector_custom_proxy |> DT::selectRows(numeric(0))
-          map_selector_custom_proxy |> leaflet::clearGroup("highlighted_point")
-        }
+        # Highlight all points on map
+        map_selector_custom_proxy |> leaflet::clearGroup("highlighted_point")
+        map_selector_custom_proxy |>
+          leaflet::addCircleMarkers(
+            lng = tadat$site_AU_table_custom$TADA.LongitudeMeasure,
+            lat = tadat$site_AU_table_custom$TADA.LatitudeMeasure,
+            layerId = paste0(tadat$site_AU_table_custom$TADA.MonitoringLocationIdentifier, "_new"),
+            radius = 9, stroke = TRUE, weight = 1,
+            color = "black", fillColor = "red",
+            fillOpacity = 1, opacity = 0.8,
+            group = "highlighted_point"
+          )
         
-        # Reset flag after a short delay
-        shiny::invalidateLater(100)
-        shiny::observe({
-          updating_from_checkbox(FALSE)
-        })
       }, ignoreInit = TRUE)
+      
+      observeEvent(input$deselect_all_sites, {
+        # Clear all selections
+        selected_idx(integer(0))
+        table_selector_custom_proxy |> DT::selectRows(numeric(0))
+        map_selector_custom_proxy |> leaflet::clearGroup("highlighted_point")
+      })
       
       # DT -> Map: highlight selected points
       observeEvent(input$table_selector_custom_rows_selected, ignoreInit = TRUE, ignoreNULL = FALSE, {
