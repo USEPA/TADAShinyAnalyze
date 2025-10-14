@@ -68,6 +68,9 @@ mod_analysis_selector_custom_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
     
+    # Disable uses_select on initialization since uses_all defaults to TRUE
+    shinyjs::disable("uses_select_custom")
+    
     # Update the Select state/tribe menu
     shiny::observeEvent(tadat$df_mltoau_input, {
       shiny::updateSelectizeInput(

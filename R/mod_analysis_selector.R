@@ -66,6 +66,9 @@ mod_analysis_selector_ui <- function(id) {
 mod_analysis_selector_server <- function(id, tadat){
   moduleServer(id, function(input, output, session){
     ns <- session$ns
+  
+    # Disable uses_select on initialization since uses_all defaults to TRUE
+    shinyjs::disable("uses_select")
     
     # Update the Select state/tribe menu
     shiny::observeEvent(tadat$df_mlid_input, {
@@ -78,7 +81,6 @@ mod_analysis_selector_server <- function(id, tadat){
       )
     }, ignoreNULL = TRUE)
     
-    # An observe block to determine the use_type
     # An observe block to determine the use_type
     shiny::observe({
       # Check if all three files are loaded
@@ -234,9 +236,8 @@ mod_analysis_selector_server <- function(id, tadat){
           session = session,
           inputId = "uses_select",
           choices = sort(tadat$available_uses),
-          selected = tadat$uses_select_re  # Maintain current selection
+          selected = tadat$uses_select_re
         )
-        # Don't update tadat$uses_select_re here
       }
     }, ignoreInit = FALSE)
     
