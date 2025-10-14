@@ -1096,7 +1096,7 @@ frequency_summary <- function(x, type){
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
       dplyr::mutate(FreqValue = FreqValue/100) |>
       dplyr::mutate(Percentile = quantile(Result_Duration,
-                                          probs = first(FreqValue))) |>
+                                          probs = dplyr::first(FreqValue))) |>
       dplyr::mutate(E_Value = Percentile) |>
       dplyr::ungroup()
   } else {
@@ -1161,7 +1161,7 @@ frequency_summary <- function(x, type){
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE),                     
                        Number_of_Excursions = modSum(Duration_Excursion),
-                       FreqValue = first(FreqValue)) |>
+                       FreqValue = dplyr::first(FreqValue)) |>
       dplyr::mutate(Excursion_Percentage = Number_of_Excursions/Sample_Count * 100) |>
       dplyr::mutate(Exceedance = ifelse(Excursion_Percentage > FreqValue, 
                                         "Exceed", "Not Exceed")) |>
@@ -1191,7 +1191,7 @@ frequency_summary <- function(x, type){
       dplyr::summarize(Sample_Count = dplyr::n(),
                        Start_Date = min(Window_End_win, na.rm = TRUE),
                        End_Date = max(Window_End_win, na.rm = TRUE), 
-                       Percentile = first(Percentile),
+                       Percentile = dplyr::first(Percentile),
                        Number_of_Excursions = modSum(Duration_Excursion)) |>
       dplyr::mutate(Exceedance = ifelse(Number_of_Excursions > 0, "Exceed", "Not Exceed")) |>
       dplyr::ungroup() |>
