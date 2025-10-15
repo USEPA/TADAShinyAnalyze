@@ -835,9 +835,7 @@ duration_cal <- function(x, type, complete_windows = TRUE){
         # window metadata
         Window_Start_win   = Window_Start_win,
         Window_End_win     = Window_End_win,
-        Window_Step        = window_step_value,
         N_in_Window        = N_in_Window,
-        Stat_Method        = agg_raw,
         # windowed measurement
         Result_Duration    = Result_Duration,
         Value_win_min      = Value_win_min,
