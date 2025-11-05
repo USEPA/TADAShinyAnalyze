@@ -57,20 +57,21 @@ mod_load_file_ui <- function(id) {
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
-        shiny::fileInput(
-          inputId = ns("mlid_input_file"),
-          label = "Choose file to load:",
-          width = "90%",
-          placeholder = "No file selected.",
-          multiple = FALSE,
-          accept = c(
-            "text/csv",
-            "text/comma-separated-values",
-            "text/tab-separated-values",
-            "text/plain",
-            ".csv", ".tsv", ".txt", ".xlsx"
-          )
-        )
+        shiny::uiOutput(ns("mlid_file_input_ui"))
+        # shiny::fileInput(
+        #   inputId = ns("mlid_input_file"),
+        #   label = "Choose file to load:",
+        #   width = "90%",
+        #   placeholder = "No file selected.",
+        #   multiple = FALSE,
+        #   accept = c(
+        #     "text/csv",
+        #     "text/comma-separated-values",
+        #     "text/tab-separated-values",
+        #     "text/plain",
+        #     ".csv", ".tsv", ".txt", ".xlsx"
+        #   )
+        # )
       ),
       
       # data table column
@@ -102,20 +103,21 @@ mod_load_file_ui <- function(id) {
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
-        shiny::fileInput(
-          inputId = ns("mltoau_input_file"),
-          label = "Choose file to load:",
-          width = "90%",
-          placeholder = "No file selected.",
-          multiple = FALSE,
-          accept = c(
-            "text/csv",
-            "text/comma-separated-values",
-            "text/tab-separated-values",
-            "text/plain",
-            ".csv", ".tsv", ".txt", ".xlsx"
-          )
-        )
+        shiny::uiOutput(ns("mltoau_file_input_ui"))
+        # shiny::fileInput(
+        #   inputId = ns("mltoau_input_file"),
+        #   label = "Choose file to load:",
+        #   width = "90%",
+        #   placeholder = "No file selected.",
+        #   multiple = FALSE,
+        #   accept = c(
+        #     "text/csv",
+        #     "text/comma-separated-values",
+        #     "text/tab-separated-values",
+        #     "text/plain",
+        #     ".csv", ".tsv", ".txt", ".xlsx"
+        #   )
+        # )
       ),
       
       # data table column
@@ -147,20 +149,21 @@ mod_load_file_ui <- function(id) {
           choices = c(Comma = ",", Excel = "excel" , Tab = "\t"),
           selected = ","
         ),
-        shiny::fileInput(
-          inputId = ns("autouse_input_file"),
-          label = "Choose file to load:",
-          width = "90%",
-          placeholder = "No file selected.",
-          multiple = FALSE,
-          accept = c(
-            "text/csv",
-            "text/comma-separated-values",
-            "text/tab-separated-values",
-            "text/plain",
-            ".csv", ".tsv", ".txt", ".xlsx"
-          )
-        )
+        shiny::uiOutput(ns("autouse_file_input_ui"))
+        # shiny::fileInput(
+        #   inputId = ns("autouse_input_file"),
+        #   label = "Choose file to load:",
+        #   width = "90%",
+        #   placeholder = "No file selected.",
+        #   multiple = FALSE,
+        #   accept = c(
+        #     "text/csv",
+        #     "text/comma-separated-values",
+        #     "text/tab-separated-values",
+        #     "text/plain",
+        #     ".csv", ".tsv", ".txt", ".xlsx"
+        #   )
+        # )
       ),
       
       # data table column
@@ -186,6 +189,66 @@ mod_load_file_server <- function(id, tadat){
   shiny::moduleServer(id, function(input, output, session){
     # get module session id
     ns <- session$ns
+    
+    # Render dynamic file input for mlid
+    output$mlid_file_input_ui <- shiny::renderUI({
+      accept_types <- switch(
+        input$mlid_separator,
+        "," = c("text/csv", "text/comma-separated-values", ".csv"),
+        "excel" = c(".xlsx", ".xls"),
+        "\t" = c("text/tab-separated-values", "text/plain", ".tsv", ".txt"),
+        c(".csv", ".tsv", ".txt", ".xlsx", ".xls") # default
+      )
+      
+      shiny::fileInput(
+        inputId = ns("mlid_input_file"),
+        label = "Choose file to load:",
+        width = "90%",
+        placeholder = "No file selected.",
+        multiple = FALSE,
+        accept = accept_types
+      )
+    })
+    
+    # Render dynamic file input for mltoau
+    output$mltoau_file_input_ui <- shiny::renderUI({
+      accept_types <- switch(
+        input$mltoau_separator,
+        "," = c("text/csv", "text/comma-separated-values", ".csv"),
+        "excel" = c(".xlsx", ".xls"),
+        "\t" = c("text/tab-separated-values", "text/plain", ".tsv", ".txt"),
+        c(".csv", ".tsv", ".txt", ".xlsx", ".xls")
+      )
+      
+      shiny::fileInput(
+        inputId = ns("mltoau_input_file"),
+        label = "Choose file to load:",
+        width = "90%",
+        placeholder = "No file selected.",
+        multiple = FALSE,
+        accept = accept_types
+      )
+    })
+    
+    # Render dynamic file input for autouse
+    output$autouse_file_input_ui <- shiny::renderUI({
+      accept_types <- switch(
+        input$autouse_separator,
+        "," = c("text/csv", "text/comma-separated-values", ".csv"),
+        "excel" = c(".xlsx", ".xls"),
+        "\t" = c("text/tab-separated-values", "text/plain", ".tsv", ".txt"),
+        c(".csv", ".tsv", ".txt", ".xlsx", ".xls")
+      )
+      
+      shiny::fileInput(
+        inputId = ns("autouse_input_file"),
+        label = "Choose file to load:",
+        width = "90%",
+        placeholder = "No file selected.",
+        multiple = FALSE,
+        accept = accept_types
+      )
+    })
     
     # Create reactive values to track file upload status
     files_loaded <- reactiveValues(
