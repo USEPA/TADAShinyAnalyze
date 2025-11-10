@@ -860,15 +860,40 @@ duration_cal <- function(x, type, complete_windows = TRUE){
 ### A function to compare the excursion
 duration_excursion_fun <- function(x){
   x2 <- x |>
-    dplyr::mutate(Duration_Excursion = dplyr::case_when(
-      is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
-        E_Value > Threshold_Upper_win                                   ~   TRUE,
-      !is.na(Threshold_Lower_win) & is.na(Threshold_Upper_win) & 
-        E_Value < Threshold_Lower_win                                   ~   TRUE,
-      !is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
-        (E_Value < Threshold_Lower_win | E_Value > Threshold_Upper_win)   ~   TRUE,
-      TRUE                                                            ~  FALSE
-    ))
+    dplyr::mutate(
+      # Normalize the duration method for consistent comparison
+      DurationMethod_norm = trimws(tolower(DurationMethod)),
+      
+      Duration_Excursion = dplyr::case_when(
+        # ===== ARITHMETIC EXTREMES: Check both min and max against thresholds =====
+        DurationMethod_norm %in% "arithmetic extremes" & 
+          is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
+          Value_win_max > Threshold_Upper_win                                     ~ TRUE,
+        
+        DurationMethod_norm %in% "arithmetic extremes" & 
+          !is.na(Threshold_Lower_win) & is.na(Threshold_Upper_win) & 
+          Value_win_min < Threshold_Lower_win                                     ~ TRUE,
+        
+        DurationMethod_norm %in% "arithmetic extremes" & 
+          !is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
+          (Value_win_min < Threshold_Lower_win | Value_win_max > Threshold_Upper_win) ~ TRUE,
+        
+        # ===== STANDARD METHODS: Use E_Value =====
+        !(DurationMethod_norm %in% "arithmetic extremes") &
+          is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
+          E_Value > Threshold_Upper_win                                           ~ TRUE,
+        
+        !(DurationMethod_norm %in% "arithmetic extremes") &
+          !is.na(Threshold_Lower_win) & is.na(Threshold_Upper_win) & 
+          E_Value < Threshold_Lower_win                                           ~ TRUE,
+        
+        !(DurationMethod_norm %in% "arithmetic extremes") &
+          !is.na(Threshold_Lower_win) & !is.na(Threshold_Upper_win) & 
+          (E_Value < Threshold_Lower_win | E_Value > Threshold_Upper_win)         ~ TRUE,
+        
+        TRUE                                                                      ~ FALSE
+      )
+    )
   return(x2)
 }
 
