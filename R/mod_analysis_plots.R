@@ -572,23 +572,35 @@ mod_analysis_plots_server <- function(id,
       
       # Helper: shape from AcuteChronic
       get_shape <- function(vals) {
-        typ <- unique(tolower(na.omit(vals)))
-        if ("acute" %in% typ) return(3)
-        if ("chronic" %in% typ) return(4)
-        return(17)
+        dplyr::case_when(
+          tolower(vals) == "acute" ~ 3,
+          tolower(vals) == "chronic" ~ 4,
+          TRUE ~ 17
+        )
       }
       
-      plot_criteria <- function(df_sub, value_col, color) {
+      # Check if the data is equation-based
+      plot_preprocess <- function(df_sub, value_col){
         if (!value_col %in% names(df_sub)) return(NULL)
         df_valid <- df_sub[!is.na(df_sub[[value_col]]) & df_sub[[value_col]] > 0, ]
+        is_equation_based <- unique(tolower(df_valid$EquationBased)) == "yes"
+        if (length(is_equation_based) == 0){
+          is_equation_based <- FALSE
+        }
+        return(list(df_valid = df_valid, is_equation_based = is_equation_based))
+      }
+      
+      mag_upper <- plot_preprocess(df, "MagnitudeValueUpper")
+      mag_lower <- plot_preprocess(df, "MagnitudeValueLower")
+      
+      plot_criteria <- function(df_valid, value_col, color, is_equation_based) {
         
         if (nrow(df_valid) < 1) return(NULL)
         
         # Equation-based → always points
-        is_equation_based <- unique(tolower(df_valid$EquationBased)) == "yes"
         shape <- get_shape(df_valid$AcuteChronic)
         linetype <- get_linetype(df_valid$AcuteChronic)
-        
+
         if (is_equation_based) {
           # Plot as points
           p <<- p + ggplot2::geom_point(
@@ -599,7 +611,7 @@ mod_analysis_plots_server <- function(id,
             shape = shape,
             size = 3,
             stroke = 1
-          )
+          ) 
         } else {
           # Split into groups by unique value to avoid zig-zag
           for (val in unique(df_valid[[value_col]])) {
@@ -620,36 +632,71 @@ mod_analysis_plots_server <- function(id,
       
       
       # Plot upper (red) and lower (blue) criteria
-      plot_criteria(df, "MagnitudeValueUpper", "red")
-      plot_criteria(df, "MagnitudeValueLower", "blue")
+      plot_criteria(mag_upper$df_valid, "MagnitudeValueUpper", 
+                    "red", mag_upper$is_equation_based)
+      plot_criteria(mag_lower$df_valid, "MagnitudeValueLower", 
+                    "blue", mag_lower$is_equation_based)
       
-      # WQS Criteria Legend Setup 
-      legend_lines <- data.frame(
-        ActivityStartDate = rep(min(df$ActivityStartDate, na.rm = TRUE), 6),
-        Value = rep(min(df$TADA.ResultMeasureValue[df$TADA.ResultMeasureValue > 0], na.rm = TRUE), 6),
-        LimitType = rep(c("Upper", "Lower"), each = 3),
-        SourceType = rep(c("Acute", "Chronic", "Other"), 2)
-      )
+      # Get the final equation-based flag
+      is_equation_based_final <- mag_upper$is_equation_based | mag_lower$is_equation_based
       
-      # Add dummy lines for legend
-      p <- p + ggplot2::geom_line(
-        data = legend_lines,
-        ggplot2::aes(x = ActivityStartDate, y = Value, color = LimitType, linetype = SourceType),
-        linewidth = 1,
-        show.legend = TRUE,
-        inherit.aes = FALSE
-      )
-      
-      # Manual legends
-      p <- p +
-        ggplot2::scale_color_manual(
-          name = "Limit Type",
-          values = c("Upper" = "red", "Lower" = "blue")
-        ) +
-        ggplot2::scale_linetype_manual(
-          name = "Criteria Source",
-          values = c("Acute" = "dotted", "Chronic" = "dashed", "Other" = "solid")
+      if (is_equation_based_final){
+        # Shape legend for equation-based criteria (points)
+        legend_points <- data.frame(
+          ActivityStartDate = rep(min(df$ActivityStartDate, na.rm = TRUE), 6),
+          Value = rep(min(df$TADA.ResultMeasureValue[df$TADA.ResultMeasureValue > 0], na.rm = TRUE), 6),
+          LimitType = rep(c("Upper", "Lower"), each = 3),
+          SourceType = rep(c("Acute", "Chronic", "Other"), 2)
         )
+        
+        p <- p + ggplot2::geom_point(
+          data = legend_points,
+          ggplot2::aes(x = ActivityStartDate, y = Value, color = LimitType, shape = SourceType),
+          size = 3,
+          stroke = 1,
+          show.legend = TRUE,
+          inherit.aes = FALSE
+        )
+        
+        # Manual legends for points
+        p <- p +
+          ggplot2::scale_color_manual(
+            name = "Limit Type",
+            values = c("Upper" = "red", "Lower" = "blue")
+          ) +
+          ggplot2::scale_shape_manual(
+            name = "Criteria Source",
+            values = c("Acute" = 3, "Chronic" = 4, "Other" = 17)
+          )
+      } else {
+        # WQS Criteria Legend Setup 
+        legend_lines <- data.frame(
+          ActivityStartDate = rep(min(df$ActivityStartDate, na.rm = TRUE), 6),
+          Value = rep(min(df$TADA.ResultMeasureValue[df$TADA.ResultMeasureValue > 0], na.rm = TRUE), 6),
+          LimitType = rep(c("Upper", "Lower"), each = 3),
+          SourceType = rep(c("Acute", "Chronic", "Other"), 2)
+        )
+        
+        # Add dummy lines for legend
+        p <- p + ggplot2::geom_line(
+          data = legend_lines,
+          ggplot2::aes(x = ActivityStartDate, y = Value, color = LimitType, linetype = SourceType),
+          linewidth = 1,
+          show.legend = TRUE,
+          inherit.aes = FALSE
+        )
+        
+        # Manual legends
+        p <- p +
+          ggplot2::scale_color_manual(
+            name = "Limit Type",
+            values = c("Upper" = "red", "Lower" = "blue")
+          ) +
+          ggplot2::scale_linetype_manual(
+            name = "Criteria Source",
+            values = c("Acute" = "dotted", "Chronic" = "dashed", "Other" = "solid")
+          )
+      }
       
       rv$p_timeseries <- p
       
