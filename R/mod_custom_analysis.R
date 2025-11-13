@@ -427,11 +427,13 @@ mod_custom_analysis_server <- function(id, tadat){
       
       if (nrow(dat_hardness) > 0){
         dat_hardness2 <- dat_hardness |>
-          dplyr::left_join(hardness_equation) |>
           dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
             list("hardness" = Hardness,
-                 "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-                 "E_A" = E_A, "E_B" = E_B),
+                 "CF_A" = hardness_param_1, 
+                 "CF_B" = hardness_param_2, 
+                 "CF_C" = hardness_param_3,
+                 "E_A" = hardness_param_4, 
+                 "E_B" = hardness_param_5),
             .f = hardness_eq
           )) |>
           excursion_fun() |>
@@ -448,7 +450,6 @@ mod_custom_analysis_server <- function(id, tadat){
       
       if (nrow(dat_pH) > 0){
         dat_pH2 <- dat_pH |>
-          dplyr::left_join(pH_equation) |>
           dplyr::mutate(
             MagnitudeValueUpper = purrr::map2_dbl(
               Equation, pH,
@@ -470,16 +471,18 @@ mod_custom_analysis_server <- function(id, tadat){
       # Check if data are available
       if (nrow(dat_pH_hardness) > 0){
         dat_pH_hardness2 <- dat_pH_hardness |>
-          dplyr::left_join(pH_Hardness_equation) |>
           dplyr::mutate(MagnitudeValueUpper = purrr::pmap_dbl(
             list("hardness" = Hardness,
-                 "CF_A" = CF_A, "CF_B" = CF_B, "CF_C" = CF_C,
-                 "E_A" = E_A, "E_B" = E_B),
+                 "CF_A" = hardness_param_1, 
+                 "CF_B" = hardness_param_2, 
+                 "CF_C" = hardness_param_3,
+                 "E_A" = hardness_param_4, 
+                 "E_B" = hardness_param_5),
             .f = hardness_eq
           )) |>
           dplyr::mutate(MagnitudeValueUpper = if_else(
             pH < 7,
-            pmin(87, MagnitudeValueUpper),
+            pmin(hardness_param_6, MagnitudeValueUpper),
             MagnitudeValueUpper
           )) |>
           excursion_fun() |>
@@ -497,7 +500,6 @@ mod_custom_analysis_server <- function(id, tadat){
       # Check if data are available
       if (nrow(dat_pH_temperature) > 0){
         dat_pH_temperature2 <- dat_pH_temperature |>
-          dplyr::left_join(pH_Temperature_equation) |>
           dplyr::mutate(
             MagnitudeValueUpper = purrr::pmap_dbl(
               list(Equation = Equation, pH = pH, Temperature = Temperature),
