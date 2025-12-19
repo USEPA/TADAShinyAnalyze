@@ -57,12 +57,17 @@ app_ui <- function(request) {
                         htmltools::br(),
                         mod_load_file_ui("load_file_1")
         ),
-        shiny::tabPanel("2. Batch Analysis",
+        shiny::tabPanel("2. Criteria Table",
+                        value = "Criteria",
+                        htmltools::br(),
+                        mod_criteria_table_ui("criteria_table_1")
+        ),
+        shiny::tabPanel("3. Batch Analysis",
                         value = "Batch",
                         htmltools::br(),
                         mod_batch_analysis_ui("batch_analysis_1")
         ),
-        shiny::tabPanel("3. Custom Analysis",
+        shiny::tabPanel("4. Custom Analysis",
                         value = "Custom",
                         htmltools::br(),
                         mod_custom_analysis_ui("custom_analysis_1"))

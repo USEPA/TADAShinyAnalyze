@@ -112,6 +112,10 @@ golem::add_module(
   name = "analysis_data_viewer_custom",
   with_test = TRUE,
 )
+golem::add_module(
+  name = "criteria_table",
+  with_test = TRUE,
+)
 
 
 

@@ -16,7 +16,7 @@ mod_batch_analysis_ui <- function(id) {
   tagList(
     
     # header
-    htmltools::h2("2. Batch Analysis"),
+    htmltools::h2("3. Batch Analysis"),
     
     # Components
     fluidRow(

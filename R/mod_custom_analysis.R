@@ -15,7 +15,7 @@ mod_custom_analysis_ui <- function(id) {
   tagList(
     
     # header
-    htmltools::h2("3. Custom Analysis"),
+    htmltools::h2("4. Custom Analysis"),
     
     # Components
     fluidRow(
