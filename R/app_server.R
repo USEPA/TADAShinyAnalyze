@@ -14,14 +14,31 @@ options(warn = 2)
 app_server <- function(input, output, session) {
   # Your application server logic
   
-  # Set maximum file upload size to 100MB
-  options(shiny.maxRequestSize = 300*1024^2)
+  # Fetch criteria file list ONCE at app startup
+  criteria_file_list <- tryCatch({
+    
+    getCriteriaFiles(branch = "main")
+  }, error = function(e) {
+    warning("Failed to fetch criteria file list from GitHub: ", e$message)
+    NULL
+  })
+  
+  # Get the organization ID
+  ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")
+  ATTAINS_orgs_vec <- ATTAINS_orgs$code
+  names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
   
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()
   
+  # Add explicit initialization
+  tadat$df_mltoau_input <- NULL
+  tadat$df_autouse_input <- NULL
+  tadat$df_mlid_input <- NULL
+  
   # modules
   mod_load_file_server("load_file_1", tadat)
+  mod_criteria_table_server("criteria_table_1", tadat)
   mod_batch_analysis_server("batch_analysis_1", tadat)
   mod_custom_analysis_server("custom_analysis_1", tadat)
   
