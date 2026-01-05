@@ -10,6 +10,11 @@
 options(shiny.maxRequestSize = get_golem_config("MB_LIMIT")*1024^2)
 options(warn = 2)
 
+# Get the organization ID
+ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")
+ATTAINS_orgs_vec <- ATTAINS_orgs$code
+names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
+
 # server
 app_server <- function(input, output, session) {
   # Your application server logic
@@ -23,15 +28,12 @@ app_server <- function(input, output, session) {
     NULL
   })
   
-  # Get the organization ID
-  ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")
-  ATTAINS_orgs_vec <- ATTAINS_orgs$code
-  names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
-  
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()
   
   # Add explicit initialization
+  tadat$criteria_file_list <- criteria_file_list
+  
   tadat$df_mltoau_input <- NULL
   tadat$df_autouse_input <- NULL
   tadat$df_mlid_input <- NULL
@@ -43,6 +45,7 @@ app_server <- function(input, output, session) {
   mod_custom_analysis_server("custom_analysis_1", tadat)
   
   # disable other tabs upon start
+  shinyjs::disable(selector = '.nav li a[data-value="Criteria"]')
   shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
   shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
   

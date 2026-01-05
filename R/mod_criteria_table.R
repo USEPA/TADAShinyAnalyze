@@ -9,11 +9,6 @@
 #' @importFrom shiny NS tagList 
 #' @importFrom shinyjs useShinyjs show hide
 
-# Get the organization ID
-ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")
-ATTAINS_orgs_vec <- ATTAINS_orgs$code
-names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
-
 mod_criteria_table_ui <- function(id) {
   
   ns <- NS(id)
@@ -89,7 +84,36 @@ mod_criteria_table_ui <- function(id) {
         )
       )
     ),
-    htmltools::br()
+    htmltools::br(),
+    
+    htmltools::hr(),
+    
+    htmltools::p("After reviewing the template, and updating the template if needed, upload the template in the file uploader."),
+    
+    shiny::fluidRow(
+      shiny::column(
+        width = 12,
+        
+        shiny::fileInput(
+          inputId = ns("review_template"),
+          label = "Choose file to load:",
+          width = "90%",
+          placeholder = "No file selected.",
+          multiple = FALSE,
+          accept = c(".xlsx")
+        ),
+        
+        htmltools::p("Summary of the uploaded template."),
+        
+        shiny::verbatimTextOutput(outputId = ns("template_summary")),
+        
+        htmltools::p("Review the template."),
+        
+        DT::DTOutput(outputId = ns("final_template"))
+
+      )
+    )
+    
   )
 }
 
@@ -106,6 +130,23 @@ mod_criteria_table_server <- function(id, tadat) {
     
     # Reactive value to store the criteria template
     criteria_template_rv <- shiny::reactiveVal(NULL)
+    
+    # A function to handle the warning message
+    run_with_warnings <- function(expr) {
+      tryCatch(
+        withCallingHandlers(
+          expr,
+          warning = function(w) {
+            warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
+            invokeRestart("muffleWarning")  # Works here because we're inside withCallingHandlers
+          }
+        ),
+        error = function(e) {
+          warning_msg(paste("Error:", conditionMessage(e)))
+          NULL
+        }
+      )
+    }
     
     # Enable or disable the state_tribe_select
     shiny::observeEvent(input$criteria_method, {
@@ -162,8 +203,7 @@ mod_criteria_table_server <- function(id, tadat) {
           # Get the org ID
           org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
           
-          criteria_template <- tryCatch(
-            {
+          criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 .data = tadat$df_mlid_input,
                 org_id = org_ID,
@@ -173,24 +213,14 @@ mod_criteria_table_server <- function(id, tadat) {
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
               )
-            },
-            warning = function(w) {
-              warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-              invokeRestart("muffleWarning")
-            },
-            error = function(e) {
-              warning_msg(paste("Error:", conditionMessage(e)))
-              NULL
-            }
-          )
+            })
           
         # Option B: State/Tribe from ATTAINS
         } else if (input$criteria_method %in% "B") {
           req(input$state_tribe_select)
           req(tadat$df_mlid_input)
           
-          criteria_template <- tryCatch(
-            {
+          criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 .data = tadat$df_mlid_input,
                 org_id = input$state_tribe_select,
@@ -200,22 +230,12 @@ mod_criteria_table_server <- function(id, tadat) {
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
               )
-            },
-            warning = function(w) {
-              warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-              invokeRestart("muffleWarning")
-            },
-            error = function(e) {
-              warning_msg(paste("Error:", conditionMessage(e)))
-              NULL
-            }
-          )
+            })
           
         # Option C: Any State/Tribe from ATTAINS
         } else if (input$criteria_method %in% "C") {
           
-          criteria_template <- tryCatch(
-            {
+          criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 .data = tadat$df_mlid_input,
                 org_id = NULL,
@@ -225,16 +245,7 @@ mod_criteria_table_server <- function(id, tadat) {
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
               )
-            },
-            warning = function(w) {
-              warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-              invokeRestart("muffleWarning")
-            },
-            error = function(e) {
-              warning_msg(paste("Error:", conditionMessage(e)))
-              NULL
-            }
-          )
+            })
           
           # Add "All" flag to the ATTAINS.OrganizationIdentifier columns
           if (!is.null(criteria_template) && !is.null(criteria_template$data)) {
@@ -247,21 +258,11 @@ mod_criteria_table_server <- function(id, tadat) {
         # Option D: Blank Template
         } else {
           
-          criteria_template <- tryCatch(
-            {
+          criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 return_workbook = TRUE
               )
-            },
-            warning = function(w) {
-              warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-              invokeRestart("muffleWarning")
-            },
-            error = function(e) {
-              warning_msg(paste("Error:", conditionMessage(e)))
-              NULL
-            }
-          )
+            })
           
         }
         
@@ -318,35 +319,157 @@ mod_criteria_table_server <- function(id, tadat) {
         
         # Define file paths
         excel_path <- file.path(temp_dir, "Criteria_Methods_Template.xlsx")
-        csv_path <- file.path(temp_dir, "Criteria_Methods_Template.csv")
         
         # Save workbook
         if (!is.null(criteria_template_rv()$workbook)) {
           openxlsx::saveWorkbook(criteria_template_rv()$workbook, excel_path, overwrite = TRUE)
         }
         
-        # Save data as CSV
-        if (!is.null(criteria_template_rv()$data)) {
-          readr::write_csv(criteria_template_rv()$data, csv_path, na = "")
-        }
-        
         # Create zip file
         files_to_zip <- c()
         if (file.exists(excel_path)) files_to_zip <- c(files_to_zip, excel_path)
-        if (file.exists(csv_path)) files_to_zip <- c(files_to_zip, csv_path)
-        
+
         utils::zip(zipfile = file, files = files_to_zip, flags = "-j")
       },
       contentType = "application/zip"
     )
     
-    # Upload the edited criteria_template
+    ### Upload the reviewed criteria template
     
-    # Create a summary to view the data
+    # Reactive to read the uploaded template file
+    review_template_input <- shiny::eventReactive(input$review_template, {
+      
+      # Validate file is selected
+      shiny::validate(need(!is.null(input$review_template), "No file selected."))
+      
+      # Define file path
+      file_path <- input$review_template$datapath
+      file_ext <- tools::file_ext(file_path)
+      
+      # Log to console
+      message(
+        paste0(
+          format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "Criteria Template Import, file name: ", input$review_template$name, "\n",
+          "Criteria Template Import, file path: ", file_path, "\n"
+        )
+      )
+      
+      # User notification
+      shiny::showNotification(
+        paste0("Loading criteria template: ", input$review_template$name),
+        type = "message",
+        duration = 5
+      )
+      
+      # Read the Excel file
+      df_template <- NULL
+      
+      if (file_ext %in% c("xlsx", "xls")) {
+        df_template <- tryCatch({
+          # Try reading the DefineCriteriaMethodology sheet first
+          readxl::read_excel(file_path, 
+                             sheet = "DefineCriteriaMethodology",
+                             na = c("NA", ""),
+                             trim_ws = TRUE, 
+                             col_names = TRUE,
+                             guess_max = 100000)
+        }, error = function(e) {
+          # If sheet name fails, try reading first sheet
+          tryCatch({
+            readxl::read_excel(file_path, 
+                               sheet = 1,
+                               na = c("NA", ""),
+                               trim_ws = TRUE, 
+                               col_names = TRUE,
+                               guess_max = 100000)
+          }, error = function(e2) {
+            shiny::showNotification(
+              paste("Error reading file:", e2$message),
+              type = "error",
+              duration = 10
+            )
+            return(NULL)
+          })
+        })
+      } else {
+        shiny::showNotification("Please upload an Excel file (.xlsx)", type = "error")
+        return(NULL)
+      }
+      
+      # Define required columns for criteria template
+      required_cols <- c(
+        "ATTAINS.OrganizationIdentifier",
+        "ATTAINS.ParameterName", 
+        "ATTAINS.UseName",
+        "TADA.CharacteristicName"
+      )
+      
+      # Check for missing required columns
+      missing_cols <- setdiff(required_cols, names(df_template))
+      
+      if (length(missing_cols) > 0) {
+        shiny::showNotification(
+          paste0("Warning: Missing columns in template: ", 
+                 paste(missing_cols, collapse = ", ")),
+          type = "warning",
+          duration = 10
+        )
+      }
+      
+      # Also save to tadat for use in other modules
+      tadat$criteria_template <- df_template
+      
+      return(df_template)
+    })
     
-    # View the table
+    ### Render template summary
+    output$template_summary <- shiny::renderText({
+      # Check if file was uploaded
+      if (is.null(input$review_template)) {
+        return("No file selected.")
+      }
+      
+      # Call the reactive expression to get the data
+      df <- review_template_input()
+      
+      if (is.null(df)) {
+        return("Error loading file. Please check the file format.")
+      }
+      
+      # Build summary text
+      paste0(
+        "Loaded dataset has ", nrow(df), " rows.\n",
+        "There are ", length(unique(df$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
+        "There are ", length(unique(df$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
+        "There are ", length(unique(df$ATTAINS.UseName)), " unique use type(s).\n",
+        "There are ", length(unique(df$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s)."
+      )
+    })
     
-    # Activate tabs 3 and 4
+    ### Generate the template summary table
+    output$final_template <- DT::renderDT({
+      # Validate file is uploaded
+      shiny::validate(need(!is.null(input$review_template), "No file selected."))
+      
+      # Get the data from the reactive
+      df <- review_template_input()
+      
+      shiny::validate(need(!is.null(df), "Error loading file."))
+      
+      # Render table
+      DT::datatable(df,
+                    filter = "top",
+                    class = "compact",
+                    options = list(scrollX = TRUE,
+                                   scrollY = "400px",
+                                   scrollCollapse = TRUE,
+                                   paging = TRUE,
+                                   pageLength = 5,
+                                   lengthMenu = c(5, 10, 25, 50, 100),
+                                   autoWidth = TRUE))
+    })
+    
     
   }) 
 }

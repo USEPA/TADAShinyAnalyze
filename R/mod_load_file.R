@@ -427,9 +427,8 @@ mod_load_file_server <- function(id, tadat){
       
       # define required columns
       # TODO need to check this is correct
-      mltoau_required_cols <- c("MonitoringLocationIdentifier",
-                                "TADA.MonitoringLocationIdentifier",
-                                "JoinToAU.AssessmentUnitIdentifier")
+      mltoau_required_cols <- c("TADA.MonitoringLocationIdentifier",
+                                "ATTAINS.AssessmentUnitIdentifier")
       
       # get missing columns
       mltoau_missing_cols <- setdiff(mltoau_required_cols, names(df_mltoau_input))
@@ -496,7 +495,7 @@ mod_load_file_server <- function(id, tadat){
         paste0(
           "Loaded dataset has ", nrow(df_mltoau_summary), " rows and ", ncol(df_mltoau_summary), " columns.\n",
           "There are ", length(unique(df_mltoau_summary$MonitoringLocationIdentifier)), " unique monitoring locations.",
-          "There are ", length(unique(df_mltoau_summary$JoinToAU.AssessmentUnitIdentifier)), " unique assessment units."
+          "There are ", length(unique(df_mltoau_summary$ATTAINS.AssessmentUnitIdentifier)), " unique assessment units."
         )
       }
     }) # end renderText
@@ -549,7 +548,7 @@ mod_load_file_server <- function(id, tadat){
       
       # define required columns
       # TODO need to check this is correct
-      autouse_required_cols <- c("JoinToAU.AssessmentUnitIdentifier",
+      autouse_required_cols <- c("ATTAINS.AssessmentUnitIdentifier",
                                  "ATTAINS.UseName")
       
       # get missing columns
@@ -616,27 +615,35 @@ mod_load_file_server <- function(id, tadat){
         # print
         paste0(
           "Loaded dataset has ", nrow(df_autouse_summary), " rows and ", ncol(df_autouse_summary), " columns.\n",
-          "There are ", length(unique(df_autouse_summary$JoinToAU.AssessmentUnitIdentifier)), " unique assessment units.",
+          "There are ", length(unique(df_autouse_summary$ATTAINS.AssessmentUnitIdentifier)), " unique assessment units.",
           "There are ", length(unique(df_autouse_summary$ATTAINS.UseName)), " unique use types."
         )
       }
     }) # end renderText
     
-    # enable second tab to be selected once input data is processed
+    # enable criteria table to be selected once input data is processed
     shiny::observe({
       if (files_loaded$mlid){
-      shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::enable(selector = '.nav li a[data-value="Criteria"]')
       } else {
-      shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::disable(selector = '.nav li a[data-value="Criteria"]')
       }})
     
-    # enable the third tab to be selected once input data is processed
-    shiny::observe({
-      if (files_loaded$mlid){
-        shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
-      } else {
-        shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
-      }})
+    # # enable batch tab to be selected once input data is processed
+    # shiny::observe({
+    #   if (files_loaded$mlid){
+    #   shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
+    #   } else {
+    #   shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+    #   }})
+    # 
+    # # enable the custom tab to be selected once input data is processed
+    # shiny::observe({
+    #   if (files_loaded$mlid){
+    #     shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
+    #   } else {
+    #     shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
+    #   }})
     
     # Save files_loaded to tadat
     shiny::observe({
