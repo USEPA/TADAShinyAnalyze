@@ -72,7 +72,8 @@ golem::add_shinyappsio_file()
 
 # 3) Deploy to Shinyapps.io
 # rsconnect::setAccountInfo(name="yourname", token="YOUR_TOKEN", secret="YOUR_SECRET")
-rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze")
+# rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze")
+rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze-Test")
 
 # 4) View logs on failure
 # rsconnect::showLogs(appName = "your-app-name", streaming = TRUE)
