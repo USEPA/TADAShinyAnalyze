@@ -30,11 +30,15 @@ mod_criteria_table_ui <- function(id) {
       ),
       htmltools::tags$li(
         htmltools::strong("Option C:"), 
-        " Generate the table based on information from any state/tribe that has submitted to ATTAINS."
+        " Generate the table based on information from any state/tribe that has submitted to ATTAINS. The tool will automatically fill in the 'ATTAINS.OrganizationIdentifier' column as 'All.' Users can review and update this column after downloading the template."
       ),
       htmltools::tags$li(
         htmltools::strong("Option D:"),
         " Generate a blank template."
+      ),
+      htmltools::tags$li(
+        htmltools::strong("Option E:"),
+        " Upload a template users have filled out and reviewed using the file uploader. The tool will check if there is any missing information."
       )
     ),
     htmltools::p('Once the selection is completed, click the "Generate Template" button to generate an Excel file with the criteria table template. When the template is ready, click "Download Template" to save.'),
@@ -53,7 +57,8 @@ mod_criteria_table_ui <- function(id) {
             "Option A: TADA Community Hub Templates" = "A",
             "Option B: State/Tribe from ATTAINS" = "B",
             "Option C: Any State/Tribe from ATTAINS" = "C",
-            "Option D: Blank Template" = "D"
+            "Option D: Blank Template" = "D",
+            "Option E: A Template from Users" = "E"
           ),
           width = "100%"
         ),
@@ -69,6 +74,16 @@ mod_criteria_table_ui <- function(id) {
             label = "Select the State/Tribe",
             choices = ATTAINS_orgs_vec
           )
+        ),
+        shinyjs::hidden(
+          shiny::fileInput(
+            inputId = ns("upload_template"),
+            label = "Choose file to load (for Option E):",
+            width = "90%",
+            placeholder = "No file selected.",
+            multiple = FALSE,
+            accept = c(".xlsx")
+          )
         )
       )
     ),
@@ -77,7 +92,7 @@ mod_criteria_table_ui <- function(id) {
       shiny::column(
         width = 12,
         shiny::verbatimTextOutput(outputId = ns("template_status")),
-        shinyjs::disabled(shiny::downloadButton(
+        shinyjs::hidden(shiny::downloadButton(
           outputId = ns("download_template"),
           label = "Download Template (.zip)",
           style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
@@ -88,7 +103,7 @@ mod_criteria_table_ui <- function(id) {
     
     htmltools::hr(),
     
-    htmltools::p("After reviewing the template, and updating the template if needed, upload the template in the file uploader."),
+    htmltools::p("After reviewing the template, and updating the template if needed, upload the final template in the file uploader."),
     
     shiny::fluidRow(
       shiny::column(
@@ -148,7 +163,7 @@ mod_criteria_table_server <- function(id, tadat) {
       )
     }
     
-    # Enable or disable the state_tribe_select
+    # UI control
     shiny::observeEvent(input$criteria_method, {
       
       # If input$criteria_method is A, use criteria_file_list instead
@@ -170,7 +185,100 @@ mod_criteria_table_server <- function(id, tadat) {
       shinyjs::toggleState(id = "state_tribe_select",
                            condition = input$criteria_method %in% c("A", "B"))
       
+      # Activate the upload_template if input$criteria_method is E
+      shinyjs::toggle(id = "upload_template",
+                           condition = input$criteria_method %in% c("E"))
+      
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
+    
+    ### Upload the template for Option E
+    
+    # Reactive to read the uploaded template file
+    uploaded_temp_table <- shiny::eventReactive(input$upload_template, {
+      
+      # Validate file is selected
+      shiny::validate(need(!is.null(input$upload_template), "No file selected."))
+      
+      # Define file path
+      file_path <- input$upload_template$datapath
+      file_ext <- tools::file_ext(file_path)
+      
+      # Log to console
+      message(
+        paste0(
+          format(Sys.time(), "%Y-%m-%d %H:%M:%S"), "\n",
+          "Criteria Template Import, file name: ", input$upload_template$name, "\n",
+          "Criteria Template Import, file path: ", file_path, "\n"
+        )
+      )
+      
+      # User notification
+      shiny::showNotification(
+        paste0("Loading criteria template: ", input$upload_template$name),
+        type = "message",
+        duration = 5
+      )
+      
+      # Read the Excel file
+      df_template <- NULL
+      
+      if (file_ext %in% c("xlsx")) {
+        df_template <- tryCatch({
+          # Try reading the DefineCriteriaMethodology sheet first
+          readxl::read_excel(file_path, 
+                             sheet = "DefineCriteriaMethodology",
+                             na = c("NA", ""),
+                             trim_ws = TRUE, 
+                             col_names = TRUE,
+                             guess_max = 100000)
+        }, error = function(e) {
+          # If sheet name fails, try reading first sheet
+          tryCatch({
+            readxl::read_excel(file_path, 
+                               sheet = 1,
+                               na = c("NA", ""),
+                               trim_ws = TRUE, 
+                               col_names = TRUE,
+                               guess_max = 100000)
+          }, error = function(e2) {
+            shiny::showNotification(
+              paste("Error reading file:", e2$message),
+              type = "error",
+              duration = 10
+            )
+            return(NULL)
+          })
+        })
+      } else {
+        shiny::showNotification("Please upload an Excel file (.xlsx)", type = "error")
+        return(NULL)
+      }
+      
+      # Define required columns for criteria template
+      required_cols <- c(
+        "ATTAINS.OrganizationIdentifier",
+        "ATTAINS.ParameterName", 
+        "ATTAINS.UseName",
+        "TADA.CharacteristicName",
+        "TADA.ComparableDataIdentifier"
+      )
+      
+      # Check for missing required columns
+      missing_cols <- setdiff(required_cols, names(df_template))
+      
+      if (length(missing_cols) > 0) {
+        shiny::showNotification(
+          paste0("Warning: Missing columns in template: ", 
+                 paste(missing_cols, collapse = ", ")),
+          type = "warning",
+          duration = 10
+        )
+      }
+      
+      return(df_template)
+    })
+    
+    ### Determine the options to generate the criteria table
     
     # Run the TADA_DefineCriteriaMethodology_Shiny function to get the criteria table
     shiny::observeEvent(input$Generate_Template, {
@@ -250,19 +358,40 @@ mod_criteria_table_server <- function(id, tadat) {
           # Add "All" flag to the ATTAINS.OrganizationIdentifier columns
           if (!is.null(criteria_template) && !is.null(criteria_template$data)) {
             temp_c <- criteria_template$data |>
-              dplyr::mutate(ATTAINS.OrganizationIdentifier = "All") 
-            
+              dplyr::mutate(ATTAINS.OrganizationIdentifier = "All")
+
             criteria_template$data <- temp_c
           }
           
         # Option D: Blank Template
-        } else {
+        } else if (input$criteria_method %in% "D"){
           
           criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 return_workbook = TRUE
               )
             })
+          
+        } else {
+          
+          req(uploaded_temp_table)
+          
+          temp_table <- uploaded_temp_table()
+          
+          # Get the org ID
+          org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
+          
+          criteria_template <- run_with_warnings({
+            TADA_DefineCriteriaMethodology_Shiny(
+              .data = tadat$df_mlid_input,
+              org_id = org_ID,
+              auto_assign = FALSE,
+              criteriaMethods = temp_table,
+              AUMLRef = tadat$df_mltoau_input,
+              AU_UsesRef = tadat$df_autouse_input,
+              return_workbook = TRUE
+            )
+          })
           
         }
         
@@ -365,7 +494,7 @@ mod_criteria_table_server <- function(id, tadat) {
       # Read the Excel file
       df_template <- NULL
       
-      if (file_ext %in% c("xlsx", "xls")) {
+      if (file_ext %in% c("xlsx")) {
         df_template <- tryCatch({
           # Try reading the DefineCriteriaMethodology sheet first
           readxl::read_excel(file_path, 
@@ -402,7 +531,8 @@ mod_criteria_table_server <- function(id, tadat) {
         "ATTAINS.OrganizationIdentifier",
         "ATTAINS.ParameterName", 
         "ATTAINS.UseName",
-        "TADA.CharacteristicName"
+        "TADA.CharacteristicName",
+        "TADA.ComparableDataIdentifier"
       )
       
       # Check for missing required columns
@@ -431,19 +561,19 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Call the reactive expression to get the data
-      df <- review_template_input()
+      df_template <- review_template_input()
       
-      if (is.null(df)) {
+      if (is.null(df_template)) {
         return("Error loading file. Please check the file format.")
       }
       
       # Build summary text
       paste0(
-        "Loaded dataset has ", nrow(df), " rows.\n",
-        "There are ", length(unique(df$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
-        "There are ", length(unique(df$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
-        "There are ", length(unique(df$ATTAINS.UseName)), " unique use type(s).\n",
-        "There are ", length(unique(df$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s)."
+        "Loaded dataset has ", nrow(df_template), " rows.\n",
+        "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
+        "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
+        "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
+        "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s)."
       )
     })
     
@@ -453,12 +583,12 @@ mod_criteria_table_server <- function(id, tadat) {
       shiny::validate(need(!is.null(input$review_template), "No file selected."))
       
       # Get the data from the reactive
-      df <- review_template_input()
+      df_template <- review_template_input()
       
-      shiny::validate(need(!is.null(df), "Error loading file."))
+      shiny::validate(need(!is.null(df_template), "Error loading file."))
       
       # Render table
-      DT::datatable(df,
+      DT::datatable(df_template,
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
@@ -469,6 +599,36 @@ mod_criteria_table_server <- function(id, tadat) {
                                    lengthMenu = c(5, 10, 25, 50, 100),
                                    autoWidth = TRUE))
     })
+    
+    # Activate the batch and custom tabs if the final criteria table is ready
+    shiny::observe({
+      
+      # Validate file is uploaded
+      shiny::validate(need(!is.null(input$review_template), "No file selected."))
+
+      req(review_template_input())
+
+      df_template <- review_template_input()
+
+      # Define required columns for criteria template
+      required_cols <- c(
+        "ATTAINS.OrganizationIdentifier",
+        "ATTAINS.ParameterName",
+        "ATTAINS.UseName",
+        "TADA.CharacteristicName",
+        "TADA.ComparableDataIdentifier"
+      )
+
+      # Check for missing required columns
+      missing_cols <- setdiff(required_cols, names(df_template))
+
+      if (length(missing_cols) == 0){
+        shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
+      } else {
+        shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
+      }})
     
     
   }) 
