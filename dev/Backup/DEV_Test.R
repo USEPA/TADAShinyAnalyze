@@ -44,20 +44,31 @@ temp_table_A <- loadCriteria(state_tribe = "Montana",
 criteria_A_Excel <- TADA_DefineCriteriaMethodology_Shiny(
   .data = MT_dat,
   org_id =  "MTDEQ",
-  AUMLRef = MLtoAU,
-  AU_UsesRef = AUtoUse,
+  AUMLRef = NULL,
+  AU_UsesRef = NULL,
   auto_assign = FALSE,
   criteriaMethods = temp_table_A,
   return_workbook = TRUE
 )
 
 # Option B with TADA_DefineCriteriaMethodology_Shiny
-criteria_B_Excel <- TADA_DefineCriteriaMethodology_Shiny(
+criteria_B_table <- EPATADA::TADA_DefineCriteriaMethodology(
+  .data = MT_dat,
+  org_id = "MTDEQ",
+  auto_assign = TRUE,
+  criteriaMethods = NULL,
+  excel = FALSE,
+  overwrite = FALSE
+)
+
+criteria_B_table <- TADA_DefineCriteriaMethodology_Shiny(
   .data = MT_dat,
   org_id = "MTDEQ",
   auto_assign = TRUE,
   criteriaMethods = NULL,
   return_workbook = TRUE
+  # excel = TRUE,
+  # overwrite = TRUE
 )
 
 # Option C with TADA_DefineCriteriaMethodology_Shiny

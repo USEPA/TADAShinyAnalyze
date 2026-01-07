@@ -92,7 +92,7 @@ mod_criteria_table_ui <- function(id) {
       shiny::column(
         width = 12,
         shiny::verbatimTextOutput(outputId = ns("template_status")),
-        shinyjs::hidden(shiny::downloadButton(
+        shinyjs::disabled(shiny::downloadButton(
           outputId = ns("download_template"),
           label = "Download Template (.zip)",
           style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
@@ -547,8 +547,20 @@ mod_criteria_table_server <- function(id, tadat) {
         )
       }
       
+      # Check for missing rows
+      df_template2 <- df_template %>%
+        dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+      
+      if (nrow(df_template2) == 0) {
+        shiny::showNotification(
+          paste0("Warning: No available data"),
+          type = "warning",
+          duration = 10
+        )
+      }
+      
       # Also save to tadat for use in other modules
-      tadat$criteria_template <- df_template
+      tadat$criteria_template <- df_template2
       
       return(df_template)
     })
@@ -567,9 +579,13 @@ mod_criteria_table_server <- function(id, tadat) {
         return("Error loading file. Please check the file format.")
       }
       
+      # Check for missing rows
+      df_template2 <- df_template %>%
+        dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+      
       # Build summary text
       paste0(
-        "Loaded dataset has ", nrow(df_template), " rows.\n",
+        "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis.", 
         "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
         "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
         "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
@@ -600,35 +616,39 @@ mod_criteria_table_server <- function(id, tadat) {
                                    autoWidth = TRUE))
     })
     
-    # Activate the batch and custom tabs if the final criteria table is ready
-    shiny::observe({
-      
-      # Validate file is uploaded
-      shiny::validate(need(!is.null(input$review_template), "No file selected."))
-
-      req(review_template_input())
-
-      df_template <- review_template_input()
-
-      # Define required columns for criteria template
-      required_cols <- c(
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName",
-        "ATTAINS.UseName",
-        "TADA.CharacteristicName",
-        "TADA.ComparableDataIdentifier"
-      )
-
-      # Check for missing required columns
-      missing_cols <- setdiff(required_cols, names(df_template))
-
-      if (length(missing_cols) == 0){
-        shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
-        shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
-      } else {
-        shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
-        shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
-      }})
+    # # Activate the batch and custom tabs if the final criteria table is ready
+    # shiny::observe({
+    # 
+    #   # Validate file is uploaded
+    #   shiny::validate(need(!is.null(input$review_template), "No file selected."))
+    # 
+    #   req(review_template_input())
+    # 
+    #   df_template <- review_template_input()
+    # 
+    #   # Define required columns for criteria template
+    #   required_cols <- c(
+    #     "ATTAINS.OrganizationIdentifier",
+    #     "ATTAINS.ParameterName",
+    #     "ATTAINS.UseName",
+    #     "TADA.CharacteristicName",
+    #     "TADA.ComparableDataIdentifier"
+    #   )
+    # 
+    #   # Check for missing required columns
+    #   missing_cols <- setdiff(required_cols, names(df_template))
+    # 
+    #   # Check for missing rows
+    #   df_template2 <- df_template %>%
+    #     dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+    # 
+    #   if (length(missing_cols) == 0 & nrow(df_template2) > 0){
+    #     shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
+    #     shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
+    #   } else {
+    #     shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+    #     shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
+    #   }})
     
     
   }) 

@@ -12,8 +12,11 @@ options(warn = 2)
 
 # Get the organization ID
 ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")
+ATTAINS_orgs <- ATTAINS_orgs |>
+  dplyr::arrange(name)
 ATTAINS_orgs_vec <- ATTAINS_orgs$code
 names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
+
 
 # server
 app_server <- function(input, output, session) {
@@ -27,6 +30,9 @@ app_server <- function(input, output, session) {
     warning("Failed to fetch criteria file list from GitHub: ", e$message)
     NULL
   })
+  
+  criteria_file_list <- criteria_file_list |>
+    dplyr::arrange(display_name)
   
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()
