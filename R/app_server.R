@@ -17,7 +17,6 @@ ATTAINS_orgs <- ATTAINS_orgs |>
 ATTAINS_orgs_vec <- ATTAINS_orgs$code
 names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
 
-
 # server
 app_server <- function(input, output, session) {
   # Your application server logic

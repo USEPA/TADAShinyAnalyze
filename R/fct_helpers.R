@@ -1410,7 +1410,6 @@ TADA_DefineCriteriaMethodology_Shiny <- function(.data = NULL,
                                                  auto_assign = FALSE, 
                                                  AUMLRef = NULL, 
                                                  AU_UsesRef = NULL, 
-                                                 epa304a = FALSE, 
                                                  displayUniqueId = FALSE,
                                                  return_workbook = FALSE) {
   
@@ -1425,7 +1424,6 @@ TADA_DefineCriteriaMethodology_Shiny <- function(.data = NULL,
       auto_assign = auto_assign,
       AUMLRef = AUMLRef,
       AU_UsesRef = AU_UsesRef,
-      epa304a = epa304a,
       displayUniqueId = displayUniqueId,
       excel = FALSE
     )
@@ -1439,7 +1437,6 @@ TADA_DefineCriteriaMethodology_Shiny <- function(.data = NULL,
       auto_assign = auto_assign,
       AUMLRef = AUMLRef,
       AU_UsesRef = AU_UsesRef,
-      epa304a = epa304a,
       displayUniqueId = displayUniqueId,
       excel = FALSE
     )

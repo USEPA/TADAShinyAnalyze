@@ -25,21 +25,15 @@ MT.UseAURef <- TADA_AssignUsesToAU(
   org_id = "MTDEQ"
 )
 
-# Get the list of criteria table
-criteria_file_list <- getCriteriaFiles()
-# Get the MTDEQ criteria table from the TADACommunityHub
-temp_table <- loadCriteria(state_tribe = "Montana", ref = criteria_file_list)
-
 ### Apply the TADA_DefineCriteriaMethodology with temp_table
 
 # Case 1: With AUMLRef and AU_UsesRef
 criteria_B_Excel <- TADA_DefineCriteriaMethodology(
   .data = tada.MT.clean,
-  org_id =  "USEPA",
-  auto_assign = FALSE,
+  org_id =  "MTDEQ",
+  auto_assign = TRUE,
   criteriaMethods = NULL,
   AUMLRef = MT.AUMLRef$ATTAINS_crosswalk,
-  epa304a = 
   AU_UsesRef = MT.UseAURef,
   excel = TRUE,
   overwrite = TRUE
