@@ -561,6 +561,7 @@ mod_criteria_table_server <- function(id, tadat) {
       
       # Also save to tadat for use in other modules
       tadat$criteria_template <- df_template2
+      # Get the organization ID from the criteria table
       tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
       
       return(df_template)

@@ -330,14 +330,8 @@ mod_batch_analysis_server <- function(id, tadat){
           selected_cols <- selected_cols
         }
         
-        print("Test 1: Batch")
-        print(dplyr::glimpse(dat4))
-        
         # Select columns
         dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
-        
-        print("Test 2: Batch")
-        print(dplyr::glimpse(dat4_1))
         
         ### Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -538,12 +532,6 @@ mod_batch_analysis_server <- function(id, tadat){
       tadat$excurse_dat <- dat5
       tadat$excurse_dat_filtered <- tadat$excurse_dat
       
-      print("Test 1")
-      print(dat5)
-      
-      print("Test 2")
-      print(tadat$excurse_dat_filtered)
-      
       if (tadat$use_type_batch %in% "Option 1"){
         # Create a table for the map-table selector
         site_AU_table <- dat5 |>
@@ -567,21 +555,12 @@ mod_batch_analysis_server <- function(id, tadat){
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
       
-      print("Test 3")
-      print(dat6)
-      
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
-      print("Test 4")
-      print(dat7)
-      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
-      
-      print("Test 5")
-      print(dat8)
-      
+
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
@@ -612,15 +591,6 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # Save the data to tadat
       tadat$excurse_summary <- dat11
-      
-      print("Test 6")
-      print(dat9)
-      
-      print("Test 7")
-      print(dat10)
-      
-      print("Test 8")
-      print(dat11)
       
       ### Step 10. Download the batch analysis results
       output$download_results <- shiny::downloadHandler(
@@ -845,14 +815,6 @@ mod_batch_analysis_server <- function(id, tadat){
       }
       
     }, ignoreNULL = FALSE)
-    
-    shiny::observe({
-      print("Test tadat$excurse_summary_f")
-      print(tadat$excurse_summary_f)
-      
-      print("Test tadat$excurse_dat_filtered")
-      print(tadat$excurse_summary_f)
-    })
     
     mod_excursion_viewer_server("Summary_View", 
                                 summary_dat = reactive(tadat$excurse_summary_f))

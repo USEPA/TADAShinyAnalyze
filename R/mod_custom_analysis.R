@@ -122,7 +122,7 @@ mod_custom_analysis_server <- function(id, tadat){
     mod_analysis_selector_custom_server("Custom_Select", tadat)
     
     # Reset dependent values when state/tribe changes
-    shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$uses_select_re_custom), {
+    shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$uses_select_re_custom, tadat$criteria_template), {
       tadat$custom_raw <- NULL
       tadat$custom_raw2 <- NULL
       tadat$custom_raw3 <- NULL
@@ -142,6 +142,7 @@ mod_custom_analysis_server <- function(id, tadat){
       shiny::req(tadat$df_mlid_input, tadat$use_type_custom,
                  tadat$loc_select_custom, 
                  tadat$criteria_state_tribe, 
+                 tadat$criteria_template,
                  tadat$uses_select_re_custom)
       
       # Check if uses are selected, if not, don't proceed
@@ -175,7 +176,7 @@ mod_custom_analysis_server <- function(id, tadat){
       if (tadat$use_type_custom %in% "Option 1"){
         req(tadat$df_mltoau_input, tadat$df_autouse_input)
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
         
@@ -202,7 +203,9 @@ mod_custom_analysis_server <- function(id, tadat){
                           unique(criteria_table_f1$TADA.CharacteristicName)) |>
           dplyr::left_join(AU_MLID_f1) |>
           dplyr::left_join(AU_Use_f1, 
-                           by = "ATTAINS.AssessmentUnitIdentifier",
+                           by = c("ATTAINS.AssessmentUnitIdentifier", 
+                                  "ATTAINS.WaterType",
+                                  "ATTAINS.OrganizationIdentifier"),
                            relationship = "many-to-many") |>
           criteria_join(criteria_table_f1, 
                         match_type = tadat$join_select_custom,
@@ -213,7 +216,7 @@ mod_custom_analysis_server <- function(id, tadat){
         
       } else {
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
         
