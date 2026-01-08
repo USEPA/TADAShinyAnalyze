@@ -50,7 +50,7 @@ mod_map_table_selector_server <- function(id, tadat){
     selected_idx <- reactiveVal(integer(0))
   
     shiny::observe({
-      req(tadat$state_tribe, tadat$uses_select_re)
+      req(tadat$criteria_state_tribe, tadat$uses_select_re)
       
       # Map selector
       output$map_selector <- leaflet::renderLeaflet({
@@ -64,7 +64,7 @@ mod_map_table_selector_server <- function(id, tadat){
             # Create a label column
             dplyr::mutate(label = paste0("Site ID: ", "<strong>", TADA.MonitoringLocationIdentifier, "</strong>", "<br/>",
                                          "Site Name: ", "<strong>", TADA.MonitoringLocationName, "</strong>", "<br/>",
-                                         "AU ID: ", "<strong>", JoinToAU.AssessmentUnitIdentifier,  "</strong>", "<br/>")) 
+                                         "AU ID: ", "<strong>", ATTAINS.AssessmentUnitIdentifier,  "</strong>", "<br/>")) 
         } else {
           temp_dat <- dat |>
             # Create a label column
@@ -252,7 +252,7 @@ mod_map_table_selector_server <- function(id, tadat){
       }, ignoreInit = TRUE)
       
       # Reset selection when dataset changes
-      observeEvent(c(tadat$state_tribe, tadat$uses_select_re), {
+      observeEvent(c(tadat$criteria_state_tribe, tadat$uses_select_re), {
         # Clear selections when filters change
         selected_idx(integer(0))
         table_selector_proxy |> DT::selectRows(numeric(0))

@@ -8,7 +8,7 @@
 
 # set options
 options(shiny.maxRequestSize = get_golem_config("MB_LIMIT")*1024^2)
-options(warn = 2)
+options(warn = 1)
 
 # Get the organization ID
 ATTAINS_orgs <- rExpertQuery::EQ_DomainValues("org_id")

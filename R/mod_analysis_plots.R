@@ -289,7 +289,7 @@ mod_analysis_plots_server <- function(id,
       if (loc_select() %in% "MLid"){
         loc_choices <- sort(unique(filtered_data2()$TADA.MonitoringLocationIdentifier))
       } else if (loc_select() %in% "AU"){
-        loc_choices <- sort(unique(filtered_data2()$JoinToAU.AssessmentUnitIdentifier))
+        loc_choices <- sort(unique(filtered_data2()$ATTAINS.AssessmentUnitIdentifier))
       } else {
         # For Custom Grouping, clear the choices and selection
         loc_choices <- NULL
@@ -317,7 +317,7 @@ mod_analysis_plots_server <- function(id,
           dplyr::filter(TADA.MonitoringLocationIdentifier %in% input$loc_box_select)
       } else if (loc_select() %in% "AU"){
         dat2 <- filtered_data2() |>
-          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% input$loc_box_select)
+          dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% input$loc_box_select)
       } else {
         dat2 <- filtered_data2()
       }
@@ -474,7 +474,7 @@ mod_analysis_plots_server <- function(id,
       } else if (loc_select() %in% "AU"){
         rv$p_boxplot <- p + ggplot2::geom_jitter(data = filtered_data4(), ggplot2::aes(x = ATTAINS.UseName,
                                                                             y = TADA.ResultMeasureValue
-                                                                            , fill = JoinToAU.AssessmentUnitIdentifier),
+                                                                            , fill = ATTAINS.AssessmentUnitIdentifier),
                                       color = 'black',
                                       shape = 21,
                                       size = 3.5,
@@ -534,7 +534,7 @@ mod_analysis_plots_server <- function(id,
       if (loc_select() %in% "MLid") {
         df$fill_var <- df$TADA.MonitoringLocationIdentifier
       } else if (loc_select() %in% "AU"){
-        df$fill_var <- df$JoinToAU.AssessmentUnitIdentifier
+        df$fill_var <- df$ATTAINS.AssessmentUnitIdentifier
       } else {
         df$fill_var <- "Custom Group"
       }

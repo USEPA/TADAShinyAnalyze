@@ -12,7 +12,14 @@ criteria_join <- function(x, y, match_type = "Option 2",
                           filter_type = TRUE){
 
   # Add flags to criteria table
-  y2 <- y |> dplyr::mutate(Matched = "Yes")
+  y2 <- y |> 
+    dplyr::mutate(Matched = "Yes") |>
+    # Remove the three columns for now
+    dplyr::select(
+      -ATTAINS.OrganizationIdentifier,
+      -TADA.MethodSpeciationName,
+      -TADA.ComparableDataIdentifier
+    )
 
   # Build join expression as a string
   join_cols <- c(
@@ -216,13 +223,13 @@ modSum <- function(x){
 excursion_summary <- function(x, type){
   
   # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
-  # "JoinToAU.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
+  # "ATTAINS.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
   
   x_cols <- names(x)
   
   coords_cols <- c("TADA.MonitoringLocationIdentifier",
                   "TADA.MonitoringLocationName",
-                  "JoinToAU.AssessmentUnitIdentifier",
+                  "ATTAINS.AssessmentUnitIdentifier",
                   "TADA.LongitudeMeasure",
                   "TADA.LatitudeMeasure")
   
@@ -252,15 +259,15 @@ excursion_summary <- function(x, type){
   
   if (type %in% "MLid"){
     id_cols <- c("TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
-                  "TADA.LongitudeMeasure", "TADA.LatitudeMeasure", "JoinToAU.AssessmentUnitIdentifier",
+                  "TADA.LongitudeMeasure", "TADA.LatitudeMeasure", "ATTAINS.AssessmentUnitIdentifier",
                   id_cols)
   } else if (type %in% "AU") {
-    id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
+    id_cols <- c("ATTAINS.AssessmentUnitIdentifier", id_cols)
   } else {
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
+  # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
 
   x2 <- x |>
@@ -343,7 +350,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
   } else if (type %in% "AU"){
     # For AU grouping, aggregate by AU then join coordinates
     au_summary <- data |>
-      dplyr::group_by(JoinToAU.AssessmentUnitIdentifier) |>
+      dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         total_params = dplyr::n_distinct(TADA.CharacteristicName),
@@ -358,14 +365,14 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
     
     # Join with coordinates
     map_data <- coords_data |>
-      dplyr::left_join(au_summary, by = "JoinToAU.AssessmentUnitIdentifier") |>
+      dplyr::left_join(au_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
       dplyr::mutate(
         has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
         total_params = tidyr::replace_na(total_params, 0),
         # params_exceeding = tidyr::replace_na(params_exceeding, 0),
         use_param_exceeding = tidyr::replace_na(use_param_exceeding, "")
       ) |>
-      dplyr::group_by(JoinToAU.AssessmentUnitIdentifier) |>
+      dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::mutate(
         sites_in_au = dplyr::n_distinct(TADA.MonitoringLocationIdentifier)
       )
@@ -410,11 +417,11 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
         switch(type,
                "MLid" = paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
                                "<b>Site Name:</b> ", TADA.MonitoringLocationName, "<br>"),
-               "AU" = paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
+               "AU" = paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
                              "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
                              "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
-               "CG" = ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data),
-                             paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>",
+               "CG" = ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data),
+                             paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
                                     "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
                              paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")),
                paste0(paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"))),
@@ -457,7 +464,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
   } else if (type %in% "AU"){
     # AU grouping
     au_use_summary <- data |>
-      dplyr::group_by(JoinToAU.AssessmentUnitIdentifier) |>
+      dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         params_exceeding_count = sum(Exceedance == "Exceed"),
@@ -468,7 +475,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       )
     
     map_data <- coords_data |>
-      dplyr::left_join(au_use_summary, by = "JoinToAU.AssessmentUnitIdentifier") |>
+      dplyr::left_join(au_use_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
       dplyr::mutate(
         has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
         params_exceeding_count = tidyr::replace_na(params_exceeding_count, 0),
@@ -508,8 +515,8 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       weight = 1,
       radius = 8,
       popup = ~paste0(
-        ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data), 
-               paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data), 
+               paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>"), ""),
         "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
         "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
@@ -555,7 +562,7 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
   } else if (type %in% "AU"){
     # AU grouping
     au_param_summary <- data |>
-      dplyr::group_by(JoinToAU.AssessmentUnitIdentifier) |>
+      dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         num_excursions = sum(Duration_Excursions, na.rm = TRUE),
@@ -565,7 +572,7 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
       )
     
     map_data <- coords_data |>
-      dplyr::left_join(au_param_summary, by = "JoinToAU.AssessmentUnitIdentifier") |>
+      dplyr::left_join(au_param_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
       dplyr::mutate(
         has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
         num_excursions = tidyr::replace_na(num_excursions, 0)
@@ -600,8 +607,8 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
       weight = 1,
       radius = ~pmin(sqrt(num_excursions) * 3 + 5, 20),
       popup = ~paste0(
-        ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(map_data), 
-               paste0("<b>AU ID:</b> ", JoinToAU.AssessmentUnitIdentifier, "<br>"), ""),
+        ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data), 
+               paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>"), ""),
         "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Parameter:</b> ", selected_param, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
@@ -649,18 +656,18 @@ time_aggregate <- function(x, type){
   if (type %in% "MLid"){
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
-    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
-      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    if ("ATTAINS.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "ATTAINS.AssessmentUnitIdentifier", id_cols)
     } else {
       id_cols <- c(base_id_cols, id_cols)
     }
   } else if (type %in% "AU"){
-    id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
+    id_cols <- c("ATTAINS.AssessmentUnitIdentifier", id_cols)
   } else {
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
+  # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
   
   # Collapse duplicate samples at the SAME DateTime (per id_cols) via mean
@@ -743,18 +750,18 @@ duration_cal <- function(x, type, complete_windows = TRUE){
   if (type %in% "MLid"){
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
-    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
-      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    if ("ATTAINS.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "ATTAINS.AssessmentUnitIdentifier", id_cols)
     } else {
       id_cols <- c(base_id_cols, id_cols)
     }
   } else if (type %in% "AU"){
-    id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
+    id_cols <- c("ATTAINS.AssessmentUnitIdentifier", id_cols)
   } else {
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
+  # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
   
   x_ordered <- x |>
@@ -1072,18 +1079,18 @@ frequency_summary <- function(x, type){
   if (type %in% "MLid"){
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
-    if ("JoinToAU.AssessmentUnitIdentifier" %in% x_cols) {
-      id_cols <- c(base_id_cols, "JoinToAU.AssessmentUnitIdentifier", id_cols)
+    if ("ATTAINS.AssessmentUnitIdentifier" %in% x_cols) {
+      id_cols <- c(base_id_cols, "ATTAINS.AssessmentUnitIdentifier", id_cols)
     } else {
       id_cols <- c(base_id_cols, id_cols)
     }
   } else if (type %in% "AU"){
-    id_cols <- c("JoinToAU.AssessmentUnitIdentifier", id_cols)
+    id_cols <- c("ATTAINS.AssessmentUnitIdentifier", id_cols)
   } else {
     id_cols <- id_cols
   }
   
-  # Check if JoinToAU.AssessmentUnitIdentifier exists
+  # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
   
   # Remove methods not able to be calculated for now

@@ -561,6 +561,7 @@ mod_criteria_table_server <- function(id, tadat) {
       
       # Also save to tadat for use in other modules
       tadat$criteria_template <- df_template2
+      tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
       
       return(df_template)
     })
@@ -616,39 +617,45 @@ mod_criteria_table_server <- function(id, tadat) {
                                    autoWidth = TRUE))
     })
     
-    # # Activate the batch and custom tabs if the final criteria table is ready
-    # shiny::observe({
-    # 
-    #   # Validate file is uploaded
-    #   shiny::validate(need(!is.null(input$review_template), "No file selected."))
-    # 
-    #   req(review_template_input())
-    # 
-    #   df_template <- review_template_input()
-    # 
-    #   # Define required columns for criteria template
-    #   required_cols <- c(
-    #     "ATTAINS.OrganizationIdentifier",
-    #     "ATTAINS.ParameterName",
-    #     "ATTAINS.UseName",
-    #     "TADA.CharacteristicName",
-    #     "TADA.ComparableDataIdentifier"
-    #   )
-    # 
-    #   # Check for missing required columns
-    #   missing_cols <- setdiff(required_cols, names(df_template))
-    # 
-    #   # Check for missing rows
-    #   df_template2 <- df_template %>%
-    #     dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
-    # 
-    #   if (length(missing_cols) == 0 & nrow(df_template2) > 0){
-    #     shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
-    #     shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
-    #   } else {
-    #     shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
-    #     shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
-    #   }})
+    # Save the options to the next tab
+    shiny::observe({
+      tadat$criteria_method <- input$criteria_method
+      tadat$state_tribe_select <- input$state_tribe_select
+    })
+    
+    # Activate the batch and custom tabs if the final criteria table is ready
+    shiny::observe({
+
+      # Validate file is uploaded
+      shiny::validate(need(!is.null(input$review_template), "No file selected."))
+
+      req(review_template_input())
+
+      df_template <- review_template_input()
+
+      # Define required columns for criteria template
+      required_cols <- c(
+        "ATTAINS.OrganizationIdentifier",
+        "ATTAINS.ParameterName",
+        "ATTAINS.UseName",
+        "TADA.CharacteristicName",
+        "TADA.ComparableDataIdentifier"
+      )
+
+      # Check for missing required columns
+      missing_cols <- setdiff(required_cols, names(df_template))
+
+      # Check for missing rows
+      df_template2 <- df_template %>%
+        dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+
+      if (length(missing_cols) == 0 & nrow(df_template2) > 0){
+        shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::enable(selector = '.nav li a[data-value="Custom"]')
+      } else {
+        shinyjs::disable(selector = '.nav li a[data-value="Batch"]')
+        shinyjs::disable(selector = '.nav li a[data-value="Custom"]')
+      }})
     
     
   }) 

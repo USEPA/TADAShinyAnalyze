@@ -136,7 +136,7 @@ mod_batch_analysis_server <- function(id, tadat){
     mod_analysis_selector_server("Batch_Select", tadat)
     
     # Clear all dependent data immediately when state/tribe or uses change
-    shiny::observeEvent(c(tadat$uses_select_re, tadat$criteria_state_tribe, tadat$criteria_template), {
+    shiny::observeEvent(c(tadat$state_tribe, tadat$uses_select_re), {
       # Clear all analysis results
       tadat$site_AU_table <- NULL
       tadat$available_param_num <- NULL
@@ -186,8 +186,8 @@ mod_batch_analysis_server <- function(id, tadat){
     # })
     
     shiny::observe({
-      shiny::req(tadat$df_mlid_input, tadat$use_type_batch, tadat$criteria_template,
-                 tadat$loc_select, tadat$uses_select_re, tadat$join_select)
+      shiny::req(tadat$df_mlid_input, tadat$use_type_batch,
+                 tadat$loc_select, tadat$state_tribe, tadat$uses_select_re, tadat$join_select)
       
       # Check if uses are selected, if not, don't proceed
       if (is.null(tadat$uses_select_re) || length(tadat$uses_select_re) == 0) {
@@ -225,21 +225,23 @@ mod_batch_analysis_server <- function(id, tadat){
         if (tadat$use_type_batch %in% "Option 1"){
           req(tadat$df_mltoau_input, tadat$df_autouse_input)
           
-          criteria_table_f1 <- tadat$criteria_template |>
-            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
+          criteria_table_f1 <- criteria_table |>
+            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
           
           # Filter the AU_Use based on available_uses_s
           AU_Use <- tadat$df_autouse_input
-          AU_MLID <- tadat$df_mltoau_input 
+          AU_MLID <- tadat$df_mltoau_input |>
+            dplyr::mutate(TADA.MonitoringLocationIdentifier = 
+                            stringr::str_to_upper(MonitoringLocationIdentifier))
           
           AU_Use_f1 <- AU_Use |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
           
           # Filter the AU_MLID based on AU_Use_f1
           AU_MLID_f1 <- AU_MLID |>
-            dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% 
-                            AU_Use_f1$ATTAINS.AssessmentUnitIdentifier)
+            dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
+                            AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
           
           # Filter the input data based on AU_MLID_f1
           dat3 <- dat2 |>
@@ -250,9 +252,7 @@ mod_batch_analysis_server <- function(id, tadat){
           dat4 <- dat3 |>
             dplyr::left_join(AU_MLID_f1) |>
             dplyr::left_join(AU_Use_f1, 
-                             by = c("ATTAINS.AssessmentUnitIdentifier", 
-                                    "ATTAINS.WaterType",
-                                    "ATTAINS.OrganizationIdentifier"),
+                             by = "JoinToAU.AssessmentUnitIdentifier",
                              relationship = "many-to-many") |>
             criteria_join(criteria_table_f1, 
                           match_type = tadat$join_select,
@@ -263,8 +263,8 @@ mod_batch_analysis_server <- function(id, tadat){
           
         } else {
           
-          criteria_table_f1 <- tadat$criteria_template |>
-            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
+          criteria_table_f1 <- criteria_table |>
+            dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe) |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
           
           # Join the criteria_table_f1 and AU_MLID_f1 to dat2
@@ -324,7 +324,7 @@ mod_batch_analysis_server <- function(id, tadat){
         
         if (tadat$use_type_batch %in% "Option 1"){
           selected_cols <- c(selected_cols[1:4], 
-                             "ATTAINS.AssessmentUnitIdentifier",
+                             "JoinToAU.AssessmentUnitIdentifier",
                              selected_cols[5:40])
         } else {
           selected_cols <- selected_cols
@@ -337,7 +337,7 @@ mod_batch_analysis_server <- function(id, tadat){
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
         dat_yes <- dat4_1 |> 
           dplyr::filter(EquationBased %in% "Yes") |>
-          # Remove Additional Information in the EquationType for now
+          # Reove Additional Information in the EquationType for now
           dplyr::filter(!EquationType %in% "Additional Information")
         
         dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
@@ -532,12 +532,6 @@ mod_batch_analysis_server <- function(id, tadat){
       tadat$excurse_dat <- dat5
       tadat$excurse_dat_filtered <- tadat$excurse_dat
       
-      print("Test 1")
-      print(dat5)
-      
-      print("Test 2")
-      print(tadat$excurse_dat_filtered)
-      
       if (tadat$use_type_batch %in% "Option 1"){
         # Create a table for the map-table selector
         site_AU_table <- dat5 |>
@@ -545,7 +539,7 @@ mod_batch_analysis_server <- function(id, tadat){
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
                           TADA.LatitudeMeasure,
-                          ATTAINS.AssessmentUnitIdentifier)
+                          JoinToAU.AssessmentUnitIdentifier)
       } else {
         site_AU_table <- dat5 |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,
@@ -561,20 +555,11 @@ mod_batch_analysis_server <- function(id, tadat){
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
       
-      print("Test 3")
-      print(dat6)
-      
       ### Step 7. Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
       
-      print("Test 4")
-      print(dat7)
-      
       ### Step 8. Conduct Duration Analysis
       dat8 <- dat7 |> duration_cal(type = tadat$loc_select, complete_windows = FALSE)
-      
-      print("Test 5")
-      print(dat8)
       
       # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
@@ -606,15 +591,6 @@ mod_batch_analysis_server <- function(id, tadat){
       
       # Save the data to tadat
       tadat$excurse_summary <- dat11
-      
-      print("Test 6")
-      print(dat9)
-      
-      print("Test 7")
-      print(dat10)
-      
-      print("Test 8")
-      print(dat11)
       
       ### Step 10. Download the batch analysis results
       output$download_results <- shiny::downloadHandler(
@@ -707,11 +683,11 @@ mod_batch_analysis_server <- function(id, tadat){
           # First get the AUs for selected monitoring locations
           selected_aus <- tadat$site_AU_table |>
             dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs) |>
-            dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
+            dplyr::pull(JoinToAU.AssessmentUnitIdentifier) |>
             unique()
           
           excursion_summary2 <- tadat$excurse_summary |>
-            dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
+            dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% selected_aus)
         }
         
         # Save excursion_summary2 to tadat
@@ -788,10 +764,10 @@ mod_batch_analysis_server <- function(id, tadat){
             dplyr::filter(TADA.CharacteristicName %in% filtered_params,
                           TADA.MonitoringLocationIdentifier %in% filtered_locs)
         } else {
-          filtered_aus <- unique(tadat$excurse_summary_f$ATTAINS.AssessmentUnitIdentifier)
+          filtered_aus <- unique(tadat$excurse_summary_f$JoinToAU.AssessmentUnitIdentifier)
           tadat$excurse_dat_filtered <- tadat$excurse_dat |>
             dplyr::filter(TADA.CharacteristicName %in% filtered_params,
-                          ATTAINS.AssessmentUnitIdentifier %in% filtered_aus)
+                          JoinToAU.AssessmentUnitIdentifier %in% filtered_aus)
         }
       } else {
         tadat$excurse_dat_filtered <- NULL
@@ -819,11 +795,11 @@ mod_batch_analysis_server <- function(id, tadat){
       } else {
         selected_aus <- tadat$site_AU_table |>
           dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs) |>
-          dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
+          dplyr::pull(JoinToAU.AssessmentUnitIdentifier) |>
           unique()
         
         exceedance_summary2 <- tadat$exceed_summary |>
-          dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
+          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% selected_aus)
       }
       
       # Handle NULL or empty parameter filter
@@ -839,14 +815,6 @@ mod_batch_analysis_server <- function(id, tadat){
       }
       
     }, ignoreNULL = FALSE)
-    
-    shiny::observe({
-      print("Test tadat$excurse_summary_f")
-      print(tadat$excurse_summary_f)
-      
-      print("Test tadat$excurse_dat_filtered")
-      print(tadat$excurse_summary_f)
-    })
     
     mod_excursion_viewer_server("Summary_View", 
                                 summary_dat = reactive(tadat$excurse_summary_f))
