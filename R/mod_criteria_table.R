@@ -94,7 +94,7 @@ mod_criteria_table_ui <- function(id) {
         shiny::verbatimTextOutput(outputId = ns("template_status")),
         shinyjs::disabled(shiny::downloadButton(
           outputId = ns("download_template"),
-          label = "Download Template (.zip)",
+          label = "Download Template (.xlsx)",
           style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
         )
       )
@@ -438,29 +438,17 @@ mod_criteria_table_server <- function(id, tadat) {
     # Download the Excel workbook with criteria_template
     output$download_template <- shiny::downloadHandler(
       filename = function() {
-        paste0("Criteria_Template_", format(Sys.time(), "%Y%m%d%H%M%S"), ".zip")
+        paste0("Criteria_Template_", format(Sys.time(), "%Y%m%d%H%M%S"), ".xlsx")
       },
       content = function(file) {
         req(criteria_template_rv())
         
-        # Create temp directory
-        temp_dir <- tempdir()
-        
-        # Define file paths
-        excel_path <- file.path(temp_dir, "Criteria_Methods_Template.xlsx")
-        
-        # Save workbook
+        # Save workbook directly to the download file
         if (!is.null(criteria_template_rv()$workbook)) {
-          openxlsx::saveWorkbook(criteria_template_rv()$workbook, excel_path, overwrite = TRUE)
+          openxlsx::saveWorkbook(criteria_template_rv()$workbook, file, overwrite = TRUE)
         }
-        
-        # Create zip file
-        files_to_zip <- c()
-        if (file.exists(excel_path)) files_to_zip <- c(files_to_zip, excel_path)
-
-        utils::zip(zipfile = file, files = files_to_zip, flags = "-j")
       },
-      contentType = "application/zip"
+      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
     
     ### Upload the reviewed criteria template
