@@ -122,7 +122,7 @@ mod_custom_analysis_server <- function(id, tadat){
     mod_analysis_selector_custom_server("Custom_Select", tadat)
     
     # Reset dependent values when state/tribe changes
-    shiny::observeEvent(c(tadat$state_tribe_custom, tadat$uses_select_re_custom), {
+    shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$uses_select_re_custom), {
       tadat$custom_raw <- NULL
       tadat$custom_raw2 <- NULL
       tadat$custom_raw3 <- NULL
@@ -141,7 +141,7 @@ mod_custom_analysis_server <- function(id, tadat){
     shiny::observe({
       shiny::req(tadat$df_mlid_input, tadat$use_type_custom,
                  tadat$loc_select_custom, 
-                 tadat$state_tribe_custom, 
+                 tadat$criteria_state_tribe, 
                  tadat$uses_select_re_custom)
       
       # Check if uses are selected, if not, don't proceed
@@ -176,22 +176,20 @@ mod_custom_analysis_server <- function(id, tadat){
         req(tadat$df_mltoau_input, tadat$df_autouse_input)
         
         criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe_custom) |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
         
         # Filter the AU_Use based on available_uses_s
         AU_Use <- tadat$df_autouse_input
-        AU_MLID <- tadat$df_mltoau_input |>
-          dplyr::mutate(TADA.MonitoringLocationIdentifier = 
-                          stringr::str_to_upper(MonitoringLocationIdentifier))
+        AU_MLID <- tadat$df_mltoau_input 
         
         AU_Use_f1 <- AU_Use |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
         
         # Filter the AU_MLID based on AU_Use_f1
         AU_MLID_f1 <- AU_MLID |>
-          dplyr::filter(JoinToAU.AssessmentUnitIdentifier %in% 
-                          AU_Use_f1$JoinToAU.AssessmentUnitIdentifier)
+          dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% 
+                          AU_Use_f1$ATTAINS.AssessmentUnitIdentifier)
         
         # Filter the input data based on AU_MLID_f1
         dat3 <- dat2 |>
@@ -204,7 +202,7 @@ mod_custom_analysis_server <- function(id, tadat){
                           unique(criteria_table_f1$TADA.CharacteristicName)) |>
           dplyr::left_join(AU_MLID_f1) |>
           dplyr::left_join(AU_Use_f1, 
-                           by = "JoinToAU.AssessmentUnitIdentifier",
+                           by = "ATTAINS.AssessmentUnitIdentifier",
                            relationship = "many-to-many") |>
           criteria_join(criteria_table_f1, 
                         match_type = tadat$join_select_custom,
@@ -216,7 +214,7 @@ mod_custom_analysis_server <- function(id, tadat){
       } else {
         
         criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$state_tribe_custom) |>
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
         
         # Join the criteria_table_f1 and AU_MLID_f1 to dat2
@@ -277,14 +275,20 @@ mod_custom_analysis_server <- function(id, tadat){
       
       if (tadat$use_type_custom %in% "Option 1"){
         selected_cols <- c(selected_cols[1:4], 
-                           "JoinToAU.AssessmentUnitIdentifier",
+                           "ATTAINS.AssessmentUnitIdentifier",
                            selected_cols[5:40])
       } else {
         selected_cols <- selected_cols
       }
       
+      print("Test 1: Custom")
+      print(dplyr::glimpse(dat4))
+      
       # Select columns
       dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+      
+      print("Test 2: Custom")
+      print(dplyr::glimpse(dat4_1))
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -310,7 +314,7 @@ mod_custom_analysis_server <- function(id, tadat){
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
                           TADA.LatitudeMeasure,
-                          JoinToAU.AssessmentUnitIdentifier)
+                          ATTAINS.AssessmentUnitIdentifier)
       } else {
         site_AU_table <- dat_match |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,

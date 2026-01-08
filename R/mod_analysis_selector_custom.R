@@ -14,10 +14,16 @@ mod_analysis_selector_custom_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
+        shiny::verbatimTextOutput(ns("current_criteria_info_custom"))
+      )
+    ),
+    fluidRow(
+      column(
+        width = 12,
         htmltools::p("Determine the spatial unit, state/tribe of the criteria, and the uses included in the analysis."),
         htmltools::p("If only Water Quality Data File is available 
-                     or if users select the EPA 304(a) option in the 'Select state/tribe of the criteria',
-                     The AU option would not be available for the 'Custom Analyzed by the spatial unit'. In this case, 
+                     or if users select the EPA option in the 'Criteria Table' tab,
+                     The AU option would not be available for the 'Batch Analyzed by the spatial unit'. In this case, 
                      the tool will not match the ATTAINS.UseName from the criteria table to the assessment units.")
       )
     ),
@@ -31,16 +37,10 @@ mod_analysis_selector_custom_ui <- function(id) {
                                         "Custom Gouping (Use the following map-table selector to select sites to group)" = "CG"))
       ),
       column(
-        width = 3,
-        shiny::selectizeInput(inputId = ns("state_tribe_custom"),
-                              label = "Select state/tribe of the criteria",
-                              choices = NULL),
+        width = 6,
         shiny::checkboxInput(inputId = ns("uses_all_custom"),
                              label = "Select all uses",
-                             value = TRUE)
-      ),
-      column(
-        width = 3,
+                             value = TRUE),
         shinyWidgets::virtualSelectInput(
           inputId = ns("uses_select_custom"),
           label = "Select the uses:",
@@ -49,7 +49,7 @@ mod_analysis_selector_custom_ui <- function(id) {
           search = TRUE,
           multiple = TRUE
         )
-      )
+      ),
     ),
     fluidRow(
       column(width = 6,
@@ -70,6 +70,12 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     
     # Disable uses_select on initialization since uses_all defaults to TRUE
     shinyjs::disable("uses_select_custom")
+    
+    # Show the state/tribe selection
+    output$current_criteria_info_custom <- shiny::renderText({
+      paste0("Current criteria: ", tadat$criteria_state_tribe, 
+             " (Method: ", tadat$criteria_method, ")")
+    })
     
     # Update the Select state/tribe menu
     shiny::observeEvent(tadat$df_mltoau_input, {
@@ -97,12 +103,13 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     
     # An observe block to determine the use_type
     shiny::observe({
+      req(tadat$criteria_template)
       # Check if all three files are loaded
       if (isTRUE(tadat$files_loaded_mlid) && 
           isTRUE(tadat$files_loaded_mltoau) && 
           isTRUE(tadat$files_loaded_autouse)) {
         # All files are loaded - check if user selected default criteria
-        if (isTRUE(input$state_tribe_custom %in% "D")) {
+        if (isTRUE(tadat$criteria_state_tribe %in% "D")) {
           use_type <- "Option 2"  # Default criteria selected
         } else {
           use_type <- "Option 1"  # Use crosswalk files
@@ -163,15 +170,15 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     })
     
     # Update the available uses when state/tribe changes
-    shiny::observeEvent(c(input$state_tribe_custom, tadat$use_type_custom), {
-      req(input$state_tribe_custom)
+    shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$use_type_custom), {
+      req(tadat$criteria_state_tribe)
       req(tadat$use_type_custom)
       
       if (tadat$use_type_custom %in% "Option 1"){
         req(tadat$df_autouse_input)
         
         criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe_custom)
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1
         criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
@@ -184,7 +191,7 @@ mod_analysis_selector_custom_server <- function(id, tadat){
       } else {
         
         criteria_table_f1 <- criteria_table |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% input$state_tribe_custom)
+          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1
         criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
@@ -268,7 +275,6 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     ### Save the selected loc_select, state_tribe and uses to tadat
     shiny::observe({
       tadat$loc_select_custom <- input$loc_select_custom
-      tadat$state_tribe_custom <- input$state_tribe_custom
       tadat$join_select_custom <- input$join_select_custom
     })
   })

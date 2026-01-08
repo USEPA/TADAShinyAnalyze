@@ -494,7 +494,7 @@ mod_load_file_server <- function(id, tadat){
         # print
         paste0(
           "Loaded dataset has ", nrow(df_mltoau_summary), " rows and ", ncol(df_mltoau_summary), " columns.\n",
-          "There are ", length(unique(df_mltoau_summary$MonitoringLocationIdentifier)), " unique monitoring locations.",
+          "There are ", length(unique(df_mltoau_summary$TADA.MonitoringLocationIdentifier)), " unique monitoring locations.",
           "There are ", length(unique(df_mltoau_summary$ATTAINS.AssessmentUnitIdentifier)), " unique assessment units."
         )
       }

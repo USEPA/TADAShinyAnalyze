@@ -77,8 +77,8 @@ mod_map_viewer_server <- function(id, tadat){
             popup = ~paste0(
               "<strong>Location:</strong> ", TADA.MonitoringLocationName, "<br>",
               "<strong>Location ID:</strong> ", TADA.MonitoringLocationIdentifier, "<br>",
-              ifelse("JoinToAU.AssessmentUnitIdentifier" %in% names(dat2),
-                     paste0("<strong>Assessment Unit:</strong> ", JoinToAU.AssessmentUnitIdentifier, "<br>"),
+              ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(dat2),
+                     paste0("<strong>Assessment Unit:</strong> ", ATTAINS.AssessmentUnitIdentifier, "<br>"),
                      ""),
               "<strong>Exceedance:</strong> ", ifelse(Exceedance_Result, "Yes", "No"), "<br>",
               "<strong>Coordinates:</strong> ", round(TADA.LatitudeMeasure, 4), ", ", 

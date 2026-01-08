@@ -54,6 +54,62 @@ dat4_1 <- dat4 |>
   tidyr::drop_na(TADA.ResultMeasureValue) |>
   tidyr::drop_na(DateTime)
 
+# Construct the selected columns
+selected_cols <- c(
+  "TADA.MonitoringLocationIdentifier",
+  "TADA.MonitoringLocationName",
+  "TADA.LongitudeMeasure",
+  "TADA.LatitudeMeasure",
+  "ATTAINS.OrganizationIdentifier",
+  "ATTAINS.ParameterName",
+  "ATTAINS.UseName",
+  "AcuteChronic",
+  "UniqueSpatialCriteria",
+  "Season",
+  "EquationBased",
+  "EquationType", 
+  "TADA.CharacteristicName",
+  "TADA.ResultSampleFractionText",
+  "TADA.MethodSpeciationName",
+  "TADA.ResultMeasure.MeasureUnitCode",
+  "TADA.ResultMeasureValue",
+  "ActivityStartDate",
+  "DateTime",
+  "pH",
+  "Temperature",
+  "Hardness",
+  "MagnitudeValueLower",
+  "MagnitudeValueUpper",
+  "DurationValue",
+  "DurationUnit",
+  "DurationMethod",
+  "FreqValue",
+  "FreqMethod",
+  # Equation coefficient columns
+  "Equation",
+  "hardness_param_1",
+  "hardness_param_2",
+  "hardness_param_3",
+  "hardness_param_4",
+  "hardness_param_5",
+  "hardness_param_6",
+  "pH_param_1",
+  "pH_param_2",
+  "pH_param_3",
+  "pH_param_4"
+)
+
+if (tadat$use_type_batch %in% "Option 1"){
+  selected_cols <- c(selected_cols[1:4], 
+                     "ATTAINS.AssessmentUnitIdentifier",
+                     selected_cols[5:40])
+} else {
+  selected_cols <- selected_cols
+}
+
+# Select columns
+dat4_1 <- dat4_1 |> dplyr::select(dplyr::all_of(selected_cols))
+
 # x <- dat4
 # y <- criteria_table_f1 |>
 #   dplyr::select(

@@ -330,8 +330,14 @@ mod_batch_analysis_server <- function(id, tadat){
           selected_cols <- selected_cols
         }
         
+        print("Test 1: Batch")
+        print(dplyr::glimpse(dat4))
+        
         # Select columns
         dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+        
+        print("Test 2: Batch")
+        print(dplyr::glimpse(dat4_1))
         
         ### Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
