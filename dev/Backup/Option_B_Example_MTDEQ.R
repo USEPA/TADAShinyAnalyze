@@ -39,5 +39,17 @@ criteria_B_Excel <- TADA_DefineCriteriaMethodology(
   overwrite = TRUE
 )
 
+criteria_B_Excel2 <- TADA_DefineCriteriaMethodology(
+  .data = tada.MT.clean,
+  org_id =  "MTDEQ",
+  auto_assign = TRUE,
+  criteriaMethods = NULL,
+  AUMLRef = MT.AUMLRef$ATTAINS_crosswalk,
+  AU_UsesRef = MT.UseAURef,
+  displayUniqueId = TRUE,
+  excel = TRUE,
+  overwrite = TRUE
+)
+
 
 

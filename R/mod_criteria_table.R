@@ -62,13 +62,15 @@ mod_criteria_table_ui <- function(id) {
           ),
           width = "100%"
         ),
-        shiny::actionButton(ns("Generate_Template"), "Generate Template", shiny::icon("computer"),
-                            style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+        shinyjs::disabled(
+          shiny::actionButton(ns("Generate_Template"), "Generate Template", shiny::icon("computer"),
+                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+          )
         )
       ),
       shiny::column(
         width = 6,
-        shinyjs::disabled(
+        shinyjs::hidden(
           shiny::selectInput(
             inputId = ns("state_tribe_select"),
             label = "Select the State/Tribe",
@@ -84,7 +86,18 @@ mod_criteria_table_ui <- function(id) {
             multiple = FALSE,
             accept = c(".xlsx")
           )
-        )
+        ),
+        shinyjs::hidden(
+          shiny::selectInput(
+            inputId = ns("state_tribe_select_OP_E"),
+            label = "Select the State/Tribe (from the uploaded criteria table file)",
+            choices = character(0)
+          )
+        )#,
+        # shinyWidgets::prettySwitch(
+        #   inputId = "criteria_displayUniqueId",
+        #   label = "Print all unique TADA.ComparableDataIdentifier in the criteria table"
+        # )
       )
     ),
     htmltools::br(),
@@ -164,7 +177,7 @@ mod_criteria_table_server <- function(id, tadat) {
     }
     
     # UI control
-    shiny::observeEvent(input$criteria_method, {
+    shiny::observeEvent(c(input$criteria_method, input$state_tribe_select_OP_E), {
       
       # If input$criteria_method is A, use criteria_file_list instead
       if (input$criteria_method %in% "A"){
@@ -182,14 +195,40 @@ mod_criteria_table_server <- function(id, tadat) {
       }
 
       # Activate state_tribe_select if input$criteria_method is A or B
-      shinyjs::toggleState(id = "state_tribe_select",
+      shinyjs::toggle(id = "state_tribe_select",
                            condition = input$criteria_method %in% c("A", "B"))
       
       # Activate the upload_template if input$criteria_method is E
       shinyjs::toggle(id = "upload_template",
-                           condition = input$criteria_method %in% c("E"))
+                           condition = input$criteria_method %in% "E")
+      
+      # Activate the state_tribe_select_OP_E if input$criteria_method is E
+      shinyjs::toggle(id = "state_tribe_select_OP_E",
+                      condition = input$criteria_method %in% "E")
+      
+      # Activate the Generate Template button if input$criteria_method %in% "E"
+      # and input$state_tribe_select_OP_E" is not ""
+      shinyjs::toggleState(id = "Generate_Template",
+                           condition = input$criteria_method %in% c("A", "B", "C", "D") |
+                             (input$criteria_method %in% "E" & (input$state_tribe_select_OP_E != "")))
       
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
+    
+    # Update the input$state_tribe_select_OP_E if users uploaded criteria table for Option E
+    shiny::observeEvent(uploaded_temp_table(), {
+      req(uploaded_temp_table)
+      
+      temp_table <- uploaded_temp_table()
+      
+      # Get the org ID
+      org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
+      
+      shiny::updateSelectInput(
+        session = session,
+        inputId = "state_tribe_select_OP_E",
+        choices = org_ID
+      )
+    })
     
     ### Upload the template for Option E
     
@@ -304,7 +343,7 @@ mod_criteria_table_server <- function(id, tadat) {
         # Option A: TADA Community Hub Templates
         if (input$criteria_method %in% "A") {
           req(input$state_tribe_select)
-          
+
           # Get the criteria table from the TADACommunityHub
           temp_table <- loadCriteria(input$state_tribe_select, ref = tadat$criteria_file_list)
           
@@ -327,7 +366,7 @@ mod_criteria_table_server <- function(id, tadat) {
         } else if (input$criteria_method %in% "B") {
           req(input$state_tribe_select)
           req(tadat$df_mlid_input)
-          
+
           criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 .data = tadat$df_mlid_input,
@@ -342,7 +381,7 @@ mod_criteria_table_server <- function(id, tadat) {
           
         # Option C: Any State/Tribe from ATTAINS
         } else if (input$criteria_method %in% "C") {
-          
+
           criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 .data = tadat$df_mlid_input,
@@ -365,6 +404,7 @@ mod_criteria_table_server <- function(id, tadat) {
           
         # Option D: Blank Template
         } else if (input$criteria_method %in% "D"){
+          req(input$criteria_displayUniqueId)
           
           criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
@@ -374,17 +414,15 @@ mod_criteria_table_server <- function(id, tadat) {
           
         } else {
           
+          req(input$state_tribe_select_OP_E != "")
           req(uploaded_temp_table)
-          
+
           temp_table <- uploaded_temp_table()
-          
-          # Get the org ID
-          org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
           
           criteria_template <- run_with_warnings({
             TADA_DefineCriteriaMethodology_Shiny(
               .data = tadat$df_mlid_input,
-              org_id = org_ID,
+              org_id = input$state_tribe_select_OP_E,
               auto_assign = FALSE,
               criteriaMethods = temp_table,
               AUMLRef = tadat$df_mltoau_input,
