@@ -1,0 +1,9 @@
+ATTAINS.OrganizationIdentifier,ATTAINS.AssessmentUnitIdentifier,ATTAINS.UseName,ATTAINS.WaterType,TADA.AssessmentUnitStatus,IncludeOrExclude
+MTDEQ,MT42K001_010,Agricultural,RIVER,Existing,Include
+MTDEQ,MT42K001_010,Aquatic Life,RIVER,Existing,Include
+MTDEQ,MT42K001_010,Drinking Water,RIVER,Existing,Include
+MTDEQ,MT42K001_010,Primary Contact Recreation,RIVER,Existing,Include
+MTDEQ,MT42K001_020,Agricultural,RIVER,Existing,Include
+MTDEQ,MT42K001_020,Aquatic Life,RIVER,Existing,Include
+MTDEQ,MT42K001_020,Drinking Water,RIVER,Existing,Include
+MTDEQ,MT42K001_020,Primary Contact Recreation,RIVER,Existing,Include

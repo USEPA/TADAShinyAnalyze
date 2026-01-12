@@ -81,7 +81,7 @@ mod_criteria_table_ui <- function(id) {
           shiny::selectInput(
             inputId = ns("state_tribe_select"),
             label = "Select the State/Tribe",
-            choices = ATTAINS_orgs_vec
+            choices = character(0)
           )
         ),
         shinyjs::hidden(
@@ -193,7 +193,7 @@ mod_criteria_table_server <- function(id, tadat) {
         shiny::updateSelectInput(
           session = session,
           inputId = "state_tribe_select",
-          choices = ATTAINS_orgs_vec
+          choices = tadat$ATTAINS_orgs_vec
         )
       }
 
@@ -595,9 +595,6 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$criteria_template <- df_template2
       # Get the organization ID from the criteria table
       tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
-      
-      print("Test tadat$criteria_template")
-      print(any(names(tadat$criteria_template) %in% "ATTAINS.OrganizationIdentifier"))
       
       return(df_template)
     })

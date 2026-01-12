@@ -17,6 +17,7 @@ css <- "
 /* This displays the custom cursor on the disabled anchor.  It gets overwritten when the nav li is activated. */
 .nav li {
   cursor: not-allowed !important;
+}
 .row {
     margin-right: 0px;
     margin-left: 0px;

@@ -6,17 +6,6 @@
 #' @noRd
 #' 
 
-# set options
-options(shiny.maxRequestSize = get_golem_config("MB_LIMIT")*1024^2)
-options(warn = 2)
-
-# Get the organization ID
-ATTAINS_orgs <- suppressWarnings(suppressMessages(rExpertQuery::EQ_DomainValues("org_id")))
-ATTAINS_orgs <- ATTAINS_orgs |>
-  dplyr::arrange(name)
-ATTAINS_orgs_vec <- ATTAINS_orgs$code
-names(ATTAINS_orgs_vec) <- ATTAINS_orgs$name
-
 # server
 app_server <- function(input, output, session) {
   # Your application server logic
@@ -38,6 +27,10 @@ app_server <- function(input, output, session) {
   
   # Add explicit initialization
   tadat$criteria_file_list <- criteria_file_list
+  
+  # org id options (set in run_app() onStart)
+  golem_opts <- golem::get_golem_options()
+  tadat$ATTAINS_orgs_vec <- golem_opts[["ATTAINS_orgs_vec"]]
   
   tadat$df_mltoau_input <- NULL
   tadat$df_autouse_input <- NULL
