@@ -31,12 +31,12 @@ mod_analysis_data_viewer_custom_server <- function(id, tadat){
       output$Avail_Data_Custom <- shiny::renderText(
         # if file was selected
         if (is.null(tadat$available_param_num_custom)) {
-          "Users need to provide inputs to select the data or the tool could not find matched parameters based on the selected state/tribe criteria table. \nPlease refine the state/tribe criteria selection"
+          "Users need to provide inputs to select the data or the tool could not find matched parameters based on current selections. \nPlease refine the selection"
         } else if (tadat$available_param_num_custom == 0){
-          "The tool could not find matched parameters based on the selected state/tribe criteria table. \nPlease refine the state/tribe criteria selection"
+          "The tool could not find matched parameters based on current selections. \nPlease refine the selection"
         } else {
           paste0(
-            "The selected dataset has ", tadat$available_param_num_custom, " parameters that matched the selected state/tribe criteria table."
+            "The selected dataset has ", tadat$available_param_num_custom, " parameters that matched the selections."
           )
         }
       )

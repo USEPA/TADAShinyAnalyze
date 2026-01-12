@@ -14,9 +14,8 @@ criteria_join <- function(x, y, match_type = "Option 2",
   # Add flags to criteria table
   y2 <- y |> 
     dplyr::mutate(Matched = "Yes") |>
-    # Remove the three columns for now
+    # Remove the columns for now
     dplyr::select(
-      -ATTAINS.OrganizationIdentifier,
       -TADA.MethodSpeciationName,
       -TADA.ComparableDataIdentifier
     )
@@ -29,7 +28,7 @@ criteria_join <- function(x, y, match_type = "Option 2",
 
   # Conditionally add columns
   if (use_type == "Option 1") {
-    join_cols <- c(join_cols, "ATTAINS.UseName")
+    join_cols <- c(join_cols, "ATTAINS.UseName", "ATTAINS.OrganizationIdentifier")
   }
 
   if (match_type == "Option 1") {
@@ -44,7 +43,7 @@ criteria_join <- function(x, y, match_type = "Option 2",
   # In this case, the final ATTAINS.UseName is from the criteria table
   if (use_type == "Option 2") {
     x_col <- names(x)
-    x_col2 <- x_col[!x_col %in% "ATTAINS.UseName"]
+    x_col2 <- x_col[!x_col %in% c("ATTAINS.UseName")]
     x2 <- x |> dplyr::select((dplyr::all_of(x_col2)))
   } else {
     x2 <- x
@@ -1096,8 +1095,10 @@ frequency_summary <- function(x, type){
   # Remove methods not able to be calculated for now
   x2 <- x |>
     dplyr::filter(FreqMethod %in% 
-                    c("NumberNotMeeting", "n-samples in 3 years",
-                      "Percent of samples not meeting", "Percentile"))
+                    c("NumberNotMeeting", 
+                      "n-samples in 3 years",
+                      "Percent of samples not meeting", 
+                      "Percentile"))
   
   # Percentile
   x_P <- x2 |>

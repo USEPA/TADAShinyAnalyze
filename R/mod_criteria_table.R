@@ -62,6 +62,13 @@ mod_criteria_table_ui <- function(id) {
           ),
           width = "100%"
         ),
+        htmltools::br(),
+        htmltools::h4("Print all unique TADA.ComparableDataIdentifier in the criteria table"),
+        shinyWidgets::materialSwitch(
+          inputId = ns("criteria_displayUniqueId"),
+          label = "",
+          status = "info"
+        ),
         shinyjs::disabled(
           shiny::actionButton(ns("Generate_Template"), "Generate Template", shiny::icon("computer"),
                               style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
@@ -93,13 +100,6 @@ mod_criteria_table_ui <- function(id) {
             label = "Select the State/Tribe (from the uploaded criteria table file)",
             choices = character(0)
           )
-        ),
-        htmltools::br(),
-        htmltools::h4("Print all unique TADA.ComparableDataIdentifier in the criteria table"),
-        shinyWidgets::materialSwitch(
-          inputId = ns("criteria_displayUniqueId"),
-          label = "",
-          status = "info"
         )
       )
     ),
@@ -595,6 +595,9 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$criteria_template <- df_template2
       # Get the organization ID from the criteria table
       tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
+      
+      print("Test tadat$criteria_template")
+      print(any(names(tadat$criteria_template) %in% "ATTAINS.OrganizationIdentifier"))
       
       return(df_template)
     })

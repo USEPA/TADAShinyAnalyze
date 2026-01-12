@@ -201,6 +201,7 @@ mod_batch_analysis_server <- function(id, tadat){
       isolate({
         ### Get the input data and convert ActivityStartDateTime to dateTime
         dat <- tadat$df_mlid_input
+        
         dat <- dat |>
           dplyr::mutate(ActivityStartDateTime = 
                           suppressWarnings(
