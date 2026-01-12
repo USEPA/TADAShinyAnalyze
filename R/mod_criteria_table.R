@@ -193,7 +193,7 @@ mod_criteria_table_server <- function(id, tadat) {
         shiny::updateSelectInput(
           session = session,
           inputId = "state_tribe_select",
-          choices = tadat$ATTAINS_orgs_vec
+          choices = if (is.null(tadat$ATTAINS_orgs_vec)) character(0) else tadat$ATTAINS_orgs_vec
         )
       }
 
@@ -216,22 +216,6 @@ mod_criteria_table_server <- function(id, tadat) {
                              (input$criteria_method %in% "E" & (input$state_tribe_select_OP_E != "")))
       
     }, ignoreNULL = FALSE, ignoreInit = FALSE)
-    
-    # Update the input$state_tribe_select_OP_E if users uploaded criteria table for Option E
-    shiny::observeEvent(uploaded_temp_table(), {
-      req(uploaded_temp_table)
-      
-      temp_table <- uploaded_temp_table()
-      
-      # Get the org ID
-      org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
-      
-      shiny::updateSelectInput(
-        session = session,
-        inputId = "state_tribe_select_OP_E",
-        choices = org_ID
-      )
-    })
     
     ### Upload the template for Option E
     
@@ -320,14 +304,31 @@ mod_criteria_table_server <- function(id, tadat) {
       return(df_template)
     })
     
+    # Update the input$state_tribe_select_OP_E if users uploaded criteria table for Option E
+    shiny::observeEvent(uploaded_temp_table(), {
+      req(uploaded_temp_table())
+      
+      temp_table <- uploaded_temp_table()
+      
+      # Get the org ID
+      org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
+      
+      shiny::updateSelectInput(
+        session = session,
+        inputId = "state_tribe_select_OP_E",
+        choices = org_ID
+      )
+    })
+    
     ### Determine the options to generate the criteria table
     
     # Run the TADA_DefineCriteriaMethodology_Shiny function to get the criteria table
     shiny::observeEvent(input$Generate_Template, {
       req(input$criteria_method)
       
-      # Temporarily reset warn option to allow warning capture
-      options(warn = 1)
+      # Set the warning
+      old_warn <- getOption("warn")
+      on.exit(options(warn = old_warn), add = TRUE)
       
       # Reset warning message
       warning_msg(NULL)
@@ -420,7 +421,7 @@ mod_criteria_table_server <- function(id, tadat) {
         } else {
           
           req(input$state_tribe_select_OP_E != "")
-          req(uploaded_temp_table)
+          req(uploaded_temp_table())
 
           temp_table <- uploaded_temp_table()
           
@@ -446,9 +447,6 @@ mod_criteria_table_server <- function(id, tadat) {
         warning_msg(paste("Error generating template:", conditionMessage(e)))
         criteria_template_rv(NULL)
       })
-      
-      # Set warn back to 2
-      options(warn = 2)
       
       # Remove spinner
       shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())

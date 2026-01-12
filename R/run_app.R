@@ -20,8 +20,7 @@ run_app <- function(
     
     # set options (moved from top-level to avoid running during package load)
     options(shiny.maxRequestSize = get_golem_config("MB_LIMIT") * 1024^2)
-    options(warn = 2)
-    
+
     # Get the organization ID once per R process (cache in golem options)
     ATTAINS_orgs_vec <- tryCatch({
       ATTAINS_orgs <- suppressWarnings(suppressMessages(
