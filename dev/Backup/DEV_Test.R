@@ -57,8 +57,8 @@ criteria_B_table <- EPATADA::TADA_DefineCriteriaMethodology(
   org_id = "MTDEQ",
   auto_assign = TRUE,
   criteriaMethods = NULL,
-  excel = FALSE,
-  overwrite = FALSE
+  excel = TRUE,
+  overwrite = TRUE
 )
 
 criteria_B_table <- TADA_DefineCriteriaMethodology_Shiny(

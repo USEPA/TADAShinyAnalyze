@@ -93,11 +93,14 @@ mod_criteria_table_ui <- function(id) {
             label = "Select the State/Tribe (from the uploaded criteria table file)",
             choices = character(0)
           )
-        )#,
-        # shinyWidgets::prettySwitch(
-        #   inputId = "criteria_displayUniqueId",
-        #   label = "Print all unique TADA.ComparableDataIdentifier in the criteria table"
-        # )
+        ),
+        htmltools::br(),
+        htmltools::h4("Print all unique TADA.ComparableDataIdentifier in the criteria table"),
+        shinyWidgets::materialSwitch(
+          inputId = ns("criteria_displayUniqueId"),
+          label = "",
+          status = "info"
+        )
       )
     ),
     htmltools::br(),
@@ -356,6 +359,7 @@ mod_criteria_table_server <- function(id, tadat) {
                 org_id = org_ID,
                 auto_assign = FALSE,
                 criteriaMethods = temp_table,
+                displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
@@ -373,6 +377,7 @@ mod_criteria_table_server <- function(id, tadat) {
                 org_id = input$state_tribe_select,
                 auto_assign = TRUE,
                 criteriaMethods = NULL,
+                displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
@@ -388,6 +393,7 @@ mod_criteria_table_server <- function(id, tadat) {
                 org_id = NULL,
                 auto_assign = TRUE,
                 criteriaMethods = NULL,
+                displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
                 return_workbook = TRUE
@@ -404,8 +410,7 @@ mod_criteria_table_server <- function(id, tadat) {
           
         # Option D: Blank Template
         } else if (input$criteria_method %in% "D"){
-          req(input$criteria_displayUniqueId)
-          
+
           criteria_template <- run_with_warnings({
               TADA_DefineCriteriaMethodology_Shiny(
                 return_workbook = TRUE
@@ -425,6 +430,7 @@ mod_criteria_table_server <- function(id, tadat) {
               org_id = input$state_tribe_select_OP_E,
               auto_assign = FALSE,
               criteriaMethods = temp_table,
+              displayUniqueId = input$criteria_displayUniqueId,
               AUMLRef = tadat$df_mltoau_input,
               AU_UsesRef = tadat$df_autouse_input,
               return_workbook = TRUE

@@ -1420,20 +1420,13 @@ TADA_DefineCriteriaMethodology_Shiny <- function(.data = NULL,
                                                  displayUniqueId = FALSE,
                                                  return_workbook = FALSE) {
   
+  # Check if all inputs are NULL
+  all_null <- is.null(.data) && is.null(org_id) && is.null(MLSummaryRef) && 
+    is.null(criteriaMethods) && is.null(AUMLRef) && is.null(AU_UsesRef)
   
   # Call the original EPATADA function to get the data frame
-  if (is.null(.data)) {
-    # Call without .data - returns empty template
-    DefineCriteriaMethodology <- EPATADA::TADA_DefineCriteriaMethodology(
-      org_id = org_id,
-      MLSummaryRef = MLSummaryRef,
-      criteriaMethods = criteriaMethods,
-      auto_assign = auto_assign,
-      AUMLRef = AUMLRef,
-      AU_UsesRef = AU_UsesRef,
-      displayUniqueId = displayUniqueId,
-      excel = FALSE
-    )
+  if (all_null) {
+    DefineCriteriaMethodology <- EPATADA::TADA_DefineCriteriaMethodology(excel = FALSE)
   } else {
     # Call with .data
     DefineCriteriaMethodology <- EPATADA::TADA_DefineCriteriaMethodology(
@@ -1492,7 +1485,7 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
   # Create header style
   header_st <- openxlsx::createStyle(textDecoration = "Bold")
   
-  # Set column widths
+  # Set column widths (handle empty dataframe case)
   if (ncol(DefineCriteriaMethodology) > 0) {
     openxlsx::setColWidths(wb, sheet = "DefineCriteriaMethodology", 
                            cols = 1:ncol(DefineCriteriaMethodology), widths = "auto")
@@ -1500,12 +1493,13 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
                            cols = 1:min(5, ncol(DefineCriteriaMethodology)), widths = 20)
   }
   
-  # Write main data
+  # Write main data (headers will be written even for empty dataframe)
   openxlsx::writeData(wb, "DefineCriteriaMethodology", 
                       startCol = 1, x = DefineCriteriaMethodology, headerStyle = header_st)
   
-  # Handle missing .data
-  if (is.null(.data) || !is.data.frame(.data)) {
+  # Handle missing .data - create placeholder for dropdown options
+  # This mirrors EPATADA's approach when .data is missing
+  if (is.null(.data) || !is.data.frame(.data) || nrow(.data) == 0) {
     .data <- data.frame(
       TADA.ComparableDataIdentifier = NA_character_, 
       TADA.CharacteristicName = NA_character_, 
@@ -1521,6 +1515,9 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
                                            "TADA.CharacteristicName", 
                                            "TADA.ResultSampleFractionText", 
                                            "TADA.MethodSpeciationName"), drop = FALSE]))
+  
+  openxlsx::writeData(wb, "Index-Criteria", startCol = 14, startRow = 1, 
+                      x = data.frame(AcuteChronic = c("Acute", "Chronic", "NA")))
   
   # Water type list
   tryCatch({
@@ -1555,9 +1552,6 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
   openxlsx::writeData(wb, "Index-Criteria", startCol = 13, startRow = 1, 
                       x = data.frame(UniqueSpatialCriteria = c(unique(MLSummaryRef$UniqueSpatialCriteria), "NA")))
   
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 14, startRow = 1, 
-                      x = data.frame(AcuteChronic = c("Acute", "Chronic", "NA")))
-  
   openxlsx::writeData(wb, "Index-Criteria", startCol = 15, startRow = 1, 
                       x = data.frame(EquationBased = c("Yes", "No", "NA")))
   
@@ -1571,11 +1565,13 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
                       x = data.frame(DurationUnit = c("n-hour", "n-day", "n-week", 
                                                       "n-month", "n-quarter")))
   
+  # Note: EPATADA includes "arithmetic extremes" in DurationMethod
   openxlsx::writeData(wb, "Index-Criteria", startCol = 21, startRow = 1, 
                       x = data.frame(DurationMethod = c("arithmetic mean", "arithmetic median", 
-                                                        "arithmetic max", "arithmetic min", 
+                                                        "arithmetic max", "arithmetic min",
+                                                        "arithmetic extremes",
                                                         "geometric mean", "rolling geometric mean", 
-                                                        "rolling arithmetric mean")))
+                                                        "rolling arithmetic mean")))
   
   openxlsx::writeData(wb, "Index-Criteria", startCol = 23, startRow = 1, 
                       x = data.frame(FreqMethod = c("Percent of samples not meeting", "percentile", 
@@ -1596,7 +1592,7 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
                                                      "Quarterly", "Monthly", "Bi-weekly", 
                                                      "Weekly", "10 days", "NA")))
   
-  # Data validations (unchanged - these are correct)
+  # Data validations - matching EPATADA's approach
   suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
                                             cols = 4, rows = 2:1000, type = "list", 
                                             value = "'Index-Criteria'!$F$2:$F$1000", 
@@ -1670,27 +1666,27 @@ create_criteria_workbook <- function(DefineCriteriaMethodology,
   openxlsx::freezePane(wb, "DefineCriteriaMethodology", 
                        firstActiveRow = 2, firstActiveCol = 4)
   
-  # Conditional formatting
-  fill_color <- EPATADA::TADA_ColorPalette()[8]
-  blank_color <- EPATADA::TADA_ColorPalette()[13]
-  
+  # Conditional formatting - only apply if there are data rows
+  # Use EPATADA color palette
   if (nrow(DefineCriteriaMethodology) > 0) {
     openxlsx::conditionalFormatting(wb, "DefineCriteriaMethodology", 
                                     cols = 1:31, 
                                     rows = 2:(nrow(DefineCriteriaMethodology) + 1), 
                                     type = "notBlanks", 
-                                    style = openxlsx::createStyle(bgFill = fill_color))
+                                    style = openxlsx::createStyle(bgFill = EPATADA::TADA_ColorPalette()[8]))
     openxlsx::conditionalFormatting(wb, "DefineCriteriaMethodology", 
                                     cols = 1:31, 
                                     rows = 2:(nrow(DefineCriteriaMethodology) + 1), 
                                     type = "blanks", 
-                                    style = openxlsx::createStyle(bgFill = blank_color))
+                                    style = openxlsx::createStyle(bgFill = EPATADA::TADA_ColorPalette()[13]))
   }
   
-  # Group columns
-  openxlsx::groupColumns(wb, sheet = "DefineCriteriaMethodology", 
-                         cols = 22:ncol(DefineCriteriaMethodology), 
-                         hidden = FALSE, level = -1)
+  # Group columns (only if there are enough columns)
+  if (ncol(DefineCriteriaMethodology) >= 22) {
+    openxlsx::groupColumns(wb, sheet = "DefineCriteriaMethodology", 
+                           cols = 22:ncol(DefineCriteriaMethodology), 
+                           hidden = FALSE, level = -1)
+  }
   
   return(wb)
 }
