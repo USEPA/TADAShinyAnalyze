@@ -169,7 +169,7 @@ mod_criteria_table_server <- function(id, tadat) {
           expr,
           warning = function(w) {
             warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-            invokeRestart("muffleWarning")  # Works here because we're inside withCallingHandlers
+            invokeRestart("muffleWarning")
           }
         ),
         error = function(e) {
@@ -578,7 +578,7 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Check for missing rows
-      df_template2 <- df_template %>%
+      df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
       
       if (nrow(df_template2) == 0) {
@@ -612,7 +612,7 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Check for missing rows
-      df_template2 <- df_template %>%
+      df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
       
       # Build summary text
@@ -677,7 +677,7 @@ mod_criteria_table_server <- function(id, tadat) {
       missing_cols <- setdiff(required_cols, names(df_template))
 
       # Check for missing rows
-      df_template2 <- df_template %>%
+      df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
 
       if (length(missing_cols) == 0 & nrow(df_template2) > 0){
