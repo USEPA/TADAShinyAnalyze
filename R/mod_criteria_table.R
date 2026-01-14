@@ -125,13 +125,15 @@ mod_criteria_table_ui <- function(id) {
       shiny::column(
         width = 12,
         
-        shiny::fileInput(
-          inputId = ns("review_template"),
-          label = "Choose file to load:",
-          width = "90%",
-          placeholder = "No file selected.",
-          multiple = FALSE,
-          accept = c(".xlsx")
+        shinyjs::disabled(
+          shiny::fileInput(
+            inputId = ns("review_template"),
+            label = "Choose file to load:",
+            width = "90%",
+            placeholder = "No file selected.",
+            multiple = FALSE,
+            accept = c(".xlsx")
+          )
         ),
         
         htmltools::p("Summary of the uploaded template."),
@@ -457,6 +459,15 @@ mod_criteria_table_server <- function(id, tadat) {
       } else {
         shinyjs::disable("download_template")
       }
+    })
+    
+    # Activate the review_template file uploader
+    shiny::observe({
+      # Enable the review_template uploader only when a template has been generated
+      shinyjs::toggleState(
+        id = "review_template",
+        condition = !is.null(criteria_template_rv())
+      )
     })
     
     # Text output to show the status of the template
