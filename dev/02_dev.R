@@ -18,10 +18,106 @@
 ## install.packages('attachment') # if needed.
 attachment::att_amend_desc()
 
+## Add one line by package you want to add as dependency
+# usethis::use_package("shinydashboard")
+# usethis::use_package("shinydashboardPlus")
+# usethis::use_package("shinyBS")
+# usethis::use_package("shinyalert")
+# usethis::use_package("httr")
+# usethis::use_package("purrr")
+# usethis::use_package("readxl")
+# usethis::use_package("zip")
+usethis::use_package("gotop")
+usethis::use_package("utils")
+usethis::use_package("shinyjs")
+usethis::use_package("dplyr")
+usethis::use_package("sf")
+usethis::use_package("leaflet")
+usethis::use_package("EPATADA")
+
 ## Add modules ----
 ## Create a module infrastructure in R/
-golem::add_module(name = "name_of_module1", with_test = TRUE) # Name of the module
-golem::add_module(name = "name_of_module2", with_test = TRUE) # Name of the module
+
+## Create test scripts only
+golem::add_module(
+  name = "map_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "map_table_selector_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "map_table_selector",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "load_file",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "excursion_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "exceedance_viewer_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "exceedance_viewer",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "custom_analysis",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "batch_analysis",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_selector_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_selector",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_plots",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_plots_custom",
+  with_test = TRUE,
+  module_template = function(...) ""
+)
+golem::add_module(
+  name = "analysis_data_viewer",
+  with_test = TRUE,
+)
+golem::add_module(
+  name = "analysis_data_viewer_custom",
+  with_test = TRUE,
+)
+golem::add_module(
+  name = "criteria_table",
+  with_test = TRUE,
+)
+
+
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
