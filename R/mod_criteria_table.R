@@ -195,7 +195,7 @@ mod_criteria_table_server <- function(id, tadat) {
         shiny::updateSelectInput(
           session = session,
           inputId = "state_tribe_select",
-          choices = if (is.null(tadat$ATTAINS_orgs_vec)) character(0) else tadat$ATTAINS_orgs_vec
+          choices = tadat$ATTAINS_orgs_vec
         )
       }
 

@@ -41,6 +41,7 @@ app_server <- function(input, output, session) {
   mod_criteria_table_server("criteria_table_1", tadat)
   mod_batch_analysis_server("batch_analysis_1", tadat)
   mod_custom_analysis_server("custom_analysis_1", tadat)
+  mod_TADA_summary_server("TADA_summary_1")
   
   # disable other tabs upon start
   shinyjs::disable(selector = '.nav li a[data-value="Criteria"]')
