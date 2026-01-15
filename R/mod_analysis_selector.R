@@ -98,11 +98,6 @@ mod_analysis_selector_server <- function(id, tadat){
       }
       
       tadat$use_type_batch <- use_type
-      
-      print(paste("use_type_batch:", tadat$use_type_batch))
-      print(paste("files loaded - mlid:", tadat$files_loaded_mlid, 
-                  "mltoau:", tadat$files_loaded_mltoau, 
-                  "autouse:", tadat$files_loaded_autouse))
     })
     
     # Update the loc_select choices based on use_type

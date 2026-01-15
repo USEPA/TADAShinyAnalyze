@@ -904,7 +904,11 @@ duration_excursion_fun <- function(x){
 }
 
 # A function to update the magnitude
-magnitude_update <- function(x, match_type){
+magnitude_update <- function(x, match_type,
+                             hardness_equation,
+                             pH_equation,
+                             pH_Hardness_equation,
+                             pH_Temperature__equation){
   
   ## Hardness
   dat_hardness <- x |>

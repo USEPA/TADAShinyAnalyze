@@ -566,7 +566,11 @@ mod_batch_analysis_server <- function(id, tadat){
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |> 
-        magnitude_update(match_type = tadat$join_select) |>
+        magnitude_update(match_type = tadat$join_select,
+                         hardness_equation = tadat$hardness_equation,
+                         pH_equation = tadat$pH_equation,
+                         pH_Hardness_equation = tadat$pH_hardness_equation,
+                         pH_Temperature__equation = tadat$pH_Temperature_equation) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)

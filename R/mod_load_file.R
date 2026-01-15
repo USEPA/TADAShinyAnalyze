@@ -9,10 +9,6 @@
 #' @importFrom shiny NS tagList 
 #' 
 #' 
-# Load files
-data_path1 <- app_sys("extdata/Criteria_Table_Input_20251011.RData")
-load(data_path1)
-
 mod_load_file_ui <- function(id) {
   # set module session id
   ns <- shiny::NS(id)

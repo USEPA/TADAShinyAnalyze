@@ -54,7 +54,22 @@ mod_TADA_summary_server <- function(id){
             shiny::tags$li(
               "Currently, the app supports analysis of the following methods, with expansions coming soon:",
               shiny::tags$ul(
-                
+                shiny::tags$li("DurationMethod:"),
+                shiny::tags$ul(
+                  shiny::tags$li("arithmetic mean"),
+                  shiny::tags$li("rolling arithmetic mean"),
+                  shiny::tags$li("arithmetic min"),
+                  shiny::tags$li("arithmetic max"),
+                  shiny::tags$li("geometric mean"),
+                  shiny::tags$li("arithmetic extremes")
+                ),
+                shiny::tags$li("FreqMethod:"),
+                shiny::tags$ul(
+                  shiny::tags$li("NumberNotMeeting"),
+                  shiny::tags$li("n-samples in 3 years"),
+                  shiny::tags$li("Percent of samples not meeting"),
+                  shiny::tags$li("Percentile")
+                ),
               )
             )
           )

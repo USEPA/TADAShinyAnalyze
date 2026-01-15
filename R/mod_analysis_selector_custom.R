@@ -77,30 +77,6 @@ mod_analysis_selector_custom_server <- function(id, tadat){
              " (Method: ", tadat$criteria_method, ")")
     })
     
-    # Update the Select state/tribe menu
-    shiny::observeEvent(tadat$df_mltoau_input, {
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "state_tribe_custom",
-        options = list(placeholder = "Select the state/tribe", maxItems = 1),
-        selected = character(0),
-        choices = org_options
-      )
-    }, ignoreNULL = TRUE)
-    
-    # An observe block to determine the use_type
-    shiny::observeEvent(list(tadat$df_mlid_input, tadat$files_loaded_mlid), {
-      if (isTRUE(tadat$files_loaded_mlid)) {
-        shiny::updateSelectizeInput(
-          session = session,
-          inputId = "state_tribe_custom",
-          options = list(placeholder = "Select the state/tribe", maxItems = 1),
-          selected = character(0),
-          choices = org_options
-        )
-      }
-    }, ignoreNULL = TRUE)
-    
     # An observe block to determine the use_type
     shiny::observe({
       req(tadat$criteria_template)

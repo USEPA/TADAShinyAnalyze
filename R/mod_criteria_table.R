@@ -125,7 +125,7 @@ mod_criteria_table_ui <- function(id) {
       shiny::column(
         width = 12,
         
-        shinyjs::disabled(
+        shinyjs::hidden(
           shiny::fileInput(
             inputId = ns("review_template"),
             label = "Choose file to load:",
@@ -464,7 +464,7 @@ mod_criteria_table_server <- function(id, tadat) {
     # Activate the review_template file uploader
     shiny::observe({
       # Enable the review_template uploader only when a template has been generated
-      shinyjs::toggleState(
+      shinyjs::toggle(
         id = "review_template",
         condition = !is.null(criteria_template_rv())
       )
@@ -604,6 +604,19 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$criteria_template <- df_template2
       # Get the organization ID from the criteria table
       tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
+      
+      # Get the equation tables for each Equation Type for the magnitude update step
+      tadat$hardness_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "Hardness")
+      
+      tadat$pH_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH")
+      
+      tadat$pH_hardness_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH and Hardness")
+      
+      tadat$pH_Temperature_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH and Temperature")
       
       return(df_template)
     })
