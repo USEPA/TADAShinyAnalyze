@@ -149,11 +149,12 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$use_type_custom), {
       req(tadat$criteria_state_tribe)
       req(tadat$use_type_custom)
+      req(tadat$criteria_template)
       
       if (tadat$use_type_custom %in% "Option 1"){
         req(tadat$df_autouse_input)
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1
@@ -166,7 +167,7 @@ mod_analysis_selector_custom_server <- function(id, tadat){
         
       } else {
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1

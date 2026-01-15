@@ -332,6 +332,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
     map_data <- data |>
       dplyr::group_by(TADA.MonitoringLocationIdentifier, 
                       TADA.MonitoringLocationName,
+                      ATTAINS.AssessmentUnitIdentifier,
                       TADA.LongitudeMeasure, 
                       TADA.LatitudeMeasure) |>
       dplyr::summarise(
@@ -446,10 +447,15 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
   }
   
   if (type %in% "MLid") {
+    
+    coords_data <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
+    
     # MLid grouping
     map_data <- data |>
       dplyr::group_by(TADA.MonitoringLocationIdentifier,
                       TADA.MonitoringLocationName,
+                      ATTAINS.AssessmentUnitIdentifier,
                       TADA.LongitudeMeasure, 
                       TADA.LatitudeMeasure) |>
       dplyr::summarise(
@@ -461,7 +467,10 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
         .groups = 'drop'
       )
   } else if (type %in% "AU"){
-    # AU grouping
+    
+    coords_data <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
+    
     au_use_summary <- data |>
       dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
@@ -473,7 +482,10 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
         .groups = 'drop'
       )
     
-    map_data <- coords_data |>
+    coords_data_filtered <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% au_use_summary$ATTAINS.AssessmentUnitIdentifier)
+    
+    map_data <- coords_data_filtered |>
       dplyr::left_join(au_use_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
       dplyr::mutate(
         has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
@@ -481,6 +493,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
         total_params = tidyr::replace_na(total_params, 0),
         params_exceeding_list = tidyr::replace_na(params_exceeding_list, "None")
       )
+    
   } else {
     # CG grouping
     cg_use_summary <- data |>
@@ -514,8 +527,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       weight = 1,
       radius = 8,
       popup = ~paste0(
-        ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data), 
-               paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>"), ""),
+        "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
         "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Use:</b> ", selected_use, "<br>",
         "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
@@ -532,7 +544,10 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
 }
 
 ### Parameter-specific map
-create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL, selected_use = NULL, type = "MLid") {
+create_parameter_map <- function(data, coords_data = NULL, 
+                                 selected_param = NULL, 
+                                 selected_use = NULL,
+                                 type = "MLid") {
   
   # Filter for selected parameter
   if (!is.null(selected_param)) {
@@ -545,53 +560,54 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
   }
   
   if (type %in% "MLid") {
-    # MLid grouping
+    
+    coords_data <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
+
     map_data <- data |>
       dplyr::group_by(TADA.MonitoringLocationIdentifier,
                       TADA.MonitoringLocationName,
+                      ATTAINS.AssessmentUnitIdentifier,
                       TADA.LongitudeMeasure, 
                       TADA.LatitudeMeasure) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
-        num_excursions = sum(Duration_Excursions, na.rm = TRUE),
-        median_value = median(Median, na.rm = TRUE),
-        max_value = max(Maximum, na.rm = TRUE),
         .groups = 'drop'
       )
   } else if (type %in% "AU"){
-    # AU grouping
+    
+    coords_data <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
+
     au_param_summary <- data |>
       dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
-        num_excursions = sum(Duration_Excursions, na.rm = TRUE),
-        median_value = median(Median, na.rm = TRUE),
-        max_value = max(Maximum, na.rm = TRUE),
         .groups = 'drop'
       )
     
-    map_data <- coords_data |>
+    # Filter coords_data to only include AUs present in the filtered data
+    coords_data_filtered <- coords_data |>
+      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% au_param_summary$ATTAINS.AssessmentUnitIdentifier)
+    
+    map_data <- coords_data_filtered |>
       dplyr::left_join(au_param_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
       dplyr::mutate(
-        has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
-        num_excursions = tidyr::replace_na(num_excursions, 0)
+        has_exceedance = tidyr::replace_na(has_exceedance, FALSE)
       )
+    
   } else {
     # CG grouing
     cg_param_summary <- data |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
-        num_excursions = sum(Duration_Excursions, na.rm = TRUE),
-        median_value = median(Median, na.rm = TRUE),
-        max_value = max(Maximum, na.rm = TRUE),
         .groups = 'drop'
       )
     
     map_data <- coords_data |>
       tidyr::crossing(cg_param_summary) |>
       dplyr::mutate(
-        has_exceedance = tidyr::replace_na(has_exceedance, FALSE),
-        num_excursions = tidyr::replace_na(num_excursions, 0)
+        has_exceedance = tidyr::replace_na(has_exceedance, FALSE)
       )
   }
   
@@ -604,16 +620,12 @@ create_parameter_map <- function(data, coords_data = NULL, selected_param = NULL
       fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.6,
       weight = 1,
-      radius = ~pmin(sqrt(num_excursions) * 3 + 5, 20),
+      radius = 8,
       popup = ~paste0(
-        ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data), 
-               paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>"), ""),
+        "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
         "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
         "<b>Parameter:</b> ", selected_param, "<br>",
-        "<b>Use:</b> ", selected_use, "<br>",
-        # "<b>Total Excursions:</b> ", num_excursions, "<br>",
-        "<b>Median Value:</b> ", round(median_value, 2), "<br>",
-        "<b>Max Value:</b> ", round(max_value, 2)
+        "<b>Use:</b> ", selected_use, "<br>"
       )
     ) |>
     leaflet::addLegend(
