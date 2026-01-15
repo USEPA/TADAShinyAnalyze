@@ -8,7 +8,20 @@
 
 # server
 app_server <- function(input, output, session) {
-  # Your application server logic
+  
+  # Fetch ATTAINS organization IDs
+  ATTAINS_orgs_vec <- tryCatch({
+    ATTAINS_orgs <- suppressWarnings(suppressMessages(
+      rExpertQuery::EQ_DomainValues("org_id")
+    ))
+    ATTAINS_orgs <- dplyr::arrange(ATTAINS_orgs, name)
+    v <- ATTAINS_orgs$code
+    names(v) <- ATTAINS_orgs$name
+    v
+  }, error = function(e) {
+    warning("Failed to fetch ATTAINS org IDs: ", e$message)
+    NULL
+  })
   
   # Fetch criteria file list ONCE at app startup
   criteria_file_list <- tryCatch({
@@ -27,10 +40,7 @@ app_server <- function(input, output, session) {
   
   # Add explicit initialization
   tadat$criteria_file_list <- criteria_file_list
-  
-  # org id options (set in run_app() onStart)
-  golem_opts <- golem::get_golem_options()
-  tadat$ATTAINS_orgs_vec <- golem_opts[["ATTAINS_orgs_vec"]]
+  tadat$ATTAINS_orgs_vec <- ATTAINS_orgs_vec
   
   tadat$df_mltoau_input <- NULL
   tadat$df_autouse_input <- NULL
