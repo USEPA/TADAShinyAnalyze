@@ -27,7 +27,22 @@ Imports:
     shiny,
     shinyjs,
     utils,
-    EPATADA
+    EPATADA,
+    viridis,
+    DT,
+    shinyWidgets,
+    shinybusy,
+    readxl,
+    openxlsx,
+    purrr,
+    tidyr,
+    lubridate,
+    stringr,
+    ggplot2,
+    readr,
+    httr,
+    slider,
+    rExpertQuery
 Remotes:
     USEPA/EPATADA@develop
 Suggests: 
