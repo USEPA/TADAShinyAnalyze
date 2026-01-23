@@ -404,7 +404,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       dat_yes <- dat4_2 |> 
         dplyr::filter(EquationBased %in% "Yes") |>
-        # Reove Additional Information in the EquationType for now
+        # Remove Additional Information in the EquationType for now
         dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_2 |> dplyr::filter(EquationBased %in% "No")
       

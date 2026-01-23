@@ -18,7 +18,8 @@ criteria_join <- function(x, y, match_type = "Option 2",
     dplyr::select(
       -TADA.MethodSpeciationName,
       -TADA.ComparableDataIdentifier
-    )
+    ) |>
+    dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
 
   # Build join expression as a string
   join_cols <- c(
