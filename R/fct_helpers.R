@@ -1770,7 +1770,7 @@ getCriteriaFiles <- function(branch = "main") {
   return(result)
 }
 
-# A functin to load the criteria list
+# A function to load the criteria list
 loadCriteria <- function(state_tribe, ref) {
 
   # Get the file_url

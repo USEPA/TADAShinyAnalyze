@@ -568,16 +568,25 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Define required columns for criteria template
-      required_cols <- c(
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName", 
-        "ATTAINS.UseName",
-        "TADA.CharacteristicName",
-        "TADA.ComparableDataIdentifier"
+      selected_cols <- c(
+        names(EPATADA::TADA_DefineCriteriaMethodology()),
+        "EquationType",
+        # Equation coefficient columns
+        "Equation",
+        "hardness_param_1",
+        "hardness_param_2",
+        "hardness_param_3",
+        "hardness_param_4",
+        "hardness_param_5",
+        "hardness_param_6",
+        "pH_param_1",
+        "pH_param_2",
+        "pH_param_3",
+        "pH_param_4"
       )
       
       # Check for missing required columns
-      missing_cols <- setdiff(required_cols, names(df_template))
+      missing_cols <- setdiff(selected_cols, names(df_template))
       
       if (length(missing_cols) > 0) {
         shiny::showNotification(
@@ -587,6 +596,8 @@ mod_criteria_table_server <- function(id, tadat) {
           duration = 10
         )
       }
+      
+      df_template[missing_cols] <- NA
       
       # Check for missing rows
       df_template2 <- df_template |>

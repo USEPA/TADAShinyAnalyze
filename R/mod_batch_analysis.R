@@ -161,7 +161,7 @@ mod_batch_analysis_server <- function(id, tadat){
       # }
     }, priority = 100)
     
-    # Run Barch_Data_Viewer
+    # Run Batch_Data_Viewer
     mod_analysis_data_viewer_server("Batch_Data_Viewer", tadat)
     
     # ### Remove records need to be reviewed in tadat$df_mltoau_input
@@ -201,7 +201,7 @@ mod_batch_analysis_server <- function(id, tadat){
       isolate({
         ### Get the input data and convert ActivityStartDateTime to dateTime
         dat <- tadat$df_mlid_input
-        
+
         dat <- dat |>
           dplyr::mutate(ActivityStartDateTime = 
                           suppressWarnings(
@@ -340,6 +340,7 @@ mod_batch_analysis_server <- function(id, tadat){
           dplyr::filter(EquationBased %in% "Yes") |>
           # Remove Additional Information in the EquationType for now
           dplyr::filter(!EquationType %in% "Additional Information")
+          
         
         dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
         
