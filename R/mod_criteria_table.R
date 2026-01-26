@@ -639,7 +639,7 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$pH_Temperature_equation <- df_template2 |>
         dplyr::filter(EquationType %in% "pH and Temperature")
       
-      return(df_template2)
+      return(df_template) # returns original df_template (not modified if missing columns or rows)
     })
     
     ### Render template summary
@@ -660,19 +660,40 @@ mod_criteria_table_server <- function(id, tadat) {
       df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
       
+      # Count how many rows contain missing criteria/methods values
+      row_NA <- nrow(df_template) - nrow(df_template2)
+      equationBased_NA <- sum(is.na(df_template2$EquationBased))
+      
       # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
       df_template2 <- df_template2 |>
         dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
       
       # Build summary text
-      paste0(
-        "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis.", 
-        "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
-        "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
-        "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
-        "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s).\n",
-        "Warning: EquationBased must be populated - any NA will be filled in as 'No', MagnitudeUnit must match TADA.ResultMeasureValue.MeasureUnit.\n"
-      )
+      if( equationBased_NA > 0 ){
+        text <- paste0(
+          "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis. \n", 
+          "There are ", length(unique(na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique organization(s).\n",
+          "There are ", length(unique(na.omit(df_template$TADA.CharacteristicName))), " unique TADA characteristic name(s).\n",
+          "There are ", length(unique(na.omit(df_template$ATTAINS.UseName))), " unique use type(s).\n",
+          "There are ", length(unique(na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
+          "Warning: EquationBased must be populated - any NA will be filled in as 'No'. \n", 
+          "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n"
+        )
+      }
+      
+      if( equationBased_NA == 0 ){
+        text <- paste0(
+          "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis. \n", 
+          "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
+          "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
+          "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
+          "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s).\n",
+          "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n"
+          
+        )
+      }
+      
+      paste0(text)
     })
     
     ### Generate the template summary table
@@ -685,8 +706,17 @@ mod_criteria_table_server <- function(id, tadat) {
       
       shiny::validate(need(!is.null(df_template), "Error loading file."))
       
+      # Check for missing rows
+      df_template2 <- df_template |>
+        dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+      
+      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
+      df_template2 <- df_template2 |>
+        dplyr::mutate(EquationBased = as.character(EquationBased)) |>
+        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
+      
       # Render table
-      DT::datatable(df_template,
+      DT::datatable(df_template2,
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
