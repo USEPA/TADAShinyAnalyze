@@ -316,7 +316,6 @@ add_USGS_base <- function(x){
                             group = grp[5], options = opt, layers = "0")
   x <- leaflet::hideGroup(x, grp[5])
   
-  # Add layer control
   # Add layer controls
   opt2 <- leaflet::layersControlOptions(collapsed = FALSE)
   x <- leaflet::addLayersControl(x, baseGroups = grp[1:4],
@@ -326,16 +325,26 @@ add_USGS_base <- function(x){
 }
 
 ### Overall exceedance map
-create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
+create_overall_map <- function(data, coords_data = NULL, type = "MLid",
+                               use_type) {
   
   if (type %in% "MLid") {
+    
+    # Finalize the grouping variables based on the use_type
+    group_cols <- c("TADA.MonitoringLocationIdentifier", 
+                    "TADA.MonitoringLocationName",
+                    "TADA.LongitudeMeasure", 
+                    "TADA.LatitudeMeasure")
+    
+    if (use_type %in% "Option 1"){
+      group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
+    } else {
+      group_cols2 <- group_cols
+    }
+    
     # For MLid grouping, coordinates are in the main data
     map_data <- data |>
-      dplyr::group_by(TADA.MonitoringLocationIdentifier, 
-                      TADA.MonitoringLocationName,
-                      ATTAINS.AssessmentUnitIdentifier,
-                      TADA.LongitudeMeasure, 
-                      TADA.LatitudeMeasure) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         total_params = dplyr::n_distinct(TADA.CharacteristicName),
@@ -348,6 +357,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
                                     collapse = "<br>"),
         .groups = 'drop'
       )
+    
   } else if (type %in% "AU"){
     # For AU grouping, aggregate by AU then join coordinates
     au_summary <- data |>
@@ -377,6 +387,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
       dplyr::mutate(
         sites_in_au = dplyr::n_distinct(TADA.MonitoringLocationIdentifier)
       )
+    
   } else {
     # For CG grouping, aggregate by all sites then join coordinates
     cg_summary <- data |>
@@ -403,6 +414,48 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
       )
   }
   
+  # Build popup content as a column in the data frame
+  has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
+  has_sites_col <- "sites_in_au" %in% names(map_data)
+  
+  map_data <- map_data |>
+    dplyr::mutate(
+      popup_content = paste0(
+        # Location info based on type
+        if (type == "MLid") {
+          if (has_au_col) {
+            paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+                   "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+                   "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>")
+          } else {
+            paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+                   "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")
+          }
+        } else if (type == "AU") {
+          paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
+                 "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+                 "<b>Sites in AU:</b> ", sites_in_au, "<br>")
+        } else if (type == "CG") {
+          if (has_au_col) {
+            paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
+                   "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")
+          } else {
+            paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+                   "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")
+          }
+        } else {
+          paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+                 "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")
+        },
+        # Status
+        "<b>Status:</b> ", ifelse(has_exceedance, "Exceeding", "Meeting"), "<br>",
+        # Use-parameter exceedances (only if any)
+        ifelse(nchar(use_param_exceeding) > 0, 
+               paste0("<b>Use-Parameter Exceedances:</b><br>", use_param_exceeding), 
+               "")
+      )
+    )
+  
   # Create the map
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
@@ -414,23 +467,7 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
       fillOpacity = 0.7,
       weight = 1,
       radius = 8,
-      popup = ~paste0(
-        switch(type,
-               "MLid" = paste0("<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
-                               "<b>Site Name:</b> ", TADA.MonitoringLocationName, "<br>"),
-               "AU" = paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
-                             "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
-                             "<b>Sites in AU:</b> ", sites_in_au, "<br>"),
-               "CG" = ifelse("ATTAINS.AssessmentUnitIdentifier" %in% names(map_data),
-                             paste0("<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
-                                    "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"),
-                             paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>")),
-               paste0(paste0("<b>Site:</b> ", TADA.MonitoringLocationName, "<br>"))),
-        "<b>Status:</b> ", ifelse(has_exceedance, "Exceeding", "Meeting"), "<br>",
-        ifelse(nchar(use_param_exceeding) > 0, 
-               paste0("<b>Use-Parameter Exceedances:</b><br>", use_param_exceeding), "")
-      )
-    ) |>
+      popup = ~popup_content) |>
     leaflet::addLegend(
       position = "bottomright",
       colors = c("#FF6600", "#0066CC"),
@@ -440,7 +477,8 @@ create_overall_map <- function(data, coords_data = NULL, type = "MLid") {
 }
 
 ### Use-Specific Map
-create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type = "MLid") {
+create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type = "MLid",
+                           use_type = "Option 1") {
   
   # Filter for selected use 
   if (!is.null(selected_use)) {
@@ -449,16 +487,21 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
   
   if (type %in% "MLid") {
     
-    coords_data <- coords_data |>
-      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
+    # Finalize the grouping variables based on the use_type
+    group_cols <- c("TADA.MonitoringLocationIdentifier", 
+                    "TADA.MonitoringLocationName",
+                    "TADA.LongitudeMeasure", 
+                    "TADA.LatitudeMeasure")
+    
+    if (use_type %in% "Option 1"){
+      group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
+    } else {
+      group_cols2 <- group_cols
+    }
     
     # MLid grouping
     map_data <- data |>
-      dplyr::group_by(TADA.MonitoringLocationIdentifier,
-                      TADA.MonitoringLocationName,
-                      ATTAINS.AssessmentUnitIdentifier,
-                      TADA.LongitudeMeasure, 
-                      TADA.LatitudeMeasure) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         params_exceeding_count = sum(Exceedance == "Exceed"),
@@ -467,6 +510,7 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
                                       collapse = ", "),
         .groups = 'drop'
       )
+    
   } else if (type %in% "AU"){
     
     coords_data <- coords_data |>
@@ -517,24 +561,42 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
       )
   }
   
+  # Build popup content as a column before leaflet
+  has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
+  
+  map_data <- map_data |>
+    dplyr::mutate(
+      popup_content = if (has_au_col) {
+        paste0(
+          "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
+          "<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+          "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+          "<b>Use:</b> ", selected_use, "<br>",
+          "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
+          "<b>Exceeding Parameters:</b> ", params_exceeding_list
+        )
+      } else {
+        paste0(
+          "<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+          "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+          "<b>Use:</b> ", selected_use, "<br>",
+          "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
+          "<b>Exceeding Parameters:</b> ", params_exceeding_list
+        )
+      }
+    )
+  
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
     leaflet::addCircleMarkers(
       lng = ~TADA.LongitudeMeasure,
       lat = ~TADA.LatitudeMeasure,
-      color = ~ifelse(has_exceedance, "black", "black"),
+      color = "black",
       fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.7,
       weight = 1,
       radius = 8,
-      popup = ~paste0(
-        "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
-        "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
-        "<b>Use:</b> ", selected_use, "<br>",
-        "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting"), "<br>",
-        # "<b>Parameters Exceeding:</b> ", params_exceeding_count, "/", total_params, "<br>",
-        "<b>Exceeding Parameters:</b> ", params_exceeding_list
-      )
+      popup = ~popup_content
     ) |>
     leaflet::addLegend(
       position = "bottomright",
@@ -548,7 +610,8 @@ create_use_map <- function(data, coords_data = NULL, selected_use = NULL, type =
 create_parameter_map <- function(data, coords_data = NULL, 
                                  selected_param = NULL, 
                                  selected_use = NULL,
-                                 type = "MLid") {
+                                 type = "MLid",
+                                 use_type = "Option 1") {
   
   # Filter for selected parameter
   if (!is.null(selected_param)) {
@@ -562,24 +625,30 @@ create_parameter_map <- function(data, coords_data = NULL,
   
   if (type %in% "MLid") {
     
-    coords_data <- coords_data |>
-      dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
-
+    # Finalize the grouping variables based on the use_type
+    group_cols <- c("TADA.MonitoringLocationIdentifier", 
+                    "TADA.MonitoringLocationName",
+                    "TADA.LongitudeMeasure", 
+                    "TADA.LatitudeMeasure")
+    
+    if (use_type %in% "Option 1"){
+      group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
+    } else {
+      group_cols2 <- group_cols
+    }
+    
     map_data <- data |>
-      dplyr::group_by(TADA.MonitoringLocationIdentifier,
-                      TADA.MonitoringLocationName,
-                      ATTAINS.AssessmentUnitIdentifier,
-                      TADA.LongitudeMeasure, 
-                      TADA.LatitudeMeasure) |>
+      dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         .groups = 'drop'
       )
+    
   } else if (type %in% "AU"){
     
     coords_data <- coords_data |>
       dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% data$ATTAINS.AssessmentUnitIdentifier)
-
+    
     au_param_summary <- data |>
       dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
@@ -598,7 +667,7 @@ create_parameter_map <- function(data, coords_data = NULL,
       )
     
   } else {
-    # CG grouing
+    # CG grouping
     cg_param_summary <- data |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
@@ -612,22 +681,42 @@ create_parameter_map <- function(data, coords_data = NULL,
       )
   }
   
+  # Build popup content as a column before leaflet
+  has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
+  
+  map_data <- map_data |>
+    dplyr::mutate(
+      popup_content = if (has_au_col) {
+        paste0(
+          "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
+          "<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+          "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+          "<b>Parameter:</b> ", selected_param, "<br>",
+          "<b>Use:</b> ", selected_use, "<br>",
+          "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting")
+        )
+      } else {
+        paste0(
+          "<b>Site ID:</b> ", TADA.MonitoringLocationIdentifier, "<br>",
+          "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
+          "<b>Parameter:</b> ", selected_param, "<br>",
+          "<b>Use:</b> ", selected_use, "<br>",
+          "<b>Status:</b> ", ifelse(has_exceedance, "Not Meeting", "Meeting")
+        )
+      }
+    )
+  
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
     leaflet::addCircleMarkers(
       lng = ~TADA.LongitudeMeasure,
       lat = ~TADA.LatitudeMeasure,
-      color = ~ifelse(has_exceedance, "black", "black"),
+      color = "black",
       fillColor = ~ifelse(has_exceedance, "#FF6600", "#0066CC"),
       fillOpacity = 0.6,
       weight = 1,
       radius = 8,
-      popup = ~paste0(
-        "<b>AU ID:</b> ", ATTAINS.AssessmentUnitIdentifier, "<br>",
-        "<b>Site:</b> ", TADA.MonitoringLocationName, "<br>",
-        "<b>Parameter:</b> ", selected_param, "<br>",
-        "<b>Use:</b> ", selected_use, "<br>"
-      )
+      popup = ~popup_content
     ) |>
     leaflet::addLegend(
       position = "bottomright",

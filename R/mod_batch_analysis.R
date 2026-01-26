@@ -324,15 +324,15 @@ mod_batch_analysis_server <- function(id, tadat){
         )
         
         if (tadat$use_type_batch %in% "Option 1"){
-          selected_cols <- c(selected_cols[1:4], 
+          selected_cols2 <- c(selected_cols[1:4], 
                              "ATTAINS.AssessmentUnitIdentifier",
                              selected_cols[5:40])
         } else {
-          selected_cols <- selected_cols
+          selected_cols2 <- selected_cols
         }
         
         # Select columns
-        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
         
         ### Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))

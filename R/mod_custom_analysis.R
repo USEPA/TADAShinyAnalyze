@@ -277,15 +277,15 @@ mod_custom_analysis_server <- function(id, tadat){
       )
       
       if (tadat$use_type_custom %in% "Option 1"){
-        selected_cols <- c(selected_cols[1:4], 
+        selected_cols2 <- c(selected_cols[1:4], 
                            "ATTAINS.AssessmentUnitIdentifier",
                            selected_cols[5:40])
       } else {
-        selected_cols <- selected_cols
+        selected_cols2 <- selected_cols
       }
       
       # Select columns
-      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -657,22 +657,26 @@ mod_custom_analysis_server <- function(id, tadat){
     # Render the summary maps
     output$overall_map <- leaflet::renderLeaflet({
       req(tadat$exceed_summary_custom)
+      req(tadat$use_type_custom)
 
       create_overall_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
-        type = tadat$loc_select_custom
+        type = tadat$loc_select_custom,
+        use_type = tadat$use_type_custom
       )
     })
     
     output$use_map <- leaflet::renderLeaflet({
       req(tadat$exceed_summary_custom)
+      req(tadat$use_type_custom)
       
       create_use_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
         selected_use = input$selected_use,
-        type = tadat$loc_select_custom
+        type = tadat$loc_select_custom,
+        use_type = tadat$use_type_custom
       )
     })
     
@@ -680,6 +684,7 @@ mod_custom_analysis_server <- function(id, tadat){
       req(tadat$exceed_summary_custom)
       req(input$selected_param)
       req(input$selected_use_param)
+      req(tadat$use_type_custom)
       
       # Filter data to check if there are any results
       filtered_data <- tadat$exceed_summary_custom |>
@@ -693,7 +698,8 @@ mod_custom_analysis_server <- function(id, tadat){
           coords_data = tadat$exceed_summary_coords_custom,
           selected_param = input$selected_param,
           selected_use = input$selected_use_param,
-          type = tadat$loc_select_custom
+          type = tadat$loc_select_custom,
+          use_type = tadat$use_type_custom
         )
       } else {
         # Return empty leaflet map with message
