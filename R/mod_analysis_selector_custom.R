@@ -77,45 +77,17 @@ mod_analysis_selector_custom_server <- function(id, tadat){
              " (Method: ", tadat$criteria_method, ")")
     })
     
-    # Update the Select state/tribe menu
-    shiny::observeEvent(tadat$df_mltoau_input, {
-      shiny::updateSelectizeInput(
-        session = session,
-        inputId = "state_tribe_custom",
-        options = list(placeholder = "Select the state/tribe", maxItems = 1),
-        selected = character(0),
-        choices = org_options
-      )
-    }, ignoreNULL = TRUE)
-    
-    # An observe block to determine the use_type
-    shiny::observeEvent(list(tadat$df_mlid_input, tadat$files_loaded_mlid), {
-      if (isTRUE(tadat$files_loaded_mlid)) {
-        shiny::updateSelectizeInput(
-          session = session,
-          inputId = "state_tribe_custom",
-          options = list(placeholder = "Select the state/tribe", maxItems = 1),
-          selected = character(0),
-          choices = org_options
-        )
-      }
-    }, ignoreNULL = TRUE)
-    
     # An observe block to determine the use_type
     shiny::observe({
       req(tadat$criteria_template)
       # Check if all three files are loaded
-      if (isTRUE(tadat$files_loaded_mlid) && 
-          isTRUE(tadat$files_loaded_mltoau) && 
+      if (isTRUE(tadat$files_loaded_mlid) &&
+          isTRUE(tadat$files_loaded_mltoau) &&
           isTRUE(tadat$files_loaded_autouse)) {
-        # All files are loaded - check if user selected default criteria
-        if (isTRUE(tadat$criteria_state_tribe %in% "D")) {
-          use_type <- "Option 2"  # Default criteria selected
-        } else {
-          use_type <- "Option 1"  # Use crosswalk files
-        }
+        
+        use_type <- "Option 1"  # Use crosswalk files
       } else if (isTRUE(tadat$files_loaded_mlid)) {
-        # Only main file is loaded, crosswalk files missing or incomplete
+        # Only the main water quality data file is loaded
         use_type <- "Option 2"
       } else {
         # No files loaded yet
@@ -124,10 +96,6 @@ mod_analysis_selector_custom_server <- function(id, tadat){
       
       tadat$use_type_custom <- use_type
       
-      print(paste("use_type_custom:", tadat$use_type_custom))
-      print(paste("files loaded - mlid:", tadat$files_loaded_mlid, 
-                  "mltoau:", tadat$files_loaded_mltoau, 
-                  "autouse:", tadat$files_loaded_autouse))
     })
     
     # Update the loc_select_custom choices based on use_type
@@ -173,11 +141,12 @@ mod_analysis_selector_custom_server <- function(id, tadat){
     shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$use_type_custom), {
       req(tadat$criteria_state_tribe)
       req(tadat$use_type_custom)
+      req(tadat$criteria_template)
       
       if (tadat$use_type_custom %in% "Option 1"){
         req(tadat$df_autouse_input)
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1
@@ -190,7 +159,7 @@ mod_analysis_selector_custom_server <- function(id, tadat){
         
       } else {
         
-        criteria_table_f1 <- criteria_table |>
+        criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
         
         # Get the list of available uses from criteria_table_f1

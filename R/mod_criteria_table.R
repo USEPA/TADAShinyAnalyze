@@ -125,7 +125,7 @@ mod_criteria_table_ui <- function(id) {
       shiny::column(
         width = 12,
         
-        shinyjs::disabled(
+        shinyjs::hidden(
           shiny::fileInput(
             inputId = ns("review_template"),
             label = "Choose file to load:",
@@ -195,7 +195,7 @@ mod_criteria_table_server <- function(id, tadat) {
         shiny::updateSelectInput(
           session = session,
           inputId = "state_tribe_select",
-          choices = if (is.null(tadat$ATTAINS_orgs_vec)) character(0) else tadat$ATTAINS_orgs_vec
+          choices = tadat$ATTAINS_orgs_vec
         )
       }
 
@@ -297,7 +297,8 @@ mod_criteria_table_server <- function(id, tadat) {
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("Warning: Missing columns in template: ", 
-                 paste(missing_cols, collapse = ", ")),
+                 paste(missing_cols, collapse = ", "),
+                 "appending missing columns with NA."), 
           type = "warning",
           duration = 10
         )
@@ -464,7 +465,7 @@ mod_criteria_table_server <- function(id, tadat) {
     # Activate the review_template file uploader
     shiny::observe({
       # Enable the review_template uploader only when a template has been generated
-      shinyjs::toggleState(
+      shinyjs::toggle(
         id = "review_template",
         condition = !is.null(criteria_template_rv())
       )
@@ -568,29 +569,49 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Define required columns for criteria template
-      required_cols <- c(
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName", 
-        "ATTAINS.UseName",
-        "TADA.CharacteristicName",
-        "TADA.ComparableDataIdentifier"
+      selected_cols <- c(
+        names(EPATADA::TADA_DefineCriteriaMethodology()),
+        "EquationType",
+        # Equation coefficient columns
+        "Equation",
+        "hardness_param_1",
+        "hardness_param_2",
+        "hardness_param_3",
+        "hardness_param_4",
+        "hardness_param_5",
+        "hardness_param_6",
+        "pH_param_1",
+        "pH_param_2",
+        "pH_param_3",
+        "pH_param_4"
       )
       
       # Check for missing required columns
-      missing_cols <- setdiff(required_cols, names(df_template))
+      missing_cols <- setdiff(selected_cols, names(df_template))
       
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("Warning: Missing columns in template: ", 
-                 paste(missing_cols, collapse = ", ")),
+                 paste(missing_cols, collapse = ", "),
+                 "appending missing columns with NA."),
           type = "warning",
           duration = 10
         )
       }
       
+      df_template[missing_cols] <- NA
+      
       # Check for missing rows
       df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+      
+      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
+      df_template2 <- df_template2 |>
+        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
+      
+      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
+      df_template2 <- df_template2 |>
+        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
       
       if (nrow(df_template2) == 0) {
         shiny::showNotification(
@@ -605,7 +626,20 @@ mod_criteria_table_server <- function(id, tadat) {
       # Get the organization ID from the criteria table
       tadat$criteria_state_tribe <- unique(df_template2$ATTAINS.OrganizationIdentifier)[1]
       
-      return(df_template)
+      # Get the equation tables for each Equation Type for the magnitude update step
+      tadat$hardness_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "Hardness")
+      
+      tadat$pH_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH")
+      
+      tadat$pH_hardness_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH and Hardness")
+      
+      tadat$pH_Temperature_equation <- df_template2 |>
+        dplyr::filter(EquationType %in% "pH and Temperature")
+      
+      return(df_template2)
     })
     
     ### Render template summary
@@ -626,13 +660,18 @@ mod_criteria_table_server <- function(id, tadat) {
       df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
       
+      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
+      df_template2 <- df_template2 |>
+        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
+      
       # Build summary text
       paste0(
         "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis.", 
         "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
         "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
         "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
-        "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s)."
+        "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s).\n",
+        "Warning: EquationBased must be populated - any NA will be filled in as 'No', MagnitudeUnit must match TADA.ResultMeasureValue.MeasureUnit.\n"
       )
     })
     
@@ -676,21 +715,33 @@ mod_criteria_table_server <- function(id, tadat) {
       df_template <- review_template_input()
 
       # Define required columns for criteria template
-      required_cols <- c(
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName",
-        "ATTAINS.UseName",
-        "TADA.CharacteristicName",
-        "TADA.ComparableDataIdentifier"
+      selected_cols <- c(
+        names(EPATADA::TADA_DefineCriteriaMethodology()),
+        "EquationType",
+        # Equation coefficient columns
+        "Equation",
+        "hardness_param_1",
+        "hardness_param_2",
+        "hardness_param_3",
+        "hardness_param_4",
+        "hardness_param_5",
+        "hardness_param_6",
+        "pH_param_1",
+        "pH_param_2",
+        "pH_param_3",
+        "pH_param_4"
       )
-
+      
       # Check for missing required columns
-      missing_cols <- setdiff(required_cols, names(df_template))
+      missing_cols <- setdiff(selected_cols, names(df_template))
 
+      # handle missing cols
+      df_template[missing_cols] <- NA
+      
       # Check for missing rows
       df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
-
+      
       if (length(missing_cols) == 0 & nrow(df_template2) > 0){
         shinyjs::enable(selector = '.nav li a[data-value="Batch"]')
         shinyjs::enable(selector = '.nav li a[data-value="Custom"]')

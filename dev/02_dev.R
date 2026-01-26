@@ -116,6 +116,10 @@ golem::add_module(
   name = "criteria_table",
   with_test = TRUE,
 )
+golem::add_module(
+  name = "TADA_summary",
+  with_test = TRUE,
+)
 
 
 

@@ -80,29 +80,20 @@ mod_analysis_selector_server <- function(id, tadat){
     shiny::observe({
       req(tadat$criteria_template)
       # Check if all three files are loaded
-      if (isTRUE(tadat$files_loaded_mlid) && 
-          isTRUE(tadat$files_loaded_mltoau) && 
+      if (isTRUE(tadat$files_loaded_mlid) &&
+          isTRUE(tadat$files_loaded_mltoau) &&
           isTRUE(tadat$files_loaded_autouse)) {
-        # All files are loaded - check if user selected EPA criteria
-        if (tadat$criteria_method %in% "B" & tadat$criteria_state_tribe %in% "USEPA") {
-          use_type <- "Option 2"  # Default criteria selected
-        } else {
-          use_type <- "Option 1"  # Use crosswalk files
-        }
+        
+        use_type <- "Option 1"  # Use crosswalk files
       } else if (isTRUE(tadat$files_loaded_mlid)) {
-        # Only main file is loaded, crosswalk files missing or incomplete
+        # Only the main water quality data file is loaded
         use_type <- "Option 2"
       } else {
         # No files loaded yet
         use_type <- "Option 2"
       }
-      
+
       tadat$use_type_batch <- use_type
-      
-      print(paste("use_type_batch:", tadat$use_type_batch))
-      print(paste("files loaded - mlid:", tadat$files_loaded_mlid, 
-                  "mltoau:", tadat$files_loaded_mltoau, 
-                  "autouse:", tadat$files_loaded_autouse))
     })
     
     # Update the loc_select choices based on use_type

@@ -161,7 +161,7 @@ mod_batch_analysis_server <- function(id, tadat){
       # }
     }, priority = 100)
     
-    # Run Barch_Data_Viewer
+    # Run Batch_Data_Viewer
     mod_analysis_data_viewer_server("Batch_Data_Viewer", tadat)
     
     # ### Remove records need to be reviewed in tadat$df_mltoau_input
@@ -201,7 +201,7 @@ mod_batch_analysis_server <- function(id, tadat){
       isolate({
         ### Get the input data and convert ActivityStartDateTime to dateTime
         dat <- tadat$df_mlid_input
-        
+
         dat <- dat |>
           dplyr::mutate(ActivityStartDateTime = 
                           suppressWarnings(
@@ -324,15 +324,15 @@ mod_batch_analysis_server <- function(id, tadat){
         )
         
         if (tadat$use_type_batch %in% "Option 1"){
-          selected_cols <- c(selected_cols[1:4], 
+          selected_cols2 <- c(selected_cols[1:4], 
                              "ATTAINS.AssessmentUnitIdentifier",
                              selected_cols[5:40])
         } else {
-          selected_cols <- selected_cols
+          selected_cols2 <- selected_cols
         }
         
         # Select columns
-        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
         
         ### Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -340,6 +340,7 @@ mod_batch_analysis_server <- function(id, tadat){
           dplyr::filter(EquationBased %in% "Yes") |>
           # Remove Additional Information in the EquationType for now
           dplyr::filter(!EquationType %in% "Additional Information")
+          
         
         dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
         
@@ -566,7 +567,11 @@ mod_batch_analysis_server <- function(id, tadat){
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |> 
-        magnitude_update(match_type = tadat$join_select) |>
+        magnitude_update(match_type = tadat$join_select,
+                         hardness_equation = tadat$hardness_equation,
+                         pH_equation = tadat$pH_equation,
+                         pH_Hardness_equation = tadat$pH_hardness_equation,
+                         pH_Temperature__equation = tadat$pH_Temperature_equation) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)

@@ -9,10 +9,6 @@
 #' @importFrom shiny NS tagList 
 #' 
 #' 
-# Load files
-data_path1 <- app_sys("extdata/Criteria_Table_Input_20251011.RData")
-load(data_path1)
-
 mod_load_file_ui <- function(id) {
   # set module session id
   ns <- shiny::NS(id)
@@ -28,9 +24,14 @@ mod_load_file_ui <- function(id) {
       shiny::column(
         width = 4,
         htmltools::h3("Purpose"),
-        htmltools::p("This app is used to analyze water quality data through 
-        either a batch analysis (Step 2) or custom analysis (Step 3). Three files
-        are necessary and must be uploaded to proceed."),
+        htmltools::p("This app is used to analyze water quality data based on the criteria table (Step 2) through 
+        either a batch analysis (Step 3) or custom analysis (Step 4)."),
+        
+        htmltools::p("This tab is used to upload three data files: 
+                     The water quality data (Step 1a), monitoring location to assessment unit (AU) crosswalk table (Step 1b),
+                     and an AU to Designated Uses crosswalk table (Step 1c).
+                     If the tables in Steps 1b or 1c are not available, 
+                     user will not be able to match the ATTAINS AU identifier or ATTAINS use name, respectively, for use in their batch and custom tab analysis."),
         
         htmltools::h3("Instructions"),
         htmltools::p("First, upload water 
@@ -40,7 +41,7 @@ mod_load_file_ui <- function(id) {
         Portal or use the", htmltools::a("TADAShinyApp."
                                          , href = "https://rconnect-public.epa.gov/TADAShiny/"
                                          , target = "_blank")),
-        htmltools::p("Second, upload a Monitoring Location to AU crosswalk table (Step 1b, optional)."),
+        htmltools::p("Second, upload a ML to AU crosswalk table (Step 1b, optional)."),
         htmltools::p("Third, upload an AU to Designated Uses crosswalk table (Step 1c, optionl).
         The files for Steps 1b and 1c can be supplied from an organization 
         or generated using the", htmltools::a("TADAShinyJoinToAU App."
@@ -58,20 +59,6 @@ mod_load_file_ui <- function(id) {
           selected = ","
         ),
         shiny::uiOutput(ns("mlid_file_input_ui"))
-        # shiny::fileInput(
-        #   inputId = ns("mlid_input_file"),
-        #   label = "Choose file to load:",
-        #   width = "90%",
-        #   placeholder = "No file selected.",
-        #   multiple = FALSE,
-        #   accept = c(
-        #     "text/csv",
-        #     "text/comma-separated-values",
-        #     "text/tab-separated-values",
-        #     "text/plain",
-        #     ".csv", ".tsv", ".txt", ".xlsx"
-        #   )
-        # )
       ),
       
       # data table column

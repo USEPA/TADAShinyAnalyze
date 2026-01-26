@@ -277,15 +277,15 @@ mod_custom_analysis_server <- function(id, tadat){
       )
       
       if (tadat$use_type_custom %in% "Option 1"){
-        selected_cols <- c(selected_cols[1:4], 
+        selected_cols2 <- c(selected_cols[1:4], 
                            "ATTAINS.AssessmentUnitIdentifier",
                            selected_cols[5:40])
       } else {
-        selected_cols <- selected_cols
+        selected_cols2 <- selected_cols
       }
       
       # Select columns
-      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols))
+      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
       
       ### Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
@@ -404,7 +404,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       dat_yes <- dat4_2 |> 
         dplyr::filter(EquationBased %in% "Yes") |>
-        # Reove Additional Information in the EquationType for now
+        # Remove Additional Information in the EquationType for now
         dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_2 |> dplyr::filter(EquationBased %in% "No")
       
@@ -557,7 +557,11 @@ mod_custom_analysis_server <- function(id, tadat){
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |> 
-        magnitude_update(match_type = tadat$join_select_custom) |>
+        magnitude_update(match_type = tadat$join_select_custom,
+                         hardness_equation = tadat$hardness_equation,
+                         pH_equation = tadat$pH_equation,
+                         pH_Hardness_equation = tadat$pH_hardness_equation,
+                         pH_Temperature__equation = tadat$pH_Temperature_equation) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
       
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
@@ -653,22 +657,26 @@ mod_custom_analysis_server <- function(id, tadat){
     # Render the summary maps
     output$overall_map <- leaflet::renderLeaflet({
       req(tadat$exceed_summary_custom)
+      req(tadat$use_type_custom)
 
       create_overall_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
-        type = tadat$loc_select_custom
+        type = tadat$loc_select_custom,
+        use_type = tadat$use_type_custom
       )
     })
     
     output$use_map <- leaflet::renderLeaflet({
       req(tadat$exceed_summary_custom)
+      req(tadat$use_type_custom)
       
       create_use_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
         selected_use = input$selected_use,
-        type = tadat$loc_select_custom
+        type = tadat$loc_select_custom,
+        use_type = tadat$use_type_custom
       )
     })
     
@@ -676,6 +684,7 @@ mod_custom_analysis_server <- function(id, tadat){
       req(tadat$exceed_summary_custom)
       req(input$selected_param)
       req(input$selected_use_param)
+      req(tadat$use_type_custom)
       
       # Filter data to check if there are any results
       filtered_data <- tadat$exceed_summary_custom |>
@@ -689,7 +698,8 @@ mod_custom_analysis_server <- function(id, tadat){
           coords_data = tadat$exceed_summary_coords_custom,
           selected_param = input$selected_param,
           selected_use = input$selected_use_param,
-          type = tadat$loc_select_custom
+          type = tadat$loc_select_custom,
+          use_type = tadat$use_type_custom
         )
       } else {
         # Return empty leaflet map with message

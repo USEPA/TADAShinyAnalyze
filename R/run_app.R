@@ -15,30 +15,8 @@ run_app <- function(
   ...
 ) {
   
-  # Run app-start initialization
-  internal_onStart <- function() {
-    
-    # set options (moved from top-level to avoid running during package load)
-    options(shiny.maxRequestSize = get_golem_config("MB_LIMIT") * 1024^2)
-
-    # Get the organization ID once per R process (cache in golem options)
-    ATTAINS_orgs_vec <- tryCatch({
-      ATTAINS_orgs <- suppressWarnings(suppressMessages(
-        rExpertQuery::EQ_DomainValues("org_id")
-      ))
-      ATTAINS_orgs <- dplyr::arrange(ATTAINS_orgs, name)
-      v <- ATTAINS_orgs$code
-      names(v) <- ATTAINS_orgs$name
-      v
-    }, error = function(e) {
-      warning("Failed to fetch ATTAINS org IDs: ", e$message)
-      NULL
-    })
-    
-    golem::set_golem_options(list(ATTAINS_orgs_vec = ATTAINS_orgs_vec))
-    
-    if (is.function(onStart)) onStart()
-  }
+  # set options (moved from top-level to avoid running during package load)
+  options(shiny.maxRequestSize = get_golem_config("MB_LIMIT") * 1024^2)
   
   with_golem_options(
     app = shinyApp(
