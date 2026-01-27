@@ -46,7 +46,7 @@ Imports:
     rExpertQuery
 Remotes:
     USEPA/EPATADA@develop
-    USEPA/TADACommunityHub@main
+    USEPA/TADACommunityHub@update-validation
 Suggests: 
     spelling,
     testthat (>= 3.0.0)

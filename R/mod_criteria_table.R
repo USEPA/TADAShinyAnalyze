@@ -305,7 +305,7 @@ mod_criteria_table_server <- function(id, tadat) {
       
       if (length(missing_cols) > 0) {
         shiny::showNotification(
-          paste0("Warning: Missing columns in Option E: User Supplied Template: ", 
+          paste0("Warning: Missing columns in Option E: User Supplied Template: \n", 
                  paste(missing_cols, collapse = ", ")), 
           type = "warning",
           duration = 10
@@ -626,14 +626,35 @@ mod_criteria_table_server <- function(id, tadat) {
       df_template2 <- df_template2 |>
         dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
       
+      # A reactive value to determine if notification will be displayed if the final criteria table is empty
+      notification_id <- reactiveVal(NULL)
+      
+      # checks if df_template2 is empty
       if (nrow(df_template2) == 0) {
-        shiny::showNotification(
+        empty.df <- shiny::showNotification(
           paste0("Warning: No available data in your final TADA-compatible criteria table. Cannot proceed with no metric to analyze. \n",
                  "Please review and re-upload your final TADA-compatible criteria table to ensure all columns have been filled out appropriately."),
           type = "warning",
-          duration = 100
+          duration = NULL
         )
+        # store the empty.df as the reactive value
+        notification_id(empty.df)
       }
+      
+      # If the user initially submitted an empty final criteria table, check to see if their re-uploads is correct. If so, close the error notification.
+      shiny::observe({
+        # Validate file is uploaded
+        shiny::validate(need(!is.null(input$review_template), "No file selected."))
+        
+        req(review_template_input())
+        
+        df_template <- review_template_input()
+        
+        if (nrow(df_template) > 0){
+          shiny::removeNotification(notification_id())
+          notification_id(NULL)
+        }
+      })
       
       # Also save to tadat for use in other modules
       tadat$criteria_template <- df_template2
@@ -751,7 +772,7 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$criteria_method <- input$criteria_method
       tadat$state_tribe_select <- input$state_tribe_select
     })
-    
+
     # Activate the batch and custom tabs if the final criteria table is ready
     shiny::observe({
 
