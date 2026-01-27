@@ -794,6 +794,10 @@ mod_batch_analysis_server <- function(id, tadat){
       # Get selected locations - if NULL or empty, use all locations
       selected_locs <- tadat$selected_monitoring_locations
       
+      if (is.null(selected_locs) || length(selected_locs) == 0) {
+        # No selection - set to NULL to show empty state
+        tadat$excursion_summary2 <- NULL
+      } else{
       # Filter based on location type for the exceedance results
       if (tadat$loc_select %in% "MLid") {
         exceedance_summary2 <- tadat$exceed_summary |>
@@ -806,7 +810,7 @@ mod_batch_analysis_server <- function(id, tadat){
         
         exceedance_summary2 <- tadat$exceed_summary |>
           dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
-      }
+      }}
       
       # Handle NULL or empty parameter filter
       if (is.null(input$parameter_filter) || length(input$parameter_filter) == 0) {

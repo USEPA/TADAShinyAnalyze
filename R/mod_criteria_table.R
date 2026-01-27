@@ -631,7 +631,7 @@ mod_criteria_table_server <- function(id, tadat) {
           paste0("Warning: No available data in your final TADA-compatible criteria table. Cannot proceed with no metric to analyze. \n",
                  "Please review and re-upload your final TADA-compatible criteria table to ensure all columns have been filled out appropriately."),
           type = "warning",
-          duration = 10
+          duration = 100
         )
       }
       
@@ -699,10 +699,8 @@ mod_criteria_table_server <- function(id, tadat) {
           #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
           TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
-          TADACommunityHub::validateDurationMethod(df_template2)$message, "\n",
-          TADACommunityHub::validateDurationUnits(df_template2)$message, "\n",
-          TADACommunityHub::validateFreqMethod(df_template2)$message, "\n",
-          TADACommunityHub::validateSeason(df_template2)$message
+          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n",
+          TADACommunityHub::validateWQXUnits(df_template2)$issues
           
         )
       }
@@ -716,11 +714,9 @@ mod_criteria_table_server <- function(id, tadat) {
           "There are ", length(unique(na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
           #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
-          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
-          TADACommunityHub::validateDurationMethod(df_template2)$message, "\n",
-          TADACommunityHub::validateDurationUnits(df_template2)$message, "\n",
-          TADACommunityHub::validateFreqMethod(df_template2)$message, "\n",
-          TADACommunityHub::validateSeason(df_template2)$message
+          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",          
+          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n",
+          TADACommunityHub::validateWQXUnits(df_template2)$issues
         )
       }
       # Prints final message
