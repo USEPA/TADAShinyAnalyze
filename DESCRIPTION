@@ -18,6 +18,7 @@ Imports:
     config,
     dplyr,
     EPATADA,
+    TADACommunityHub,
     golem,
     gotop,
     htmltools,
@@ -45,6 +46,7 @@ Imports:
     rExpertQuery
 Remotes:
     USEPA/EPATADA@develop
+    USEPA/TADACommunityHub@main
 Suggests: 
     spelling,
     testthat (>= 3.0.0)

@@ -283,22 +283,30 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Define required columns for criteria template
-      required_cols <- c(
-        "ATTAINS.OrganizationIdentifier",
-        "ATTAINS.ParameterName", 
-        "ATTAINS.UseName",
-        "TADA.CharacteristicName",
-        "TADA.ComparableDataIdentifier"
+      selected_cols <- c(
+        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
+        "EquationType",
+        # Equation coefficient columns
+        "Equation",
+        "hardness_param_1",
+        "hardness_param_2",
+        "hardness_param_3",
+        "hardness_param_4",
+        "hardness_param_5",
+        "hardness_param_6",
+        "pH_param_1",
+        "pH_param_2",
+        "pH_param_3",
+        "pH_param_4"
       )
       
       # Check for missing required columns
-      missing_cols <- setdiff(required_cols, names(df_template))
+      missing_cols <- setdiff(selected_cols, names(df_template))
       
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("Warning: Missing columns in template: ", 
-                 paste(missing_cols, collapse = ", "),
-                 "appending missing columns with NA."), 
+                 paste(missing_cols, collapse = ", ")), 
           type = "warning",
           duration = 10
         )
@@ -570,7 +578,7 @@ mod_criteria_table_server <- function(id, tadat) {
       
       # Define required columns for criteria template
       selected_cols <- c(
-        names(EPATADA::TADA_DefineCriteriaMethodology()),
+        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
         "Equation",
@@ -593,17 +601,18 @@ mod_criteria_table_server <- function(id, tadat) {
         shiny::showNotification(
           paste0("Warning: Missing columns in template: ", 
                  paste(missing_cols, collapse = ", "),
-                 "appending missing columns with NA."),
+                 "\n appending missing columns with NA."),
           type = "warning",
           duration = 10
         )
       }
       
-      df_template[missing_cols] <- NA
-      
       # Check for missing rows
       df_template2 <- df_template |>
         dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
+      
+      # Adds missing cols
+      df_template2[missing_cols] <- NA
       
       # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
       df_template2 <- df_template2 |>
@@ -639,7 +648,7 @@ mod_criteria_table_server <- function(id, tadat) {
       tadat$pH_Temperature_equation <- df_template2 |>
         dplyr::filter(EquationType %in% "pH and Temperature")
       
-      return(df_template) # returns original df_template (not modified if missing columns or rows)
+      return(df_template2)
     })
     
     ### Render template summary
@@ -671,32 +680,38 @@ mod_criteria_table_server <- function(id, tadat) {
       # Build summary text
       if( equationBased_NA > 0 ){
         text <- paste0(
-          "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis. \n", 
-          "There are ", length(unique(na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique organization(s).\n",
-          "There are ", length(unique(na.omit(df_template$TADA.CharacteristicName))), " unique TADA characteristic name(s).\n",
-          "There are ", length(unique(na.omit(df_template$ATTAINS.UseName))), " unique use type(s).\n",
+          "Loaded dataset has ", nrow(df_template), " rows.\n", 
+          "   and ", nrow(df_template2), " rows contain information for analysis. Any rows missing criteria or methodology information has been removed. \n", 
+          "There are ", length(unique(na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
+          "There are ", length(unique(na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
+          "There are ", length(unique(na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
           "There are ", length(unique(na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
-          "Warning: EquationBased must be populated - any NA will be filled in as 'No'. \n", 
-          "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n"
+          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values: NA. \n",
+          "   These NAs will be filled in as 'No'. \n", 
+          #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
+          TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
+          TADACommunityHub::validateATTAINSUse(df_template2)$message
+          
         )
       }
       
       if( equationBased_NA == 0 ){
         text <- paste0(
           "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis. \n", 
-          "There are ", length(unique(df_template$ATTAINS.OrganizationIdentifier)), " unique organization(s).\n",
-          "There are ", length(unique(df_template$TADA.CharacteristicName)), " unique TADA characteristic name(s).\n",
-          "There are ", length(unique(df_template$ATTAINS.UseName)), " unique use type(s).\n",
-          "There are ", length(unique(df_template$TADA.ComparableDataIdentifier)), " unique TADA.ComparableDataIdentifier(s).\n",
-          "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n"
-          
+          "There are ", length(unique(na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
+          "There are ", length(unique(na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
+          "There are ", length(unique(na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
+          "There are ", length(unique(na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
+          #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
+          TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
+          TADACommunityHub::validateATTAINSUse(df_template2)$message
         )
       }
-      
+      # Prints final message
       paste0(text)
     })
     
-    ### Generate the template summary table
+    ### Generate the template summary table (adds missing required columns to the output)
     output$final_template <- DT::renderDT({
       # Validate file is uploaded
       shiny::validate(need(!is.null(input$review_template), "No file selected."))
@@ -706,17 +721,8 @@ mod_criteria_table_server <- function(id, tadat) {
       
       shiny::validate(need(!is.null(df_template), "Error loading file."))
       
-      # Check for missing rows
-      df_template2 <- df_template |>
-        dplyr::filter(dplyr::if_any(6:dplyr::last_col(), ~ !is.na(.)))
-      
-      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
-      df_template2 <- df_template2 |>
-        dplyr::mutate(EquationBased = as.character(EquationBased)) |>
-        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
-      
       # Render table
-      DT::datatable(df_template2,
+      DT::datatable(df_template,
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
@@ -746,7 +752,7 @@ mod_criteria_table_server <- function(id, tadat) {
 
       # Define required columns for criteria template
       selected_cols <- c(
-        names(EPATADA::TADA_DefineCriteriaMethodology()),
+        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
         "Equation",

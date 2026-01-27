@@ -19,7 +19,7 @@ criteria_join <- function(x, y, match_type = "Option 2",
       -TADA.MethodSpeciationName,
       -TADA.ComparableDataIdentifier
     ) |>
-    TADA_CorrectColType()
+    EPATADA::TADA_CorrectColType()
     #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
 
   # Build join expression as a string
