@@ -58,7 +58,7 @@ mod_criteria_table_ui <- function(id) {
             "Option B: State/Tribe from ATTAINS" = "B",
             "Option C: Any State/Tribe from ATTAINS" = "C",
             "Option D: Blank Template" = "D",
-            "Option E: A Template from Users" = "E"
+            "Option E: User Supplied Template" = "E"
           ),
           width = "100%"
         ),
@@ -305,7 +305,7 @@ mod_criteria_table_server <- function(id, tadat) {
       
       if (length(missing_cols) > 0) {
         shiny::showNotification(
-          paste0("Warning: Missing columns in template: ", 
+          paste0("Warning: Missing columns in Option E: User Supplied Template: ", 
                  paste(missing_cols, collapse = ", ")), 
           type = "warning",
           duration = 10
@@ -600,8 +600,13 @@ mod_criteria_table_server <- function(id, tadat) {
       if (length(missing_cols) > 0) {
         shiny::showNotification(
           paste0("Warning: Missing columns in template: ", 
-                 paste(missing_cols, collapse = ", "),
-                 "\n appending missing columns with NA."),
+                 paste(missing_cols, collapse = ", ")),
+          type = "warning",
+          duration = 10
+        )
+        
+        shiny::showNotification(
+          paste0("Appending missing columns with NA values."),
           type = "warning",
           duration = 10
         )
@@ -614,9 +619,8 @@ mod_criteria_table_server <- function(id, tadat) {
       # Adds missing cols
       df_template2[missing_cols] <- NA
       
-      # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
-      df_template2 <- df_template2 |>
-        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
+      # convert criteria table col types to match
+      df_template2 <- EPATADA::TADA_CorrectColType(df_template2)
       
       # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
       df_template2 <- df_template2 |>
@@ -624,7 +628,8 @@ mod_criteria_table_server <- function(id, tadat) {
       
       if (nrow(df_template2) == 0) {
         shiny::showNotification(
-          paste0("Warning: No available data"),
+          paste0("Warning: No available data in your final TADA-compatible criteria table. Cannot proceed with no metric to analyze. \n",
+                 "Please review and re-upload your final TADA-compatible criteria table to ensure all columns have been filled out appropriately."),
           type = "warning",
           duration = 10
         )
@@ -673,6 +678,9 @@ mod_criteria_table_server <- function(id, tadat) {
       row_NA <- nrow(df_template) - nrow(df_template2)
       equationBased_NA <- sum(is.na(df_template2$EquationBased))
       
+      # convert criteria table col types to match
+      df_template2 <- EPATADA::TADA_CorrectColType(df_template2)
+      
       # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
       df_template2 <- df_template2 |>
         dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
@@ -690,7 +698,11 @@ mod_criteria_table_server <- function(id, tadat) {
           "   These NAs will be filled in as 'No'. \n", 
           #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
-          TADACommunityHub::validateATTAINSUse(df_template2)$message
+          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
+          TADACommunityHub::validateDurationMethod(df_template2)$message, "\n",
+          TADACommunityHub::validateDurationUnits(df_template2)$message, "\n",
+          TADACommunityHub::validateFreqMethod(df_template2)$message, "\n",
+          TADACommunityHub::validateSeason(df_template2)$message
           
         )
       }
@@ -704,7 +716,11 @@ mod_criteria_table_server <- function(id, tadat) {
           "There are ", length(unique(na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
           #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
-          TADACommunityHub::validateATTAINSUse(df_template2)$message
+          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
+          TADACommunityHub::validateDurationMethod(df_template2)$message, "\n",
+          TADACommunityHub::validateDurationUnits(df_template2)$message, "\n",
+          TADACommunityHub::validateFreqMethod(df_template2)$message, "\n",
+          TADACommunityHub::validateSeason(df_template2)$message
         )
       }
       # Prints final message
