@@ -1881,3 +1881,43 @@ loadCriteria <- function(state_tribe, ref) {
   
   return(df)
 }
+
+#` a TADA function
+TADA_CheckType <- function(arg, type, paramName = deparse(substitute(arg))) {
+  if (!inherits(arg, type)) {
+    errorMessage <- sprintf("%s must be of class '%s'", paramName, type)
+    stop(errorMessage)
+  }
+  invisible(NULL)
+}
+
+#' Check Columns
+#'
+#' This function checks if the expected column names are in the dataframe. It is
+#' used at the beginning of TADA functions to ensure the input data frame is
+#' suitable (i.e. is either the full physical/chemical results profile
+#' downloaded from WQP or the TADA profile template downloaded from the EPA TADA
+#' webpage.)
+#'
+#' @param .data A dataframe
+#' @param expected_cols A vector of expected column names as strings
+#' @return Invisible `NULL` if all expected columns are present; otherwise, an error is thrown.
+TADA_CheckColumns <- function(.data, expected_cols) {
+  TADA_CheckType(.data, "data.frame", "Input object") # check .data is data.frame
+  
+  if (!is.vector(expected_cols) || !is.character(expected_cols)) {
+    stop("Expected columns must be a character vector.")
+  }
+  
+  missing_cols <- setdiff(expected_cols, colnames(.data))
+  
+  if (length(missing_cols) > 0) {
+    stop(paste(
+      "The dataframe does not contain the required field(s):",
+      paste(missing_cols, collapse = ", "),
+      ". Use either the full physical/chemical profile downloaded from WQP or download the TADA profile template available on the EPA TADA webpage."
+    ))
+  }
+  
+  invisible(NULL)
+}

@@ -77,6 +77,18 @@ mod_load_file_ui <- function(id) {
     
     htmltools::hr(),
     
+    ########## TEST PLOTLY #######
+    
+    fluidRow(
+      column(
+        width = 12, 
+        plotly::plotlyOutput(ns("TADA_timeseries_view")),
+        htmltools::h3("TADA Plots")
+      )
+    ),
+    
+    
+    
     # load ml to au crosswalk file
     shiny::fluidRow(
       # instructions column
@@ -343,6 +355,40 @@ mod_load_file_server <- function(id, tadat){
                                    lengthMenu = c(5, 10, 25, 50, 100),
                                    autoWidth = TRUE))
     }) # end renderDT
+    
+    ############################
+    output$TADA_timeseries_view <- plotly::renderPlotly({
+      # validate data is there
+      shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
+      
+      # Create your plotly plot (using plot_ly or ggplotly) TEST IRIS DATA
+      #p <- plotly::plot_ly(data = iris, x = ~Sepal.Length, y = ~Petal.Length)
+
+      p <- EPATADA::TADA_Scatterplot(df_mlid_input())
+      # Return the plotly object
+      return(p)
+    })
+    
+    ########## TEST TADA Plotly
+    # mod_analysis_plots_server_TADA("TADA Analysis_Plots",
+    #                                tadat = tadat)
+    ######################
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
     # render summary
     output$mlid_input_summary <- shiny::renderText({

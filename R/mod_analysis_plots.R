@@ -368,7 +368,6 @@ mod_analysis_plots_server <- function(id,
       }
     })
 
-    
     # Check if there are multiple values in Season in filtered_data3
     shiny::observe({
       shiny::req(filtered_data3())

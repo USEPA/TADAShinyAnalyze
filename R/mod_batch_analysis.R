@@ -848,7 +848,7 @@ mod_batch_analysis_server <- function(id, tadat){
     
     ########## TEST TADA Plotly
     mod_analysis_plots_server_TADA("TADA Analysis_Plots",
-                                   tadat = tadat$df_mlid_inputt)
+                                   tadat = tadat)
     ######################
     
   })
