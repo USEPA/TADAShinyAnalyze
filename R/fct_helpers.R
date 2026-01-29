@@ -95,7 +95,7 @@ pH_join <- function(x, y){
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                        dplyr::closest(DateTime >= DateTime_lower), 
-                       closest(DateTime <= DateTime_upper))
+                       dplyr::closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
     dplyr::left_join(y, by = by) |>
@@ -137,7 +137,7 @@ temp_join <- function(x, y){
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
                        dplyr::closest(DateTime >= DateTime_lower), 
-                       closest(DateTime <= DateTime_upper))
+                       dplyr::closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
     dplyr::left_join(y, by = by) |>
@@ -277,7 +277,7 @@ excursion_summary <- function(x, type){
                      Start_Date = min(ActivityStartDate, na.rm = TRUE),
                      End_Date = max(ActivityStartDate, na.rm = TRUE),
                      Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
-                     Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Median = stats::median(TADA.ResultMeasureValue, na.rm = TRUE),
                      Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
                      Number_of_Excursions = modSum(Excursion),
                      .groups = "drop") |>
@@ -1233,7 +1233,7 @@ frequency_summary <- function(x, type){
     x_P2 <- x_P |>
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
       dplyr::mutate(FreqValue = FreqValue/100) |>
-      dplyr::mutate(Percentile = quantile(Result_Duration,
+      dplyr::mutate(Percentile = stats::quantile(Result_Duration,
                                           probs = dplyr::first(FreqValue))) |>
       dplyr::mutate(E_Value = Percentile) |>
       dplyr::ungroup()
