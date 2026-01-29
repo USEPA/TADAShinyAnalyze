@@ -19,7 +19,8 @@ criteria_join <- function(x, y, match_type = "Option 2",
       -TADA.MethodSpeciationName,
       -TADA.ComparableDataIdentifier
     ) |>
-    dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
+    EPATADA::TADA_CorrectColType()
+    #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
 
   # Build join expression as a string
   join_cols <- c(
@@ -93,7 +94,7 @@ pH_join <- function(x, y){
   
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
-                       dplyr::closest(DateTime >= DateTime_lower), 
+                       closest(DateTime >= DateTime_lower), 
                        closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
@@ -135,7 +136,7 @@ temp_join <- function(x, y){
   
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
-                       dplyr::closest(DateTime >= DateTime_lower), 
+                       closest(DateTime >= DateTime_lower), 
                        closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
@@ -276,7 +277,7 @@ excursion_summary <- function(x, type){
                      Start_Date = min(ActivityStartDate, na.rm = TRUE),
                      End_Date = max(ActivityStartDate, na.rm = TRUE),
                      Minimum = min(TADA.ResultMeasureValue, na.rm = TRUE),
-                     Median = median(TADA.ResultMeasureValue, na.rm = TRUE),
+                     Median = stats::median(TADA.ResultMeasureValue, na.rm = TRUE),
                      Maximum = max(TADA.ResultMeasureValue, na.rm = TRUE),
                      Number_of_Excursions = modSum(Excursion),
                      .groups = "drop") |>
@@ -1232,7 +1233,7 @@ frequency_summary <- function(x, type){
     x_P2 <- x_P |>
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
       dplyr::mutate(FreqValue = FreqValue/100) |>
-      dplyr::mutate(Percentile = quantile(Result_Duration,
+      dplyr::mutate(Percentile = stats::quantile(Result_Duration,
                                           probs = dplyr::first(FreqValue))) |>
       dplyr::mutate(E_Value = Percentile) |>
       dplyr::ungroup()
@@ -1468,8 +1469,8 @@ window_before_period <- function(unit, value) {
   if (is.na(unit)) unit <- "n-day"
   if (unit == "n-hour")   return(lubridate::hours(max(value, 1) - 1))
   if (unit == "n-day")    return(lubridate::days(max(value, 1) - 1))
-  if (unit == "n-month")  return(lubridate::months(max(value, 1)) - lubridate::days(1))
-  if (unit == "n-season") return(lubridate::months(3L * max(value, 1)) - lubridate::days(1))
+  if (unit == "n-month")  return(months(max(value, 1)) - lubridate::days(1))
+  if (unit == "n-season") return(months(3L * max(value, 1)) - lubridate::days(1))
   lubridate::days(max(value, 1) - 1)
 }
 

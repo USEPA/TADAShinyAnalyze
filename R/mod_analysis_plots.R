@@ -435,8 +435,8 @@ mod_analysis_plots_server <- function(id,
       
       # Check if there's data to plot
       if(nrow(filtered_data4()) == 0) {
-        plot.new()
-        text(0.5, 0.5, "No data available for selected filters", 
+        graphics::plot.new()
+        graphics::text(0.5, 0.5, "No data available for selected filters", 
              cex = 1.2, col = "gray50")
         return(NULL)
       }
@@ -564,7 +564,7 @@ mod_analysis_plots_server <- function(id,
       
       # Helper: line type from AcuteChronic
       get_linetype <- function(vals) {
-        typ <- unique(tolower(na.omit(vals)))
+        typ <- unique(tolower(stats::na.omit(vals)))
         if ("acute" %in% typ) return("dotted")
         if ("chronic" %in% typ) return("dashed")
         return("solid")

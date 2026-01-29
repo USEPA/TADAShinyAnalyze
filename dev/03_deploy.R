@@ -15,7 +15,7 @@
 # 
 # ## Run checks ----
 # ## Check the package before sending to prod
-# devtools::check()
+devtools::check()
 # rhub::check_for_cran()
 # 
 # # Deploy
@@ -34,7 +34,7 @@
 ## Posit ----
 ## If you want to deploy on Posit related platforms
 # golem::add_positconnect_file()
-golem::add_shinyappsio_file()
+# golem::add_shinyappsio_file()
 # golem::add_shinyserver_file()
 
 # ## Deploy to Posit Connect or ShinyApps.io ----
@@ -73,7 +73,7 @@ golem::add_shinyappsio_file()
 # 3) Deploy to Shinyapps.io
 # rsconnect::setAccountInfo(name="yourname", token="YOUR_TOKEN", secret="YOUR_SECRET")
 # rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze")
-rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze-Test")
+# rsconnect::deployApp(appDir = ".", appName = "TADAShinyAnalyze-Test")
 
 # 4) View logs on failure
 # rsconnect::showLogs(appName = "your-app-name", streaming = TRUE)
@@ -98,7 +98,7 @@ golem::document_and_reload()
 # Add staging link here: https://rstudio-connect.dmap-stage.aws.epa.gov/content/019dcc7e-863b-426a-a2a5-1813f53f5702/ 
 rsconnect::deployApp(
   appDir = getwd(),
-  appFiles = c("app.R", "DESCRIPTION", "NAMESPACE", "R/", "inst/"),
+  # appFiles = c("app.R", "DESCRIPTION", "NAMESPACE", "R/", "inst/"),
   appName = "TADAShinyAnalyze",
   appTitle = "TADAShiny Module 3 Analyze",
   launch.browser = TRUE,

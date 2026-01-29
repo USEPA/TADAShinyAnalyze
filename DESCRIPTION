@@ -15,15 +15,15 @@ License: CC0
 URL: https://github.com/USEPA/TADAShinyAnalyze
 BugReports: https://github.com/USEPA/TADAShinyAnalyze/issues
 Imports: 
+    stats,
     config,
-    dplyr,
+    dplyr (>= 1.1.0),
     EPATADA,
+    TADACommunityHub,
     golem,
     gotop,
     htmltools,
     leaflet,
-    pkgload,
-    sf,
     shiny,
     shinyjs,
     utils,
@@ -42,15 +42,19 @@ Imports:
     readr,
     httr,
     slider,
-    rExpertQuery
+    rExpertQuery,
+    graphics
 Remotes:
-    USEPA/EPATADA@develop
+    USEPA/EPATADA,
+    USEPA/TADACommunityHub,
+    USEPA/rExpertQuery
 Suggests: 
     spelling,
     testthat (>= 3.0.0)
+Depends: 
+    R (>= 4.1.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 LazyData: true
 RoxygenNote: 7.3.3
-StagedInstall: FALSE
