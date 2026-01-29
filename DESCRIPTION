@@ -45,8 +45,9 @@ Imports:
     slider,
     rExpertQuery
 Remotes:
-    USEPA/EPATADA@develop
-    USEPA/TADACommunityHub@update-validation
+    USEPA/EPATADA,
+    USEPA/TADACommunityHub,
+    USEPA/rExpertQuery
 Suggests: 
     spelling,
     testthat (>= 3.0.0)
