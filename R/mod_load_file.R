@@ -364,7 +364,7 @@ mod_load_file_server <- function(id, tadat){
       # Create your plotly plot (using plot_ly or ggplotly) TEST IRIS DATA
       #p <- plotly::plot_ly(data = iris, x = ~Sepal.Length, y = ~Petal.Length)
 
-      p <- EPATADA::TADA_Scatterplot(df_mlid_input())
+      p <- EPATADA::TADA_Scatterplot(tadat$df_mlid_input)
       # Return the plotly object
       return(p)
     })

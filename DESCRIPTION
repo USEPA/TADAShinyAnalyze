@@ -47,7 +47,7 @@ Imports:
     slider,
     rExpertQuery
 Remotes:
-    USEPA/EPATADA@develop
+    USEPA/EPATADA@kw-temp
     USEPA/TADACommunityHub@update-validation
 Suggests: 
     spelling,
