@@ -79,7 +79,7 @@ app_ui <- function(request) {
       
       # add horizontal line
       htmltools::hr(),
-      # add a disclaimer button at the buttom
+      # add a disclaimer button at the bottom
       mod_TADA_summary_ui("TADA_summary_1"),
       
       # adds epa footer html

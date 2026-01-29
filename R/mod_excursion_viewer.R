@@ -41,6 +41,7 @@ mod_excursion_viewer_server <- function(id, summary_dat){
       output$excurse_table <- DT::renderDT(
         DT::datatable(
           dat,
+          selection = "none", # added 1/28/2026 to disable interactive highlighting as does not seem relevant - KW
           filter = "top",
           class = "compact",
           options = list(scrollX = TRUE,

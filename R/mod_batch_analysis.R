@@ -113,6 +113,17 @@ mod_batch_analysis_ui <- function(id) {
       )
     ),
     
+    ########## TEST PLOTLY #######
+    
+    fluidRow(
+      column(
+        width = 12,
+        htmltools::h3("TADA Plots"),
+        #htmltools::p("Use filters to view the results"),
+        mod_analysis_plots_ui_TADA(ns("TADA Analysis_Plots"))
+      )
+    )
+    
     # # Horizontal divider
     # htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     # 
@@ -835,6 +846,10 @@ mod_batch_analysis_server <- function(id, tadat){
                               loc_select = reactive(tadat$loc_select),
                               tabname = "batch")
     
+    ########## TEST TADA Plotly
+    mod_analysis_plots_server_TADA("TADA Analysis_Plots",
+                                   tadat = tadat$df_mlid_inputt)
+    ######################
     
   })
 }
