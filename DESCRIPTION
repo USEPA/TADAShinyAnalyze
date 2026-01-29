@@ -17,7 +17,7 @@ BugReports: https://github.com/USEPA/TADAShinyAnalyze/issues
 Imports: 
     stats,
     config,
-    dplyr,
+    dplyr (>= 1.1.0),
     EPATADA,
     TADACommunityHub,
     golem,

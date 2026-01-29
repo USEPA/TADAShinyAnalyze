@@ -1,6 +1,10 @@
 #' @keywords internal
 "_PACKAGE"
 
+# closest() is not a normal, exported function from dplyr.
+# It is part of a domain-specific language (DSL) within join_by()
+utils::globalVariables("closest")
+
 # Silence globalVariables notes
 utils::globalVariables(c(
   ".data",
