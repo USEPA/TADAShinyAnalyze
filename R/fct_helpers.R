@@ -94,8 +94,8 @@ pH_join <- function(x, y){
   
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
-                       dplyr::closest(DateTime >= DateTime_lower), 
-                       dplyr::closest(DateTime <= DateTime_upper))
+                       closest(DateTime >= DateTime_lower), 
+                       closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
     dplyr::left_join(y, by = by) |>
@@ -136,8 +136,8 @@ temp_join <- function(x, y){
   
   by <- dplyr::join_by(TADA.MonitoringLocationIdentifier, TADA.MonitoringLocationTypeName,
                        TADA.LatitudeMeasure, TADA.LongitudeMeasure,
-                       dplyr::closest(DateTime >= DateTime_lower), 
-                       dplyr::closest(DateTime <= DateTime_upper))
+                       closest(DateTime >= DateTime_lower), 
+                       closest(DateTime <= DateTime_upper))
   
   x2 <- x |>
     dplyr::left_join(y, by = by) |>
@@ -1469,8 +1469,8 @@ window_before_period <- function(unit, value) {
   if (is.na(unit)) unit <- "n-day"
   if (unit == "n-hour")   return(lubridate::hours(max(value, 1) - 1))
   if (unit == "n-day")    return(lubridate::days(max(value, 1) - 1))
-  if (unit == "n-month")  return(lubridate::months(max(value, 1)) - lubridate::days(1))
-  if (unit == "n-season") return(lubridate::months(3L * max(value, 1)) - lubridate::days(1))
+  if (unit == "n-month")  return(months(max(value, 1)) - lubridate::days(1))
+  if (unit == "n-season") return(months(3L * max(value, 1)) - lubridate::days(1))
   lubridate::days(max(value, 1) - 1)
 }
 
