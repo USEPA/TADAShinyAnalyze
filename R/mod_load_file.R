@@ -78,7 +78,20 @@ mod_load_file_ui <- function(id) {
     htmltools::hr(),
     
     ########## TEST PLOTLY #######
-    
+    fluidRow(
+      column(4, # The column takes up 4 of the 12 available grid spaces
+             selectInput(
+               inputId = ns("user_choice"), 
+               label = "Choose an option:", 
+               choices = NULL,
+               selected = NULL
+             )
+      )
+      # ,column(4,
+      #          # Dependent Dropdown (rendered in server)
+      #          uiOutput("item_dropdown")
+      # )
+    ),
     fluidRow(
       column(
         width = 12, 
@@ -357,6 +370,47 @@ mod_load_file_server <- function(id, tadat){
     }) # end renderDT
     
     ############################
+    
+    # Reactive variable for filtered data
+    shiny::observe({
+      # validate file is selected
+      shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
+      
+      # run when ml file loaded
+      df_mlid_input()
+      
+      # Get the TADA.ComparableDataIdentifier names
+      id <- sort(unique(tadat$df_mlid_input$TADA.ComparableDataIdentifier))
+      
+      # Only update if we have TADA.ComparableDataIdentifier to show
+      if (length(id) > 0) {
+        shiny::updateSelectInput(
+          session = session,
+          inputId = "user_choice",
+          choices = id,
+          selected = NULL
+        )
+      } else {
+        # Clear the TADA.ComparableDataIdentifier filter if no data
+        shiny::updateSelectInput(
+          session = session,
+          inputId = "user_choice",
+          choices = character(0),
+          selected = character(0)
+        )
+      }
+      
+      
+      
+    })
+    
+    # # Render the dependent dropdown dynamically
+    # output$item_dropdown <- renderUI({
+    #   selectInput("item_select", "Select Item:", 
+    #               choices = filtered_items())
+    # })
+    
+    
     output$TADA_timeseries_view <- plotly::renderPlotly({
       # validate data is there
       shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
@@ -365,8 +419,22 @@ mod_load_file_server <- function(id, tadat){
       #p <- plotly::plot_ly(data = iris, x = ~Sepal.Length, y = ~Petal.Length)
 
       p <- EPATADA::TADA_Scatterplot(tadat$df_mlid_input)
+      
+      i <- which(names(p) %in% EPATADA::TADA_CharStringRemoveNA(input$user_choice))
+      
+      if (is.null(i)) {
+        i <- 1
+      }
+      
+      shiny::validate(
+        shiny::need(
+          is.numeric(i) && length(i) == 1,        # The condition to check (e.g., data is not empty)
+          "Sorry, there are no matching plots for your choice selection." # The message to display if the condition is FALSE
+        )
+      )
+      
       # Return the plotly object
-      return(p)
+      return(p[[i]])
     })
     
     ########## TEST TADA Plotly

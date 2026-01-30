@@ -49,7 +49,7 @@ mod_analysis_plots_server_TADA <- function(id, tadat){
       df_mlid_input <- rv()
       
       # Create your plotly plot (using plot_ly or ggplotly)
-      p <- EPATADA::TADA_Scatterplot(EPATADA::Data_MT_MissoulaCounty)[1]
+      p <- EPATADA::TADA_Scatterplot(EPATADA::Data_MT_MissoulaCounty)[[1]]
       
       # Return the plotly object
       return(p)
