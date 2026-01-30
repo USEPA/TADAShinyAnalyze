@@ -76,31 +76,38 @@ mod_load_file_ui <- function(id) {
     ),
     
     htmltools::hr(),
+    htmltools::h3("TADA Plots"),
     
     ########## TEST PLOTLY #######
     fluidRow(
       column(4, # The column takes up 4 of the 12 available grid spaces
              selectInput(
                inputId = ns("user_choice"), 
-               label = "Choose an option:", 
+               label = div(style = "font-size: 12px;", "Choose TADA.ComparableDataIdentifier plot:"), #Adjust text size
                choices = NULL,
                selected = NULL
              )
-      )
-      # ,column(4,
-      #          # Dependent Dropdown (rendered in server)
-      #          uiOutput("item_dropdown")
-      # )
+      ),
+      column(4, # The column takes up 4 of the 12 available grid spaces
+             selectizeInput(
+               inputId = ns("user_choice_ML"), 
+               label = div(style = "font-size: 12px;","Choose up to 4 Monitoring Locations:"), #Adjust text size
+               choices = NULL,
+               selected = NULL,
+               options = list(maxItems = 4) # limits the selection to 4
+             )
+      ),
     ),
     fluidRow(
       column(
-        width = 12, 
+        width = 6, 
+        plotly::plotlyOutput(ns("TADA_boxplots_view"))
+      ),
+      column(
+        width = 6, 
         plotly::plotlyOutput(ns("TADA_timeseries_view")),
-        htmltools::h3("TADA Plots")
       )
     ),
-    
-    
     
     # load ml to au crosswalk file
     shiny::fluidRow(
@@ -400,24 +407,34 @@ mod_load_file_server <- function(id, tadat){
         )
       }
       
+      # Get the MonitoringLocation site names
+      id.ML <- sort(unique(tadat$df_mlid_input$TADA.MonitoringLocationIdentifier))
       
-      
+      # Only update if we have TADA.TADA.MonitoringLocationIdentifier to show
+      if (length(id) > 0) {
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "user_choice_ML",
+          choices = id.ML,
+          selected = id.ML[1:4],
+          options = list(maxItems = 4) # This limits the selection to 4 items
+        )
+      } else {
+        # Clear the TADA.ComparableDataIdentifier filter if no data
+        shiny::updateSelectizeInput(
+          session = session,
+          inputId = "user_choice_ML",
+          choices = character(0),
+          selected = character(0)
+        )
+      }
     })
     
-    # # Render the dependent dropdown dynamically
-    # output$item_dropdown <- renderUI({
-    #   selectInput("item_select", "Select Item:", 
-    #               choices = filtered_items())
-    # })
-    
-    
+    # display TADA_scatterplot
     output$TADA_timeseries_view <- plotly::renderPlotly({
       # validate data is there
       shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
       
-      # Create your plotly plot (using plot_ly or ggplotly) TEST IRIS DATA
-      #p <- plotly::plot_ly(data = iris, x = ~Sepal.Length, y = ~Petal.Length)
-
       p <- EPATADA::TADA_Scatterplot(tadat$df_mlid_input)
       
       i <- which(names(p) %in% EPATADA::TADA_CharStringRemoveNA(input$user_choice))
@@ -437,10 +454,29 @@ mod_load_file_server <- function(id, tadat){
       return(p[[i]])
     })
     
-    ########## TEST TADA Plotly
-    # mod_analysis_plots_server_TADA("TADA Analysis_Plots",
-    #                                tadat = tadat)
-    ######################
+    output$TADA_boxplots_view <- plotly::renderPlotly({
+      # validate data is there
+      shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
+      
+      p <- EPATADA::TADA_Boxplot(tadat$df_mlid_input)
+      
+      i <- which(names(p) %in% EPATADA::TADA_CharStringRemoveNA(input$user_choice))
+      
+      if (is.null(i)) {
+        i <- 1
+      }
+      
+      shiny::validate(
+        shiny::need(
+          is.numeric(i) && length(i) == 1,        # The condition to check (e.g., data is not empty)
+          "Sorry, there are no matching plots for your choice selection." # The message to display if the condition is FALSE
+        )
+      )
+      
+      # Return the plotly object
+      return(p[[i]])
+    })
+
     
     
     
