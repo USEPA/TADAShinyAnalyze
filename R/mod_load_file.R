@@ -76,31 +76,51 @@ mod_load_file_ui <- function(id) {
     ),
     
     htmltools::hr(),
+    htmltools::h3("TADA Plots"),
     
     ########## TEST PLOTLY #######
     fluidRow(
       column(4, # The column takes up 4 of the 12 available grid spaces
              selectInput(
                inputId = ns("user_choice"), 
-               label = "Choose an option:", 
+               label = div(style = "font-size: 12px;", "Choose TADA.ComparableDataIdentifier plot:"), #Adjust text size
                choices = NULL,
                selected = NULL
              )
-      )
-      # ,column(4,
-      #          # Dependent Dropdown (rendered in server)
-      #          uiOutput("item_dropdown")
-      # )
+      ),
+      column(4, # The column takes up 4 of the 12 available grid spaces
+             selectizeInput(
+               inputId = ns("user_choice_ML"), 
+               label = div(style = "font-size: 12px;","Choose up to 4 Monitoring Locations:"), #Adjust text size
+               choices = NULL,
+               selected = NULL,
+               options = list(maxItems = 4) # limits the selection to 4
+             )
+      ),
     ),
     fluidRow(
       column(
-        width = 12, 
+        width = 6, 
+        plotly::plotlyOutput(ns("TADA_boxplots_view"))
+      ),
+      column(
+        width = 6, 
         plotly::plotlyOutput(ns("TADA_timeseries_view")),
-        htmltools::h3("TADA Plots")
+        
       )
     ),
-    
-    
+    # TADA plots for ML filtered results in TADA data frame
+    htmltools::h4("TADA Plots: Monitoring Location or Assessment Unit"),
+    fluidRow(
+      column(
+        width = 6, 
+        plotly::plotlyOutput(ns("TADA_boxplots_view_filtered"))
+      ),
+      column(
+        width = 6, 
+        plotly::plotlyOutput(ns("TADA_timeseries_view_filtered")),
+      )
+    ),
     
     # load ml to au crosswalk file
     shiny::fluidRow(
@@ -382,6 +402,9 @@ mod_load_file_server <- function(id, tadat){
       # Get the TADA.ComparableDataIdentifier names
       id <- sort(unique(tadat$df_mlid_input$TADA.ComparableDataIdentifier))
       
+      # Get the MLID
+      id_ML <- sort(unique(tadat$df_mlid_input$TADA.MonitoringLocationIdentifier))
+      
       # Only update if we have TADA.ComparableDataIdentifier to show
       if (length(id) > 0) {
         shiny::updateSelectInput(
@@ -400,6 +423,23 @@ mod_load_file_server <- function(id, tadat){
         )
       }
       
+      # Only update if we have ML to show
+      if (length(id) > 0) {
+        shiny::updateSelectInput(
+          session = session,
+          inputId = "user_choice_ML",
+          choices = id_ML,
+          selected = NULL
+        )
+      } else {
+        # Clear the ML filter if no data
+        shiny::updateSelectInput(
+          session = session,
+          inputId = "user_choice_ML",
+          choices = character(0),
+          selected = character(0)
+        )
+      }
       
       
     })
@@ -437,12 +477,67 @@ mod_load_file_server <- function(id, tadat){
       return(p[[i]])
     })
     
-    ########## TEST TADA Plotly
-    # mod_analysis_plots_server_TADA("TADA Analysis_Plots",
-    #                                tadat = tadat)
-    ######################
+    output$TADA_boxplots_view <- plotly::renderPlotly({
+      # validate data is there
+      shiny::validate(need(!is.null(input$mlid_input_file), "No file selected."))
+      
+      p <- EPATADA::TADA_Boxplot(tadat$df_mlid_input)
+      
+      i <- which(names(p) %in% EPATADA::TADA_CharStringRemoveNA(input$user_choice))
+      
+      if (is.null(i)) {
+        i <- 1
+      }
+      
+      shiny::validate(
+        shiny::need(
+          is.numeric(i) && length(i) == 1,        # The condition to check (e.g., data is not empty)
+          "Sorry, there are no matching plots for your choice selection." # The message to display if the condition is FALSE
+        )
+      )
+      
+      # Return the plotly object
+      return(p[[i]])
+    })
     
+    # display TADA_boxplots filtered by ML
+    output$TADA_boxplots_view_filtered <- plotly::renderPlotly({
+      # validate data is there
+      shiny::validate(need(!is.null(tadat$df_mlid_input), "No file selected."))
+      
+      df_mlid_input_filtered <- tadat$df_mlid_input |> 
+        dplyr::filter(
+          TADA.ComparableDataIdentifier %in% input$user_choice,
+          MonitoringLocationIdentifier %in% input$user_choice_ML)
+      
+      # validate data is there
+      shiny::validate(need(nrow(df_mlid_input_filtered) > 0, "Your selection(s) returned an empty data.frame."))
+      
+      p <- EPATADA::TADA_Boxplot(df_mlid_input_filtered)
+      
+      # Return the plotly object
+      return(p)
+    })
     
+    # display TADA_scatterplot filtered by ML
+    output$TADA_timeseries_view_filtered <- plotly::renderPlotly({
+      # validate data is there
+      shiny::validate(need(!is.null(tadat$df_mlid_input), "No file selected."))
+      
+      df_mlid_input_filtered <- tadat$df_mlid_input |> 
+        dplyr::filter(
+          TADA.ComparableDataIdentifier %in% input$user_choice,
+          MonitoringLocationIdentifier %in% input$user_choice_ML)
+      
+      # validate data is there
+      shiny::validate(need(nrow(df_mlid_input_filtered) > 0, "Your selection(s) returned an empty data.frame."))
+      
+      p <- EPATADA::TADA_GroupedScatterplot(df_mlid_input_filtered)
+      
+      
+      # Return the plotly object
+      return(p)
+    })
     
     
     
