@@ -523,29 +523,28 @@ mod_load_file_server <- function(id, tadat){
             MonitoringLocationIdentifier %in% unique(input$user_choice_ML)[i]
           )
         
-        plot_list[[i]] <- EPATADA::TADA_Boxplot(
+        plot_list[[i]] <- suppressWarnings(EPATADA::TADA_Boxplot(
           df_mlid_input_filtered2,
-          id_cols = "MonitoringLocationIdentifier")[[1]] |> 
+          id_cols = "MonitoringLocationIdentifier")) |> 
           add_trace(
             boxmean = T,
             showlegend = F
-            #name = unique(df_mlid_input_filtered2$MonitoringLocationIdentifier),
-            #hoverinfo = "name+y"
+          ) |>
+          layout(
+            xaxis = list(title = unique(df_mlid_input_filtered2$MonitoringLocationIdentifier)),
+            title = paste(
+              "Boxplots by MonitoringLocationIdentifier",
+              unique(df_mlid_input_filtered2$TADA.ComparableDataIdentifier)[1]),
+            showlegend = FALSE
           )
         
         # 2. Pass the list to subplot()
         combined_plot <- subplot(plot_list, 
                                  shareY = TRUE,
-                                 margin = 0.05)
+                                 margin = 0.05) 
       }
       
-      p <- combined_plot |>
-        layout(
-          title = paste(
-            "Boxplots by MonitoringLocationIdentifier",
-            unique(data.ph$TADA.ComparableDataIdentifier)[1]),
-          showlegend = FALSE
-          )
+      p <- combined_plot 
       
       # Return the plotly object
       return(p)
