@@ -513,7 +513,39 @@ mod_load_file_server <- function(id, tadat){
       # validate data is there
       shiny::validate(need(nrow(df_mlid_input_filtered) > 0, "Your selection(s) returned an empty data.frame."))
       
-      p <- EPATADA::TADA_Boxplot(df_mlid_input_filtered)
+      i <- length(unique(input$user_choice_ML))
+      
+      plot_list <- list()
+      
+      for (i in 1:i) {
+        df_mlid_input_filtered2 <- df_mlid_input_filtered |>
+          dplyr::filter(
+            MonitoringLocationIdentifier %in% unique(input$user_choice_ML)[i]
+          )
+        
+        plot_list[[i]] <- EPATADA::TADA_Boxplot(
+          df_mlid_input_filtered2,
+          id_cols = "MonitoringLocationIdentifier")[[1]] |> 
+          add_trace(
+            boxmean = T,
+            showlegend = F
+            #name = unique(df_mlid_input_filtered2$MonitoringLocationIdentifier),
+            #hoverinfo = "name+y"
+          )
+        
+        # 2. Pass the list to subplot()
+        combined_plot <- subplot(plot_list, 
+                                 shareY = TRUE,
+                                 margin = 0.05)
+      }
+      
+      p <- combined_plot |>
+        layout(
+          title = paste(
+            "Boxplots by MonitoringLocationIdentifier",
+            unique(data.ph$TADA.ComparableDataIdentifier)[1]),
+          showlegend = FALSE
+          )
       
       # Return the plotly object
       return(p)
