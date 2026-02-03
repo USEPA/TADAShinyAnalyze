@@ -7,7 +7,7 @@ data.ph$ActivityStartDate <- as.POSIXct(data.ph$ActivityStartDate)
 EPATADA::TADA_Scatterplot(data.ph)
 
 # display boxplots overlay (By YYYY, YYYYMM, seasons etc?). Must modify ActivityStartDate as that is what TADA_Scatteplot is using for X
-data.ph$YYYYMM <- lubridate::ceiling_date(data.ph$ActivityStartDate, "month") - days(1)
+data.ph$YYYYMM <- lubridate::ceiling_date(data.ph$ActivityStartDate, "month") - lubridate::days(1)
 data.ph$YYYY <- format(data.ph$ActivityStartDate, "%Y")
 
 temp <- EPATADA::TADA_Scatterplot(data.ph) |>
