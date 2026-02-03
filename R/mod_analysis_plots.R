@@ -187,7 +187,7 @@ mod_analysis_plots_server <- function(id,
       }
     })
     
-    # Disable the filters for UniquSpatialCriteria and Season
+    # Disable the filters for UniqueSpatialCriteria and Season
     shinyjs::disable("unique_box_select")
     shinyjs::disable("season_box_select")
     
