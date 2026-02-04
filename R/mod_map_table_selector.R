@@ -86,7 +86,14 @@ mod_map_table_selector_server <- function(id, tadat){
                                     fillOpacity = 1,
                                     opacity = 0.5,
                                     label = purrr::map(labs, htmltools::HTML),
-                                    group = "base_map")
+                                    group = "base_map") |>
+          leaflet::addLegend(
+            position = "bottomright", # Position can be "topleft", "topright", "bottomleft", or "bottomright"
+            colors = c("red", "blue"),
+            labels = c("Selected", "Not Selected"),
+            title = "Site(s) Selection",
+            opacity = 1
+          )
         
       })
       
