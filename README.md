@@ -35,9 +35,8 @@ remotes::install_github("USEPA/TADACommunityHub", ref = "main", dependencies = T
 run_app()
 ```
 
-## Run the Web Version (PENDING)
-
-Alternatively, you can run the public web version of this application EPA Staging Link: <https://rstudio-connect.dmap-stage.aws.epa.gov/content/019dcc7e-863b-426a-a2a5-1813f53f5702/>. Beware that this version is not the most up to date and we recommend running the app from R studio instead if possible.
+## Run the Web Version
+Alternatively, you can run the public web version of this application (https://rconnect-public.epa.gov/TADAShinyAnalyze/). Beware that this version is not the most up to date and we recommend running the app from R studio instead if possible.
 
 ## TADA Background
 
