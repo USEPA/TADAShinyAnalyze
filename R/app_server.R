@@ -26,7 +26,7 @@ app_server <- function(input, output, session) {
   # Fetch criteria file list ONCE at app startup
   criteria_file_list <- tryCatch({
     
-    getCriteriaFiles(branch = "main")
+    EPATADA::TADA_ListCriteriaFiles()
   }, error = function(e) {
     warning("Failed to fetch criteria file list from GitHub: ", e$message)
     NULL

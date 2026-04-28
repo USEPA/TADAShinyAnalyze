@@ -360,7 +360,7 @@ mod_criteria_table_server <- function(id, tadat) {
           req(input$state_tribe_select)
 
           # Get the criteria table from the TADACommunityHub
-          temp_table <- loadCriteria(input$state_tribe_select, ref = tadat$criteria_file_list)
+          temp_table <- EPATADA::TADA_GetCriteriaFile(display_name = input$state_tribe_select)
           
           # Get the org ID
           org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
