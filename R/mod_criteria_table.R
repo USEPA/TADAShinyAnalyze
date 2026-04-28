@@ -287,7 +287,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
@@ -581,7 +581,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
@@ -788,7 +788,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
