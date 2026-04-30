@@ -57,7 +57,7 @@ mod_analysis_data_viewer_server <- function(id, tadat){
       )
       
       output$Matched_Data <- DT::renderDT({
-        shiny::validate(need(!is.null(tadat$dat_match), "No mathed data."))
+        shiny::validate(need(!is.null(tadat$dat_match), "No matched data."))
         
         # render table
         DT::datatable(tadat$dat_match,
