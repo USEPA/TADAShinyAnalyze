@@ -45,7 +45,7 @@ Imports:
     rExpertQuery,
     graphics
 Remotes:
-    USEPA/EPATADA@879-Review-Data-Dictionary-for-Module-3,
+    USEPA/EPATADA,
     USEPA/TADACommunityHub,
     USEPA/rExpertQuery
 Suggests: 
