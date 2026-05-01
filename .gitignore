@@ -1,7 +1,7 @@
 # history files
 .Rhistory
 .Rapp.history
-.Rbuildignore
+#.Rbuildignore
 
 # r project file
 .Rproj.user/

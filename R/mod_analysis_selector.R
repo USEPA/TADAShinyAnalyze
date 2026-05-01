@@ -269,14 +269,14 @@ mod_analysis_selector_server <- function(id, tadat){
           easyClose = TRUE,
           footer = modalButton("Close"),
           tagList(
-            tags$h5("Option 1 – ComparableDataIdentifier"),
+            tags$h5("Option 1 - ComparableDataIdentifier"),
             tags$p("Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."),
             tags$ul(
               tags$li("Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."),
               tags$li("Stricter matching (fewer false/ambiguous joins).")
             ),
             tags$hr(),
-            tags$h5("Option 2 – CharacteristicName only"),
+            tags$h5("Option 2 - CharacteristicName only"),
             tags$p("Joins only on TADA.CharacteristicName."),
             tags$ul(
               tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
