@@ -351,7 +351,7 @@ mod_batch_analysis_server <- function(id, tadat){
         # Count available parameter
         dat_match <- dplyr::bind_rows(dat_yes, dat_no)
         dat_match2 <- dat_match |>
-          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
                           TADA.ResultMeasure.MeasureUnitCode)
         
         # Get the sample size

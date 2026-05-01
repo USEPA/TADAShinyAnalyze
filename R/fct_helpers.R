@@ -10,37 +10,40 @@
 criteria_join <- function(x, y, match_type = "Option 2",
                           use_type = "Option 1",
                           filter_type = TRUE){
-
+  
   # Add flags to criteria table
   y2 <- y |> 
     dplyr::mutate(Matched = "Yes") |>
-    # Remove the columns for now
-    dplyr::select(
-      #-TADA.MethodSpeciationName,
-      -TADA.ComparableDataIdentifier
-    ) |>
     EPATADA::TADA_CorrectColType()
-    #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
-
+  #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
+  
   # Build join expression as a string
+  # If TADA.ComparableDataIdentifier is populated join by that column and units
+  # if (any(is.na(y2$TADA.ComparableDataIdentifier))) {
+  #   join_cols <- c(
+  #     "TADA.ComparableDataIdentifier",
+  #     "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
+  #   )
+  # }
+
   join_cols <- c(
     "TADA.CharacteristicName",
     "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
   )
-
+  
   # Conditionally add columns
   if (use_type == "Option 1") {
     join_cols <- c(join_cols, "ATTAINS.UseName", "ATTAINS.OrganizationIdentifier")
   }
-
+  
   if (match_type == "Option 1") {
     join_cols <- c(join_cols, "TADA.ResultSampleFractionText", "TADA.MethodSpeciationName")
   }
-
+  
   # Build and evaluate the join_by expression
   join_expr <- paste0("dplyr::join_by(", paste(join_cols, collapse = ", "), ")")
   by <- eval(parse(text = join_expr))
-
+  
   # Handle x table modifications for Option 2 (no use)
   # In this case, the final ATTAINS.UseName is from the criteria table
   if (use_type == "Option 2") {
@@ -51,23 +54,23 @@ criteria_join <- function(x, y, match_type = "Option 2",
     x2 <- x
   }
   
-  # Handle y table modifications for Option 2 (no fraction)
+  # Handle y table modifications for Option 2 (no fraction or speciation)
   if (match_type == "Option 2") {
     y_col <- names(y2)
-    y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+    y_col2 <- y_col[!y_col %in% c("TADA.ResultSampleFractionText", "TADA.MethodSpeciationName" )]
     y2 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
   }
-
+  
   # Perform the join
   x3 <- x2 |>
     dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
     dplyr::mutate(Matched = ifelse(is.na(Matched), "No", Matched))
-
+  
   # Apply filter if requested
   if (filter_type) {
     x3 <- x3 |> dplyr::filter(Matched == "Yes")
   }
-
+  
   return(x3)
 }
 

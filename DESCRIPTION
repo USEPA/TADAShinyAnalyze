@@ -4,6 +4,7 @@ Version: 0.0.0.9000
 Authors@R: c(
     person("Cristina", "Mullin", , "mywaterway@epa.gov", role = "aut",
            comment = c(ORCID = "0000-0002-0615-6087")),
+    person("Kenny", "Wong", , "mywaterway@epa.gov", role = "aut"),
     person("Sheila", "Saia", , "sheila.saia@tetratech.com", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4943-0306")),
     person("Ben", "Block", , "ben.block@tetratech.com", role = "aut",

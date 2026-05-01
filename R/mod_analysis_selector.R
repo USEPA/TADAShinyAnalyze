@@ -51,11 +51,35 @@ mod_analysis_selector_ui <- function(id) {
       )
     ),
     fluidRow(
-      column(width = 6,
-             shiny::radioButtons(inputId = ns("join_select"),
-                                 label = "Join the criteria table with fraction information",
-                                 choices = c("Yes" = "Option 1", 
-                                             "No" = "Option 2")))
+      column(
+        width = 12,
+        htmltools::p(
+          htmltools::strong("Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation).")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 6,
+        shiny::radioButtons(
+          inputId = ns("join_select"),
+          label = tagList(
+            "Choose option for joining the criteria table to your WQP dataframe",
+            # info icon that opens the popup
+            actionLink(
+              ns("join_help"),
+              label = NULL,
+              icon = icon("circle-info"),
+              title = "More details"
+            )
+          ),
+          choices = c(
+            "TADA.ComparableDataIdentifier" = "Option 1",
+            "TADA.CharacteristicName only" = "Option 2"
+          )
+        ),
+        helpText("Note: if you do not see any values populated please ensure your fraction and speciation specification matches those in your WQP data frame.")
+      )
     )
   )
 }
@@ -236,6 +260,33 @@ mod_analysis_selector_server <- function(id, tadat){
         tadat$uses_select_re <- input$uses_select
       }
     }, ignoreNULL = FALSE)  # Important: Allow empty selections
+    
+    #################################### pop up display helper
+    observeEvent(input$join_help, {
+      showModal(
+        modalDialog(
+          title = "Join options explained",
+          easyClose = TRUE,
+          footer = modalButton("Close"),
+          tagList(
+            tags$h5("Option 1 – ComparableDataIdentifier"),
+            tags$p("Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."),
+            tags$ul(
+              tags$li("Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."),
+              tags$li("Stricter matching (fewer false/ambiguous joins).")
+            ),
+            tags$hr(),
+            tags$h5("Option 2 – CharacteristicName only"),
+            tags$p("Joins only on TADA.CharacteristicName."),
+            tags$ul(
+              tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
+              tags$li("More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis.")
+            )
+          )
+        )
+      )
+    })
+    ####################################
     
     ### Save the selected loc_select and uses to tadat
     shiny::observe({

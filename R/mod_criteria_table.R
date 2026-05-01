@@ -645,10 +645,10 @@ mod_criteria_table_server <- function(id, tadat) {
           "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values: NA. \n",
           "   These NAs will be filled in as 'No'. \n", 
           # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
-          # TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
+          TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
           TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$issues
+          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n"
+          # TADACommunityHub::validateWQXUnits(df_template2)$issues
           
         )
       #}

@@ -48,7 +48,7 @@ mod_analysis_data_viewer_server <- function(id, tadat){
         if (is.null(tadat$available_param_num)) {
           "Users need to provide inputs to select the data or the tool could not find matched parameters based on current selections. \nPlease refine the selection"
         } else if (tadat$available_param_num == 0){
-          "The tool could not find matched parameters based on current selections. \nPlease refine the selection"
+          "The tool could not find matched parameters based on current selections. \nPlease ensure your criteria table contains matching fraction and speciation \n to your WQP data frame if you selected this option. \n Otherwise you may only proceed with joining by Characteristic Names."
         } else {
           paste0(
             "The selected dataset has ", tadat$available_param_num, " parameters that matched the selections."
