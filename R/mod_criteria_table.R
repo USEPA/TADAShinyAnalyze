@@ -107,12 +107,12 @@ mod_criteria_table_ui <- function(id) {
     shiny::fluidRow(
       shiny::column(
         width = 12,
-        shiny::verbatimTextOutput(outputId = ns("template_status")),
-        shinyjs::disabled(shiny::downloadButton(
-          outputId = ns("download_template"),
-          label = "Download Template (.xlsx)",
-          style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
-        )
+        shiny::verbatimTextOutput(outputId = ns("template_status"))
+        # shinyjs::disabled(shiny::downloadButton(
+        #   outputId = ns("download_template"),
+        #   label = "Download Template (.xlsx)",
+        #   style = "color: #fff; background-color: #337ab7; border-color: #2e6da4")
+        #)
       )
     ),
     htmltools::br(),
@@ -163,23 +163,6 @@ mod_criteria_table_server <- function(id, tadat) {
     
     # Reactive value to store the criteria template
     criteria_template_rv <- shiny::reactiveVal(NULL)
-    
-    # A function to handle the warning message
-    run_with_warnings <- function(expr) {
-      tryCatch(
-        withCallingHandlers(
-          expr,
-          warning = function(w) {
-            warning_msg(paste(warning_msg(), conditionMessage(w), sep = "\n"))
-            invokeRestart("muffleWarning")
-          }
-        ),
-        error = function(e) {
-          warning_msg(paste("Error:", conditionMessage(e)))
-          NULL
-        }
-      )
-    }
     
     # UI control
     shiny::observeEvent(c(input$criteria_method, input$state_tribe_select_OP_E), {
@@ -287,7 +270,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
@@ -334,39 +317,33 @@ mod_criteria_table_server <- function(id, tadat) {
     ### Determine the options to generate the criteria table
     
     # Run the TADA_DefineCriteriaMethodology_Shiny function to get the criteria table
-    shiny::observeEvent(input$Generate_Template, {
-      req(input$criteria_method)
-      
-      # Set the warning
-      old_warn <- getOption("warn")
-      on.exit(options(warn = old_warn), add = TRUE)
-      
-      # Reset warning message
-      warning_msg(NULL)
-      
-      # Show loading spinner
-      shinybusy::show_modal_spinner(
-        spin = "double-bounce",
-        color = "#0071bc",
-        text = "Generating criteria template...",
-        session = shiny::getDefaultReactiveDomain()
-      )
-      
-      criteria_template <- NULL
-      
-      tryCatch({
-        # Option A: TADA Community Hub Templates
-        if (input$criteria_method %in% "A") {
-          req(input$state_tribe_select)
-
-          # Get the criteria table from the TADACommunityHub
-          temp_table <- loadCriteria(input$state_tribe_select, ref = tadat$criteria_file_list)
-          
-          # Get the org ID
-          org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
-          
-          criteria_template <- run_with_warnings({
-              TADA_DefineCriteriaMethodology_Shiny(
+    criteria_template_rv <- shiny::reactiveVal(NULL)  # store last capture if you need it
+    
+    # Return the capture (messages + stdout) when Generate is clicked
+    criteria_cap <- eventReactive(input$Generate_Template, {
+        req(input$criteria_method)
+        
+        shinybusy::show_modal_spinner(
+          spin = "double-bounce", color = "#0071bc",
+          text = "Generating criteria template...",
+          session = shiny::getDefaultReactiveDomain()
+        )
+        on.exit(shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain()), add = TRUE)
+        
+        warning_msg(NULL)
+        
+        wrap_error <- function(e) {
+          list(result = structure(conditionMessage(e), class = "try-error"),
+               lines  = character(0))
+        }
+        
+        cap <- tryCatch({
+          if (input$criteria_method %in% "A") {
+            req(input$state_tribe_select)
+            temp_table <- EPATADA::TADA_GetCriteriaFile(display_name = input$state_tribe_select)
+            org_ID <- unique(temp_table$ATTAINS.OrganizationIdentifier)
+            capture_all_output({
+              EPATADA::TADA_DefineCriteriaMethodology(
                 .data = tadat$df_mlid_input,
                 org_id = org_ID,
                 auto_assign = FALSE,
@@ -374,17 +351,15 @@ mod_criteria_table_server <- function(id, tadat) {
                 displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
-                return_workbook = TRUE
+                excel = TRUE,
+                overwrite = FALSE
               )
             })
-          
-        # Option B: State/Tribe from ATTAINS
-        } else if (input$criteria_method %in% "B") {
-          req(input$state_tribe_select)
-          req(tadat$df_mlid_input)
-
-          criteria_template <- run_with_warnings({
-              TADA_DefineCriteriaMethodology_Shiny(
+            
+          } else if (input$criteria_method %in% "B") {
+            req(input$state_tribe_select, tadat$df_mlid_input)
+            capture_all_output({
+              EPATADA::TADA_DefineCriteriaMethodology(
                 .data = tadat$df_mlid_input,
                 org_id = input$state_tribe_select,
                 auto_assign = TRUE,
@@ -392,15 +367,14 @@ mod_criteria_table_server <- function(id, tadat) {
                 displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
-                return_workbook = TRUE
+                excel = TRUE,
+                overwrite = FALSE
               )
             })
-          
-        # Option C: Any State/Tribe from ATTAINS
-        } else if (input$criteria_method %in% "C") {
-
-          criteria_template <- run_with_warnings({
-              TADA_DefineCriteriaMethodology_Shiny(
+            
+          } else if (input$criteria_method %in% "C") {
+            capture_all_output({
+              EPATADA::TADA_DefineCriteriaMethodology(
                 .data = tadat$df_mlid_input,
                 org_id = NULL,
                 auto_assign = TRUE,
@@ -408,110 +382,63 @@ mod_criteria_table_server <- function(id, tadat) {
                 displayUniqueId = input$criteria_displayUniqueId,
                 AUMLRef = tadat$df_mltoau_input,
                 AU_UsesRef = tadat$df_autouse_input,
-                return_workbook = TRUE
+                excel = TRUE,
+                overwrite = FALSE
               )
             })
-          
-          # Add "All" flag to the ATTAINS.OrganizationIdentifier columns
-          if (!is.null(criteria_template) && !is.null(criteria_template$data)) {
-            temp_c <- criteria_template$data |>
-              dplyr::mutate(ATTAINS.OrganizationIdentifier = "All")
-
-            criteria_template$data <- temp_c
+            
+          } else if (input$criteria_method %in% "D") {
+            capture_all_output({
+              EPATADA::TADA_DefineCriteriaMethodology(
+                excel = TRUE,
+                overwrite = FALSE
+              )
+            })
+            
+          } else {
+            req(input$state_tribe_select_OP_E != "", uploaded_temp_table())
+            temp_table <- uploaded_temp_table()
+            capture_all_output({
+              EPATADA::TADA_DefineCriteriaMethodology(
+                .data = tadat$df_mlid_input,
+                org_id = input$state_tribe_select_OP_E,
+                auto_assign = FALSE,
+                criteriaMethods = temp_table,
+                displayUniqueId = input$criteria_displayUniqueId,
+                AUMLRef = tadat$df_mltoau_input,
+                AU_UsesRef = tadat$df_autouse_input,
+                excel = TRUE,
+                overwrite = FALSE
+              )
+            })
           }
-          
-        # Option D: Blank Template
-        } else if (input$criteria_method %in% "D"){
-
-          criteria_template <- run_with_warnings({
-              TADA_DefineCriteriaMethodology_Shiny(
-                return_workbook = TRUE
-              )
-            })
-          
-        } else {
-          
-          req(input$state_tribe_select_OP_E != "")
-          req(uploaded_temp_table())
-
-          temp_table <- uploaded_temp_table()
-          
-          criteria_template <- run_with_warnings({
-            TADA_DefineCriteriaMethodology_Shiny(
-              .data = tadat$df_mlid_input,
-              org_id = input$state_tribe_select_OP_E,
-              auto_assign = FALSE,
-              criteriaMethods = temp_table,
-              displayUniqueId = input$criteria_displayUniqueId,
-              AUMLRef = tadat$df_mltoau_input,
-              AU_UsesRef = tadat$df_autouse_input,
-              return_workbook = TRUE
-            )
-          })
-          
-        }
+        }, error = wrap_error)
         
-        # Store the result
-        criteria_template_rv(criteria_template)
-        
-      }, error = function(e) {
-        warning_msg(paste("Error generating template:", conditionMessage(e)))
-        criteria_template_rv(NULL)
-      })
+        criteria_template_rv(cap)  # store for other UI toggles
+        cap
+      }, ignoreInit = TRUE)
       
-      # Remove spinner
-      shinybusy::remove_modal_spinner(session = shiny::getDefaultReactiveDomain())
-      
-      # Enable download button if template was generated successfully
-      if (!is.null(criteria_template_rv())) {
-        shinyjs::enable("download_template")
-      } else {
-        shinyjs::disable("download_template")
-      }
+    observe({
+      shinyjs::toggle(id = "review_template", condition = !is.null(criteria_template_rv()))
+      #shinyjs::toggleState(id = "download_template", condition = !is.null(criteria_template_rv()))
     })
-    
-    # Activate the review_template file uploader
-    shiny::observe({
-      # Enable the review_template uploader only when a template has been generated
-      shinyjs::toggle(
-        id = "review_template",
-        condition = !is.null(criteria_template_rv())
-      )
-    })
-    
-    # Text output to show the status of the template
+
     output$template_status <- shiny::renderText({
-      if (is.null(criteria_template_rv())) {
-        if (!is.null(warning_msg()) && nchar(trimws(warning_msg())) > 0) {
+      cap <- criteria_cap()
+      if (is.null(cap)) {
+        if (!is.null(warning_msg()) && nzchar(trimws(warning_msg()))) {
           paste("Template generation issue:\n", warning_msg())
         } else {
           "Ready to generate template. Select options above and click 'Generate Template'."
         }
+      } else if (inherits(cap$result, "try-error")) {
+        paste("Error:\n", as.character(cap$result))
+      } else if (length(cap$lines)) {
+        paste(cap$lines, collapse = "\n")
       } else {
-        status_text <- "Template generated successfully! Click 'Download Template' to save."
-        if (!is.null(warning_msg()) && nchar(trimws(warning_msg())) > 0) {
-          paste(status_text, "\n\nWarnings:\n", warning_msg())
-        } else {
-          status_text
-        }
+        "No messages or output."
       }
     })
-    
-    # Download the Excel workbook with criteria_template
-    output$download_template <- shiny::downloadHandler(
-      filename = function() {
-        paste0("Criteria_Template_", format(Sys.time(), "%Y%m%d%H%M%S"), ".xlsx")
-      },
-      content = function(file) {
-        req(criteria_template_rv())
-        
-        # Save workbook directly to the download file
-        if (!is.null(criteria_template_rv()$workbook)) {
-          openxlsx::saveWorkbook(criteria_template_rv()$workbook, file, overwrite = TRUE)
-        }
-      },
-      contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
     
     ### Upload the reviewed criteria template
     
@@ -581,7 +508,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
@@ -707,7 +634,7 @@ mod_criteria_table_server <- function(id, tadat) {
         dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
       
       # Build summary text
-      if( equationBased_NA > 0 ){
+      #if( equationBased_NA > 0 ){
         text <- paste0(
           "Loaded dataset has ", nrow(df_template), " rows.\n", 
           "   and ", nrow(df_template2), " rows contain information for analysis. Any rows missing criteria or methodology information has been removed. \n", 
@@ -717,29 +644,15 @@ mod_criteria_table_server <- function(id, tadat) {
           "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
           "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values: NA. \n",
           "   These NAs will be filled in as 'No'. \n", 
-          #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
+          # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
           TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$issues
+          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n"
+          # TADACommunityHub::validateWQXUnits(df_template2)$issues
           
         )
-      }
+      #}
       
-      if( equationBased_NA == 0 ){
-        text <- paste0(
-          "Loaded dataset has ", nrow(df_template), " rows.\n", " and ", nrow(df_template2), " rows contain information for analysis. \n", 
-          "There are ", length(unique(stats::na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
-          #"Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
-          TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
-          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",          
-          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$issues
-        )
-      }
       # Prints final message
       paste0(text)
     })
@@ -788,7 +701,7 @@ mod_criteria_table_server <- function(id, tadat) {
         names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
         "EquationType",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
