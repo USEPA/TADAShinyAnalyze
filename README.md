@@ -32,6 +32,8 @@ library(TADAShinyAnalyze)
 
 remotes::install_github("USEPA/TADACommunityHub", ref = "main", dependencies = TRUE, force = TRUE)
 
+library(TADACommunityHub)
+
 run_app()
 ```
 
