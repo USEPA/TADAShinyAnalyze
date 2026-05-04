@@ -263,7 +263,7 @@ mod_custom_analysis_server <- function(id, tadat){
         "FreqValue",
         "FreqMethod",
         # Equation coefficient columns
-        "Equation",
+        "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
         "hardness_param_3",
@@ -408,7 +408,7 @@ mod_custom_analysis_server <- function(id, tadat){
         dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_2 |> dplyr::filter(EquationBased %in% "No")
       
-      drop_cols <- c("Equation", 
+      drop_cols <- c("EquationFormula", 
                      "hardness_param_1", "hardness_param_2", 
                      "hardness_param_3", "hardness_param_4",
                      "hardness_param_5", "hardness_param_6",

@@ -1,0 +1,7 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^air\.toml$
+^app\.R$
+^dev$
+^rsconnect$
+^TADAShinyAnalyze\.Rproj$

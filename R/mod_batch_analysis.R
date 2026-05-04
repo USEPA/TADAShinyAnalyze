@@ -310,7 +310,7 @@ mod_batch_analysis_server <- function(id, tadat){
           "FreqValue",
           "FreqMethod",
           # Equation coefficient columns
-          "Equation",
+          "EquationFormula",
           "hardness_param_1",
           "hardness_param_2",
           "hardness_param_3",
@@ -351,7 +351,7 @@ mod_batch_analysis_server <- function(id, tadat){
         # Count available parameter
         dat_match <- dplyr::bind_rows(dat_yes, dat_no)
         dat_match2 <- dat_match |>
-          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
                           TADA.ResultMeasure.MeasureUnitCode)
         
         # Get the sample size
@@ -399,7 +399,7 @@ mod_batch_analysis_server <- function(id, tadat){
         session = shiny::getDefaultReactiveDomain()
       )
       
-      drop_cols <- c("Equation", 
+      drop_cols <- c("EquationFormula", 
                      "hardness_param_1", "hardness_param_2", 
                      "hardness_param_3", "hardness_param_4",
                      "hardness_param_5", "hardness_param_6",

@@ -10,37 +10,40 @@
 criteria_join <- function(x, y, match_type = "Option 2",
                           use_type = "Option 1",
                           filter_type = TRUE){
-
+  
   # Add flags to criteria table
   y2 <- y |> 
     dplyr::mutate(Matched = "Yes") |>
-    # Remove the columns for now
-    dplyr::select(
-      -TADA.MethodSpeciationName,
-      -TADA.ComparableDataIdentifier
-    ) |>
     EPATADA::TADA_CorrectColType()
-    #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
-
+  #dplyr::mutate(dplyr::across(dplyr::any_of("TADA.ResultSampleFractionText"), as.character)) # temp solution, consider removing after TADA updates
+  
   # Build join expression as a string
+  # If TADA.ComparableDataIdentifier is populated join by that column and units
+  # if (any(is.na(y2$TADA.ComparableDataIdentifier))) {
+  #   join_cols <- c(
+  #     "TADA.ComparableDataIdentifier",
+  #     "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
+  #   )
+  # }
+
   join_cols <- c(
     "TADA.CharacteristicName",
     "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
   )
-
+  
   # Conditionally add columns
   if (use_type == "Option 1") {
     join_cols <- c(join_cols, "ATTAINS.UseName", "ATTAINS.OrganizationIdentifier")
   }
-
+  
   if (match_type == "Option 1") {
-    join_cols <- c(join_cols, "TADA.ResultSampleFractionText")
+    join_cols <- c(join_cols, "TADA.ResultSampleFractionText", "TADA.MethodSpeciationName")
   }
-
+  
   # Build and evaluate the join_by expression
   join_expr <- paste0("dplyr::join_by(", paste(join_cols, collapse = ", "), ")")
   by <- eval(parse(text = join_expr))
-
+  
   # Handle x table modifications for Option 2 (no use)
   # In this case, the final ATTAINS.UseName is from the criteria table
   if (use_type == "Option 2") {
@@ -51,23 +54,23 @@ criteria_join <- function(x, y, match_type = "Option 2",
     x2 <- x
   }
   
-  # Handle y table modifications for Option 2 (no fraction)
+  # Handle y table modifications for Option 2 (no fraction or speciation)
   if (match_type == "Option 2") {
     y_col <- names(y2)
-    y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
+    y_col2 <- y_col[!y_col %in% c("TADA.ResultSampleFractionText", "TADA.MethodSpeciationName" )]
     y2 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
   }
-
+  
   # Perform the join
   x3 <- x2 |>
     dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
     dplyr::mutate(Matched = ifelse(is.na(Matched), "No", Matched))
-
+  
   # Apply filter if requested
   if (filter_type) {
     x3 <- x3 |> dplyr::filter(Matched == "Yes")
   }
-
+  
   return(x3)
 }
 
@@ -1517,367 +1520,27 @@ hardness_eq <- function(hardness, E_A, E_B, CF_A, CF_B, CF_C){
   return(result)
 }
 
-# A wrapper function that uses the original EPATADA function
-TADA_DefineCriteriaMethodology_Shiny <- function(.data = NULL, 
-                                                 org_id = NULL, 
-                                                 MLSummaryRef = NULL, 
-                                                 criteriaMethods = NULL, 
-                                                 auto_assign = FALSE, 
-                                                 AUMLRef = NULL, 
-                                                 AU_UsesRef = NULL, 
-                                                 displayUniqueId = FALSE,
-                                                 return_workbook = FALSE) {
+# helper to display message from EPATADA::TADA_DefineCriteriaMethodology()
+capture_all_output <- function(expr) {
+  msgs <- character()
+  res <- NULL
   
-  # Check if all inputs are NULL
-  all_null <- is.null(.data) && is.null(org_id) && is.null(MLSummaryRef) && 
-    is.null(criteriaMethods) && is.null(AUMLRef) && is.null(AU_UsesRef)
-  
-  # Call the original EPATADA function to get the data frame
-  if (all_null) {
-    DefineCriteriaMethodology <- EPATADA::TADA_DefineCriteriaMethodology(excel = FALSE)
-  } else {
-    # Call with .data
-    DefineCriteriaMethodology <- EPATADA::TADA_DefineCriteriaMethodology(
-      .data = .data,
-      org_id = org_id,
-      MLSummaryRef = MLSummaryRef,
-      criteriaMethods = criteriaMethods,
-      auto_assign = auto_assign,
-      AUMLRef = AUMLRef,
-      AU_UsesRef = AU_UsesRef,
-      displayUniqueId = displayUniqueId,
-      excel = FALSE
+  out <- utils::capture.output({
+    res <- try(
+      withCallingHandlers(
+        force(expr),
+        message = function(m) {
+          msgs <<- c(msgs, paste0("MESSAGE: ", conditionMessage(m)))
+          invokeRestart("muffleMessage")
+        },
+        warning = function(w) {
+          msgs <<- c(msgs, paste0("WARNING: ", conditionMessage(w)))
+          invokeRestart("muffleWarning")
+        }
+      ),
+      silent = TRUE
     )
-  }
+  }, type = "output")
   
-  # If workbook requested, create it using our helper function
-  if (return_workbook) {
-    wb <- create_criteria_workbook(
-      DefineCriteriaMethodology = DefineCriteriaMethodology,
-      org_id = org_id,
-      MLSummaryRef = MLSummaryRef,
-      .data = .data
-    )
-    return(list(data = DefineCriteriaMethodology, workbook = wb))
-  } else {
-    return(DefineCriteriaMethodology)
-  }
-}
-
-# A function to format the Excel criteria table
-create_criteria_workbook <- function(DefineCriteriaMethodology, 
-                                     org_id = NULL, 
-                                     MLSummaryRef = NULL, 
-                                     .data = NULL) {
-  
-  # Create new workbook
-  wb <- openxlsx::createWorkbook()
-  
-  # Add worksheets
-  openxlsx::addWorksheet(wb, "DefineCriteriaMethodology")
-  openxlsx::addWorksheet(wb, "Index-Criteria", visible = FALSE)
-  
-  # Set active sheet
-  openxlsx::activeSheet(wb) <- "DefineCriteriaMethodology"
-  
-  # Set zoom level for all sheets
-  set_zoom <- function(x, sV) gsub("(?<=zoomScale=\")[0-9]+", x, sV, perl = TRUE)
-  n_sheets <- length(wb$worksheets)
-  for (i in 1:n_sheets) {
-    sV <- wb$worksheets[[i]]$sheetViews
-    if (!is.null(sV) && length(sV) > 0) {
-      wb$worksheets[[i]]$sheetViews <- set_zoom(90, sV)
-    }
-  }
-  
-  # Create header style
-  header_st <- openxlsx::createStyle(textDecoration = "Bold")
-  
-  # Set column widths (handle empty dataframe case)
-  if (ncol(DefineCriteriaMethodology) > 0) {
-    openxlsx::setColWidths(wb, sheet = "DefineCriteriaMethodology", 
-                           cols = 1:ncol(DefineCriteriaMethodology), widths = "auto")
-    openxlsx::setColWidths(wb, sheet = "DefineCriteriaMethodology", 
-                           cols = 1:min(5, ncol(DefineCriteriaMethodology)), widths = 20)
-  }
-  
-  # Write main data (headers will be written even for empty dataframe)
-  openxlsx::writeData(wb, "DefineCriteriaMethodology", 
-                      startCol = 1, x = DefineCriteriaMethodology, headerStyle = header_st)
-  
-  # Handle missing .data - create placeholder for dropdown options
-  # This mirrors EPATADA's approach when .data is missing
-  if (is.null(.data) || !is.data.frame(.data) || nrow(.data) == 0) {
-    .data <- data.frame(
-      TADA.ComparableDataIdentifier = NA_character_, 
-      TADA.CharacteristicName = NA_character_, 
-      TADA.ResultSampleFractionText = NA_character_, 
-      TADA.MethodSpeciationName = NA_character_, 
-      TADA.ResultMeasure.MeasureUnitCode = NA_character_
-    )
-  }
-  
-  # Write Index-Criteria dropdown data
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 6, startRow = 1, 
-                      x = unique(.data[, c("TADA.ComparableDataIdentifier", 
-                                           "TADA.CharacteristicName", 
-                                           "TADA.ResultSampleFractionText", 
-                                           "TADA.MethodSpeciationName"), drop = FALSE]))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 14, startRow = 1, 
-                      x = data.frame(AcuteChronic = c("Acute", "Chronic", "NA")))
-  
-  # Water type list
-  tryCatch({
-    All.WaterTypeList <- utils::read.csv(
-      system.file("extdata", "ATTAINSParamUseEntityRef.csv", package = "EPATADA")
-    )
-    if (!is.null(org_id) && length(org_id) > 0 && !all(org_id == "")) {
-      Org.WaterTypeList <- dplyr::filter(All.WaterTypeList, 
-                                         ATTAINS.OrganizationIdentifier %in% org_id)
-    } else {
-      Org.WaterTypeList <- All.WaterTypeList
-    }
-    if (nrow(Org.WaterTypeList) > 0) {
-      openxlsx::writeData(wb, "Index-Criteria", startCol = 10, startRow = 1, 
-                          x = unique(Org.WaterTypeList$ATTAINS.WaterType))
-    }
-  }, error = function(e) {
-    message("Note: ATTAINSParamUseEntityRef.csv not found, skipping water type dropdown")
-  })
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 11, startRow = 1, 
-                      x = data.frame(SaltFresh = c("Salt", "Fresh", "NA")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 12, startRow = 1, 
-                      x = data.frame(DepthCategory = c("No depth info", "Epilimnion-surface", 
-                                                       "Surface", "Bottom", "Middle")))
-  
-  # Handle MLSummaryRef
-  if (is.null(MLSummaryRef) || !is.data.frame(MLSummaryRef)) {
-    MLSummaryRef <- data.frame(UniqueSpatialCriteria = NA_character_)
-  }
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 13, startRow = 1, 
-                      x = data.frame(UniqueSpatialCriteria = c(unique(MLSummaryRef$UniqueSpatialCriteria), "NA")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 15, startRow = 1, 
-                      x = data.frame(EquationBased = c("Yes", "No", "NA")))
-  
-  # MagnitudeUnit
-  if ("TADA.ResultMeasure.MeasureUnitCode" %in% names(.data)) {
-    openxlsx::writeData(wb, "Index-Criteria", startCol = 18, startRow = 1, 
-                        x = data.frame(MagnitudeUnit = unique(.data$TADA.ResultMeasure.MeasureUnitCode)))
-  }
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 20, startRow = 1, 
-                      x = data.frame(DurationUnit = c("n-hour", "n-day", "n-week", 
-                                                      "n-month", "n-quarter")))
-  
-  # Note: EPATADA includes "arithmetic extremes" in DurationMethod
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 21, startRow = 1, 
-                      x = data.frame(DurationMethod = c("arithmetic mean", "arithmetic median", 
-                                                        "arithmetic max", "arithmetic min",
-                                                        "arithmetic extremes",
-                                                        "geometric mean", "rolling geometric mean", 
-                                                        "rolling arithmetic mean")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 23, startRow = 1, 
-                      x = data.frame(FreqMethod = c("Percent of samples not meeting", "percentile", 
-                                                    "n-samples in 3 years", "n-samples in 4 years", 
-                                                    "n-samples in 5 years", "binomial test", 
-                                                    "NumberNotMeeting")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 24, startRow = 1, 
-                      x = data.frame(AssessPeriod = c("Last 30 years", "Last 10 years", 
-                                                      "Last 5 years", "Last 3 years", 
-                                                      "Last year", "NA")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 27, startRow = 1, 
-                      x = data.frame(Season = c("Summer", "Fall", "Spring", "Winter", "NA")))
-  
-  openxlsx::writeData(wb, "Index-Criteria", startCol = 31, startRow = 1, 
-                      x = data.frame(DistrPeriod = c("Seasonal", "Annual", "Semi-Annual", 
-                                                     "Quarterly", "Monthly", "Bi-weekly", 
-                                                     "Weekly", "10 days", "NA")))
-  
-  # Data validations - matching EPATADA's approach
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 4, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$F$2:$F$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 5, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$G$2:$G$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 6, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$H$2:$H$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 7, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$I$2:$I$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 8, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$J$2:$J$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 9, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$K$2:$K$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 10, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$L$2:$L$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 11, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$M$2:$M$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 12, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$N$2:$N$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 13, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$O$2:$O$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 16, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$R$2:$R$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 18, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$T$2:$T$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 19, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$U$2:$U$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 21, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$W$2:$W$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 22, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$X$2:$X$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 25, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$AA$2:$AA$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  suppressWarnings(openxlsx::dataValidation(wb, sheet = "DefineCriteriaMethodology", 
-                                            cols = 29, rows = 2:1000, type = "list", 
-                                            value = "'Index-Criteria'!$AE$2:$AE$1000", 
-                                            allowBlank = TRUE, showErrorMsg = TRUE, showInputMsg = TRUE))
-  
-  # Freeze panes
-  openxlsx::freezePane(wb, "DefineCriteriaMethodology", 
-                       firstActiveRow = 2, firstActiveCol = 4)
-  
-  # Conditional formatting - only apply if there are data rows
-  # Use EPATADA color palette
-  if (nrow(DefineCriteriaMethodology) > 0) {
-    openxlsx::conditionalFormatting(wb, "DefineCriteriaMethodology", 
-                                    cols = 1:31, 
-                                    rows = 2:(nrow(DefineCriteriaMethodology) + 1), 
-                                    type = "notBlanks", 
-                                    style = openxlsx::createStyle(bgFill = EPATADA::TADA_ColorPalette()[8]))
-    openxlsx::conditionalFormatting(wb, "DefineCriteriaMethodology", 
-                                    cols = 1:31, 
-                                    rows = 2:(nrow(DefineCriteriaMethodology) + 1), 
-                                    type = "blanks", 
-                                    style = openxlsx::createStyle(bgFill = EPATADA::TADA_ColorPalette()[13]))
-  }
-  
-  # Group columns (only if there are enough columns)
-  if (ncol(DefineCriteriaMethodology) >= 22) {
-    openxlsx::groupColumns(wb, sheet = "DefineCriteriaMethodology", 
-                           cols = 22:ncol(DefineCriteriaMethodology), 
-                           hidden = FALSE, level = -1)
-  }
-  
-  return(wb)
-}
-
-
-# A function to download the criteria file list from TADACommunityHub
-getCriteriaFiles <- function(branch = "main") {
-  # GitHub API endpoint for repository contents
-  api_url <- sprintf(
-    "https://api.github.com/repos/USEPA/TADACommunityHub/contents/inst/extdata?ref=%s",
-    branch
-  )
-  
-  # Make the API request
-  response <- httr::GET(api_url)
-  
-  
-  # Check for errors
-  if (httr::status_code(response) != 200) {
-    stop("Failed to fetch file list from GitHub. Status code: ",
-         httr::status_code(response))
-  }
-  
-  # Parse JSON response
-  content <- httr::content(response, as = "parsed")
-  
-  # Filter for xlsx files with "_criteria_crosswalk" pattern
-  criteria_files <- lapply(content, function(file) {
-    if (grepl("_criteria_crosswalk\\.xlsx$", file$name)) {
-      # Extract display name by removing the suffix
-      display_name <- gsub("_criteria_crosswalk\\.xlsx$", "", file$name)
-      # Convert underscores to spaces and title case for nicer display
-      display_name <- gsub("_", " ", display_name)
-      display_name <- tools::toTitleCase(display_name)
-      
-      output <- data.frame(
-        display_name = display_name,
-        file_name = file$name,
-        download_url = file$download_url,
-        stringsAsFactors = FALSE
-      )
-      
-      return(output)
-    }
-    return(NULL)
-  })
-  
-  # Combine into a data frame
-  result <- dplyr::bind_rows(criteria_files)
-  
-  if (is.null(result) || nrow(result) == 0) {
-    warning("No criteria crosswalk files found in the repository.")
-    
-    result <- data.frame(
-      display_name = character(),
-      file_name = character(),
-      download_url = character(),
-      stringsAsFactors = FALSE
-    )
-    
-    return(result)
-  }
-  
-  return(result)
-}
-
-# A function to load the criteria list
-loadCriteria <- function(state_tribe, ref) {
-
-  # Get the file_url
-  file_url <- ref[ref$display_name %in% state_tribe, "download_url"]
-  
-  # Create a temporary file
-  temp_file <- tempfile(fileext = ".xlsx")
-  
-  # Download the file (use mode = "wb" for binary files like xlsx)
-  utils::download.file(file_url, temp_file, mode = "wb")
-  
-  # Now read it
-  df <- readxl::read_excel(temp_file)
-  
-  # Clean up
-  unlink(temp_file)
-  
-  return(df)
+  list(result = res, lines = c(out, msgs))
 }

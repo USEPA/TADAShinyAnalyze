@@ -22,6 +22,7 @@ Useful links:
 Authors:
 \itemize{
   \item Cristina Mullin \email{mywaterway@epa.gov} (\href{https://orcid.org/0000-0002-0615-6087}{ORCID})
+  \item Kenny Wong \email{mywaterway@epa.gov}
   \item Ben Block \email{ben.block@tetratech.com} (\href{https://orcid.org/0000-0003-1427-4363}{ORCID})
   \item Yu-Chen Wang
 }
