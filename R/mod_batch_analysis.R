@@ -351,7 +351,7 @@ mod_batch_analysis_server <- function(id, tadat){
         # Count available parameter
         dat_match <- dplyr::bind_rows(dat_yes, dat_no)
         dat_match2 <- dat_match |>
-          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
+          dplyr::distinct(ATTAINS.ParameterName, TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
                           TADA.ResultMeasure.MeasureUnitCode)
         
         # Get the sample size
@@ -717,7 +717,7 @@ mod_batch_analysis_server <- function(id, tadat){
       }
       
       # Get the parameter names
-      params <- sort(unique(tadat$excursion_summary2$TADA.CharacteristicName))
+      params <- sort(unique(tadat$excursion_summary2$ATTAINS.ParameterName))
       
       # Only update if we have parameters to show
       if (length(params) > 0) {

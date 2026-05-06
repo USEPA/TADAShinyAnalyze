@@ -16,7 +16,7 @@ mod_analysis_data_viewer_ui <- function(id) {
              shiny::verbatimTextOutput(ns("Avail_Data"), 
                                        placeholder = TRUE)
       ),
-      column(width = 6,
+      column(width = 12,
                htmltools::h4("Matched Parameters"),
                DT::DTOutput(ns("Matched_Data"))
       ),
@@ -56,7 +56,8 @@ mod_analysis_data_viewer_server <- function(id, tadat){
         }
       )
       
-      output$Matched_Data <- DT::renderDT({
+      # See mod_batch_analysis.R for what tadat$dat_match looks like.
+      output$Matched_Data <- DT::renderDataTable({
         shiny::validate(need(!is.null(tadat$dat_match), "No matched data."))
         
         # render table
