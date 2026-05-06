@@ -1233,13 +1233,33 @@ frequency_summary <- function(x, type){
   
   # Percentile: Calculate the percentile
   if (nrow(x_P) > 0){
-    x_P2 <- x_P |>
+    
+    x_P2 <- x_P |> 
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
-      dplyr::mutate(FreqValue = FreqValue/100) |>
-      dplyr::mutate(Percentile = stats::quantile(Result_Duration,
-                                          probs = dplyr::first(FreqValue))) |>
-      dplyr::mutate(E_Value = Percentile) |>
+      dplyr::mutate( p_raw = dplyr::first(FreqValue),
+                     p = dplyr::case_when( is.na(p_raw) ~ NA_real_,
+                                           p_raw > 1 ~ p_raw/100, # treat >1 as percentage
+                                           p_raw >= 0 & p_raw <= 1 ~ p_raw, TRUE ~ NA_real_ 
+                                           ),
+                     Percentile = dplyr::if_else(
+                       is.na(p),
+                       NA_real_,
+                       suppressWarnings(
+                         stats::quantile(Result_Duration, probs = p, na.rm = TRUE))
+                       ),
+                     E_Value = Percentile
+                     ) |>
       dplyr::ungroup()
+    
+    # 
+    # 
+    # x_P2 <- x_P |>
+    #   dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
+    #   dplyr::mutate(FreqValue = FreqValue/100) |>
+    #   dplyr::mutate(Percentile = stats::quantile(Result_Duration,
+    #                                       probs = dplyr::first(FreqValue))) |>
+    #   dplyr::mutate(E_Value = Percentile) |>
+    #   dplyr::ungroup()
   } else {
     x_P2 <- x_P |> 
       dplyr::mutate(Percentile = NA_real_) |>
@@ -1326,31 +1346,38 @@ frequency_summary <- function(x, type){
   
   
   # Percentile Method
-  if (nrow(x4_percentile) > 0){
+  if (nrow(x4_percentile) > 0) {
     x4_percentile2 <- x4_percentile |>
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
-      dplyr::summarize(Sample_Count = dplyr::n(),
-                       Start_Date = min(Window_End_win, na.rm = TRUE),
-                       End_Date = max(Window_End_win, na.rm = TRUE), 
-                       Percentile = dplyr::first(Percentile),
-                       Number_of_Excursions = modSum(Duration_Excursion)) |>
-      dplyr::mutate(Exceedance = ifelse(Number_of_Excursions > 0, "Exceed", "Not Exceed")) |>
-      dplyr::ungroup() |>
-      dplyr::mutate(Number_of_Excursions = NA_real_) |>
-      dplyr::mutate(Excursion_Percentage = NA_real_) |>
-      dplyr::mutate(Sufficient_Data = "Yes")
+      dplyr::summarise(
+        Sample_Count = dplyr::n(),
+        Start_Date   = suppressWarnings(min(Window_End_win, na.rm = TRUE)),
+        End_Date     = suppressWarnings(max(Window_End_win, na.rm = TRUE)),
+        Percentile   = dplyr::first(Percentile),
+        Exceedance   = dplyr::if_else(
+          any(Duration_Excursion == 1, na.rm = TRUE),
+          "Exceed", "Not Exceed"
+        ),
+        .groups = "drop"
+      ) |>
+      dplyr::mutate(
+        Number_of_Excursions = NA_integer_,
+        Excursion_Percentage = NA_real_,
+        Sufficient_Data      = "Yes"
+      )
   } else {
+    # unchanged fallback
     x4_percentile2 <- x4_percentile |>
       dplyr::select(dplyr::all_of(id_cols2)) |>
       dplyr::mutate(
-        Sample_Count = NA_integer_,
-        Start_Date = as.POSIXct(NA),
-        End_Date = as.POSIXct(NA),
+        Sample_Count         = NA_integer_,
+        Start_Date           = as.POSIXct(NA),
+        End_Date             = as.POSIXct(NA),
         Number_of_Excursions = NA_integer_,
         Excursion_Percentage = NA_real_,
-        Exceedance = NA_character_,
-        Percentile = NA_real_,
-        Sufficient_Data = NA_character_
+        Exceedance           = NA_character_,
+        Percentile           = NA_real_,
+        Sufficient_Data      = NA_character_
       )
   }
   
