@@ -754,7 +754,7 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$excurse_summary_f <- NULL
       } else {
         excurse_summary3 <- tadat$excursion_summary2 |>
-          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
+          dplyr::filter(ATTAINS.ParameterName %in% input$parameter_filter)
         
         # Save the data to tadat
         tadat$excurse_summary_f <- excurse_summary3
@@ -762,17 +762,17 @@ mod_batch_analysis_server <- function(id, tadat){
       
       if (!is.null(tadat$excurse_summary_f) && nrow(tadat$excurse_summary_f) > 0) {
         # Get the filtered parameters and locations
-        filtered_params <- unique(tadat$excurse_summary_f$TADA.CharacteristicName)
+        filtered_params <- unique(tadat$excurse_summary_f$ATTAINS.ParameterName)
         
         if (tadat$loc_select %in% c("MLid")) {
           filtered_locs <- unique(tadat$excurse_summary_f$TADA.MonitoringLocationIdentifier)
           tadat$excurse_dat_filtered <- tadat$excurse_dat |>
-            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+            dplyr::filter(ATTAINS.ParameterName %in% filtered_params,
                           TADA.MonitoringLocationIdentifier %in% filtered_locs)
         } else {
           filtered_aus <- unique(tadat$excurse_summary_f$ATTAINS.AssessmentUnitIdentifier)
           tadat$excurse_dat_filtered <- tadat$excurse_dat |>
-            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+            dplyr::filter(ATTAINS.ParameterName %in% filtered_params,
                           ATTAINS.AssessmentUnitIdentifier %in% filtered_aus)
         }
       } else {
@@ -818,7 +818,7 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceed_summary_f <- NULL
       } else {
         exceedance_summary3 <- exceedance_summary2 |>
-          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
+          dplyr::filter(ATTAINS.ParameterName %in% input$parameter_filter)
         
         # Save the data to tadat
         tadat$exceed_summary_f <- exceedance_summary3
