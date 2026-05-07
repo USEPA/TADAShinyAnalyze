@@ -70,7 +70,8 @@ mod_analysis_data_viewer_server <- function(id, tadat){
                                      paging = TRUE,
                                      pageLength = 5,
                                      lengthMenu = c(5, 10, 25, 50, 100),
-                                     autoWidth = TRUE))
+                                     autoWidth = FALSE, 
+                                     fillContainer = TRUE ))
       })
       
       # output$Not_Matched_Data <- DT::renderDT({
