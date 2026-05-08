@@ -846,9 +846,10 @@ mod_batch_analysis_server <- function(id, tadat){
     ###############################
     mod_tada_plots_server(
       id = "TADA_Plots",
-      df_mlid_input = reactive(tadat$df_mlid_input),     # your data
-      user_choice     = reactive(unique(tadat$df_mlid_input$TADA.ComparableDataIdentifier)),      # vector of ComparableDataIdentifier
-      user_choice_ML  = reactive(unique(input$df_mlid_input$MonitoringLocationIdentifier))    # vector of MonitoringLocationIdentifier
+      data_react = reactive({
+        req(tadat$df_mlid_input)
+        tadat$df_mlid_input
+      })
     )
     
   })
