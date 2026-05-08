@@ -633,24 +633,44 @@ mod_criteria_table_server <- function(id, tadat) {
       df_template2 <- df_template2 |>
         dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
       
+      # check for mismatching WQP Char, Fraction, Speciation and Units with the Criteria table
+      df_template2_ID <-  EPATADA::TADA_CreateComparableID(dplyr::rename(df_template2, TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit))
+      non_matches <- dplyr::anti_join(
+        df_template2_ID, tadat$df_mlid_input,
+        "TADA.ComparableDataIdentifier") |>
+        dplyr::select(
+          TADA.ComparableDataIdentifier, TADA.ResultSampleFractionText, TADA.MethodSpeciationName, TADA.ResultMeasure.MeasureUnitCode
+          ) |>
+        dplyr::distinct()
+      
       # Build summary text
       #if( equationBased_NA > 0 ){
         text <- paste0(
           "Loaded dataset has ", nrow(df_template), " rows.\n", 
           "   and ", nrow(df_template2), " rows contain information for analysis. Any rows missing criteria or methodology information has been removed. \n", 
-          "There are ", length(unique(stats::na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
-          "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
-          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values: NA. \n",
+          # "There are ", length(unique(stats::na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
+          # "There are ", length(unique(stats::na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
+          # "There are ", length(unique(stats::na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
+          # "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
+          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values as 'NA'. \n",
           "   These NAs will be filled in as 'No'. \n", 
           # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
           TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
           TADACommunityHub::validateWQXUnits(df_template2)$message, "\n"
           # TADACommunityHub::validateWQXUnits(df_template2)$issues
-          
         )
+        
+        if (nrow(non_matches) > 0) {
+          extra_text <- paste(
+            c(
+              "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
+              unique(non_matches$TADA.ComparableDataIdentifier)
+            ),
+            collapse = "\n - "
+          )
+          text <- paste(text, extra_text, sep = "\n")
+        }
       #}
       
       # Prints final message
