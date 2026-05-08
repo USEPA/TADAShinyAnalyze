@@ -113,7 +113,7 @@ mod_batch_analysis_ui <- function(id) {
       )
     ),
     
-    # # Horizontal divider
+    # Horizontal divider
     # htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     # 
     # fluidRow(
@@ -121,7 +121,15 @@ mod_batch_analysis_ui <- function(id) {
     #     width = 12,
     #     mod_exceedance_viewer_ui(ns("Summary_Exceed_View"))
     #   )
-    # )
+    # ),
+    
+    fluidRow(
+      column(
+        width = 12,
+        mod_tada_plots_ui(ns("TADA_Plots"))
+      )
+    )
+    
   )
 }
 
@@ -835,6 +843,13 @@ mod_batch_analysis_server <- function(id, tadat){
                               loc_select = reactive(tadat$loc_select),
                               tabname = "batch")
     
+    ###############################
+    mod_tada_plots_server(
+      id = "TADA_Plots",
+      df_mlid_input = reactive(tadat$df_mlid_input),     # your data
+      user_choice     = reactive(unique(tadat$df_mlid_input$TADA.ComparableDataIdentifier)),      # vector of ComparableDataIdentifier
+      user_choice_ML  = reactive(unique(input$df_mlid_input$MonitoringLocationIdentifier))    # vector of MonitoringLocationIdentifier
+    )
     
   })
 }

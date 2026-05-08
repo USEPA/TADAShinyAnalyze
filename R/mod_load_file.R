@@ -166,6 +166,14 @@ mod_load_file_ui <- function(id) {
         DT::dataTableOutput(outputId = ns("df_autouse_input_dt"))
       )
     ),
+    
+    fluidRow(
+      column(
+        width = 12,
+        mod_tada_plots_ui(ns("TADA_Plots"))
+      )
+    )
+    
   )
 }
     
@@ -365,6 +373,8 @@ mod_load_file_server <- function(id, tadat){
         )
       }
     }) # end renderText
+    
+
     
     #### 2. ml to au crosswalk file loaded event ####
     df_mltoau_input <- shiny::eventReactive(input$mltoau_input_file, {
@@ -639,6 +649,30 @@ mod_load_file_server <- function(id, tadat){
       tadat$files_loaded_autouse <- files_loaded$autouse
     })
 
+    ###############################
+    mod_tada_plots_server(
+      id = "TADA_Plots",
+      df_mlid_input = reactive({
+        tadat$df_mlid_input
+      }),
+      user_choice = reactive({
+        req(tadat$df_mlid_input)
+        # Pick all ComparableDataIdentifier by default (or narrow as needed)
+        unique(na.omit("PH_NONE_NONE_NONE"))
+      }),
+      user_choice_ML = reactive({
+        req(tadat$df_mlid_input)
+        rows_sel <- input$df_mlid_input_dt_rows_selected
+        if (!is.null(rows_sel) && length(rows_sel) > 0) {
+          # Use MLs from selected rows in the preview table
+          unique(tadat$df_mlid_input$MonitoringLocationIdentifier[rows_sel])
+        } else {
+          # Fallback: include all MLs so plots don’t filter to empty
+          unique(na.omit(tadat$df_mlid_input$MonitoringLocationIdentifier))
+        }
+      })
+    )
+    
   }) # end of moduleServer
 } # end of server function
     
