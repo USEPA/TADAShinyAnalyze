@@ -1552,7 +1552,7 @@ hardness_eq <- function(hardness, E_A, E_B, CF_A, CF_B, CF_C){
 }
 
 # helper to display message from EPATADA::TADA_DefineCriteriaMethodology()
-capture_all_output <- function(expr) {
+capture_all_output <- function(expr, width = 100) {
   msgs <- character()
   res <- NULL
   
@@ -1561,11 +1561,29 @@ capture_all_output <- function(expr) {
       withCallingHandlers(
         force(expr),
         message = function(m) {
-          msgs <<- c(msgs, paste0("MESSAGE: ", conditionMessage(m)))
+          label <- "MESSAGE: "
+          indent <- suppressWarnings(as.integer(nchar(label, type = "width")))
+          if (is.na(indent) || indent < 0L) indent <- 0L
+          wrapped <- strwrap(
+            conditionMessage(m),
+            width   = width,
+            initial = label,
+            prefix  = strrep(" ", indent)
+          )
+          msgs <<- c(msgs, wrapped)
           invokeRestart("muffleMessage")
         },
         warning = function(w) {
-          msgs <<- c(msgs, paste0("WARNING: ", conditionMessage(w)))
+          label <- "WARNING: "
+          indent <- suppressWarnings(as.integer(nchar(label, type = "width")))
+          if (is.na(indent) || indent < 0L) indent <- 0L
+          wrapped <- strwrap(
+            conditionMessage(w),
+            width   = width,
+            initial = label,
+            prefix  = strrep(" ", indent)
+          )
+          msgs <<- c(msgs, wrapped)
           invokeRestart("muffleWarning")
         }
       ),

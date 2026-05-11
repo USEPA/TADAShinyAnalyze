@@ -643,41 +643,65 @@ mod_criteria_table_server <- function(id, tadat) {
           ) |>
         dplyr::distinct()
       
-      # check for rejected values in columns using TADACommunityHub functions
-      # accepted <- 
+      # check for accepted/rejected values in columns using TADACommunityHub functions
+      checks <- list(
+        validateATTAINSParam = TADACommunityHub::validateATTAINSParam(df_template2),
+        validateATTAINSUse   = TADACommunityHub::validateATTAINSUse(df_template2),
+        validateWQXUnits     = TADACommunityHub::validateWQXUnits(df_template2),
+        validateDurationMethod = TADACommunityHub::validateDurationMethod(df_template2),
+        validateDurationUnits = TADACommunityHub::validateDurationUnits(df_template2)
+        # add remaining validations below...
+      ) 
+      
+      # Store accepted/rejected in lists
+      accepted_list <- names(Filter(function(x) identical(x$status, "Accepted"), checks))
+      rejected_list <- names(Filter(function(x) identical(x$status, "Rejected"), checks))
+      
+      # Return only messages for rejected
+      if (length(rejected_list) == 0) {
+        validat <- paste0("All column values accepted.\n")
+      } else {
+        for (nm in rejected_list) {
+          msg <- checks[[nm]]$message
+          msg2 <- checks[[nm]]$issues
+          
+          lines <- paste(sapply(seq_len(nrow(msg2)), function(i) {
+            sprintf(" - %s | %s", as.character(msg2[i, 1]), as.character(msg2[i, 2]))
+          }),  collapse = "\n")
+          
+          if (is.list(msg)) msg <- paste(unlist(msg), collapse = "; ")
+          if (length(msg) == 0 || is.null(msg)) msg <- "(no message provided)"
+          validat <- paste(msg,"\n", lines)
+        }
+      }
+      
+      # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
+      eq_text <- paste0("")
+      if (equationBased_NA > 0) {
+        eq_text <- paste0("Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values populated as 'NA'. \n",
+        "   These NAs will be filled in as 'No'. \n")
+      }
       
       # Build summary text
-      #if( equationBased_NA > 0 ){
-        text <- paste0(
-          "Loaded dataset has ", nrow(df_template), " rows.\n", 
-          "   and ", nrow(df_template2), " rows contain information for analysis. Any rows missing criteria or methodology information has been removed. \n", 
-          # "There are ", length(unique(stats::na.omit(df_template$ATTAINS.OrganizationIdentifier))), " unique ATTAINS.OrganizationIdentifier(s).\n",
-          # "There are ", length(unique(stats::na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
-          # "There are ", length(unique(stats::na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
-          # "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
-          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values populated as 'NA'. \n",
-          "   These NAs will be filled in as 'No'. \n", 
-          # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
-          TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",
-          TADACommunityHub::validateATTAINSUse(df_template2)$message, "\n",
-          TADACommunityHub::validateWQXUnits(df_template2)$message, "\n"
-          # TADACommunityHub::validateWQXUnits(df_template2)$issues
+      text <- paste0(
+        "Your criteria table contains ", nrow(df_template2), " rows of information populated that are needed for analysis. \n", 
+        "   Any rows missing criteria or methodology information has been removed. \n"
+      )
+
+      if (nrow(non_matches) > 0) {
+        extra_text <- paste(
+          c(
+            "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
+            unique(non_matches$TADA.ComparableDataIdentifier),
+            "\n"
+          ),
+          collapse = "\n - "
         )
-        
-        if (nrow(non_matches) > 0) {
-          extra_text <- paste(
-            c(
-              "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
-              unique(non_matches$TADA.ComparableDataIdentifier)
-            ),
-            collapse = "\n - "
-          )
-          text <- paste(text, extra_text, sep = "\n")
-        }
-      #}
+        text <- paste(text, eq_text, extra_text, sep = "\n")
+      }
       
       # Prints final message
-      paste0(text)
+      paste(paste0(text, "\n", validat), sep = "\n")
     })
     
     ### Generate the template summary table (adds missing required columns to the output)
