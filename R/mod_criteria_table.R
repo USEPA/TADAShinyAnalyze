@@ -41,7 +41,7 @@ mod_criteria_table_ui <- function(id) {
         " Upload a template users have filled out and reviewed using the file uploader. The tool will check if there is any missing information."
       )
     ),
-    htmltools::p('Once the selection is completed, click the "Generate Template" button to generate an Excel file with the criteria table template. When the template is ready, click "Download Template" to save.'),
+    htmltools::p('Once the selection is completed, click the "Generate and Download Template" button to generate an Excel file with the criteria table template.'),
     
     htmltools::hr(),
     
@@ -70,7 +70,7 @@ mod_criteria_table_ui <- function(id) {
           status = "info"
         ),
         shinyjs::disabled(
-          shiny::actionButton(ns("Generate_Template"), "Generate Template", shiny::icon("computer"),
+          shiny::actionButton(ns("Generate_Template"), "Generate and Download Template", shiny::icon("computer"),
                               style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
           )
         )
@@ -429,7 +429,7 @@ mod_criteria_table_server <- function(id, tadat) {
         if (!is.null(warning_msg()) && nzchar(trimws(warning_msg()))) {
           paste("Template generation issue:\n", warning_msg())
         } else {
-          "Ready to generate template. Select options above and click 'Generate Template'."
+          "Ready to generate template. Select options above and click 'Generate and Download Template'."
         }
       } else if (inherits(cap$result, "try-error")) {
         paste("Error:\n", as.character(cap$result))
@@ -643,6 +643,9 @@ mod_criteria_table_server <- function(id, tadat) {
           ) |>
         dplyr::distinct()
       
+      # check for rejected values in columns using TADACommunityHub functions
+      # accepted <- 
+      
       # Build summary text
       #if( equationBased_NA > 0 ){
         text <- paste0(
@@ -652,7 +655,7 @@ mod_criteria_table_server <- function(id, tadat) {
           # "There are ", length(unique(stats::na.omit(df_template$TADA.CharacteristicName))), " unique TADA.CharacteristicName(s).\n",
           # "There are ", length(unique(stats::na.omit(df_template$ATTAINS.UseName))), " unique ATTAINS.UseName(s).\n",
           # "There are ", length(unique(stats::na.omit(df_template$TADA.ComparableDataIdentifier))), " unique TADA.ComparableDataIdentifier(s).\n",
-          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values as 'NA'. \n",
+          "Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values populated as 'NA'. \n",
           "   These NAs will be filled in as 'No'. \n", 
           # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
           TADACommunityHub::validateATTAINSParam(df_template2)$message, "\n",

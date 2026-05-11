@@ -11,6 +11,10 @@ criteria_join <- function(x, y, match_type = "Option 2",
                           use_type = "Option 1",
                           filter_type = TRUE){
   
+  # creates TADA.ComparableDataIdentifier (if it doesn't already exist) or updates it to reflect the fraction, speciation and units shown (converts units appropriately - need to reconvert it back)
+  y <- EPATADA::TADA_CreateComparableID(dplyr::rename(y, TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit)) |>
+    dplyr::rename(MagnitudeUnit = TADA.ResultMeasure.MeasureUnitCode)
+  
   # Add flags to criteria table
   y2 <- y |> 
     dplyr::mutate(Matched = "Yes") |>
