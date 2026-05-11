@@ -20,7 +20,7 @@ mod_analysis_selector_custom_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
-        htmltools::p("Determine the spatial unit, state/tribe of the criteria, and the uses included in the analysis."),
+        htmltools::p("Determine the spatial unit and the uses included in the analysis."),
         htmltools::p("If only Water Quality Data File is available 
                      or if users select the EPA option in the 'Criteria Table' tab,
                      The AU option would not be available for the 'Batch Analyzed by the spatial unit'. In this case, 
@@ -52,11 +52,35 @@ mod_analysis_selector_custom_ui <- function(id) {
       ),
     ),
     fluidRow(
-      column(width = 6,
-             shiny::radioButtons(inputId = ns("join_select_custom"),
-                                 label = "Join the criteria table with fraction information",
-                                 choices = c("Yes" = "Option 1", 
-                                             "No" = "Option 2")))
+      column(
+        width = 12,
+        htmltools::p(
+          htmltools::strong("Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation).")
+        )
+      )
+    ),
+    fluidRow(
+      column(
+        width = 6,
+        shiny::radioButtons(
+          inputId = ns("join_select_custom"),
+          label = tagList(
+            "Choose option for joining the criteria table to your WQP dataframe",
+            # info icon that opens the popup
+            actionLink(
+              ns("join_help"),
+              label = NULL,
+              icon = icon("circle-info"),
+              title = "More details"
+            )
+          ),
+          choices = c(
+            "TADA.ComparableDataIdentifier" = "Option 1",
+            "TADA.CharacteristicName only" = "Option 2"
+          )
+        ),
+        helpText("Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame.")
+      )
     )
   )
 }
@@ -240,6 +264,33 @@ mod_analysis_selector_custom_server <- function(id, tadat){
         }
       }
     }, ignoreNULL = FALSE)
+    
+    #################################### pop up display helper
+    observeEvent(input$join_help, {
+      showModal(
+        modalDialog(
+          title = "Join options explained",
+          easyClose = TRUE,
+          footer = modalButton("Close"),
+          tagList(
+            tags$h5("Option 1 - ComparableDataIdentifier"),
+            tags$p("Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."),
+            tags$ul(
+              tags$li("Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."),
+              tags$li("Stricter matching (fewer false/ambiguous joins).")
+            ),
+            tags$hr(),
+            tags$h5("Option 2 - CharacteristicName only"),
+            tags$p("Joins only on TADA.CharacteristicName."),
+            tags$ul(
+              tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
+              tags$li("More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis.")
+            )
+          )
+        )
+      )
+    })
+    ####################################
     
     ### Save the selected loc_select, state_tribe and uses to tadat
     shiny::observe({
