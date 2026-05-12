@@ -48,10 +48,10 @@ mod_analysis_data_viewer_custom_server <- function(id, tadat){
  
     # See mod_custom_analysis.R for what tadat$dat_match_custom looks like.
     output$Matched_Data_Custom <- DT::renderDataTable({
-      shiny::validate(need(!is.null(tadat$dat_match_custom), "No matched data."))
+      shiny::validate(need(!is.null(tadat$custom_raw), "No matched data."))
       
       # render table
-      DT::datatable(tadat$dat_match_custom,
+      DT::datatable(tadat$custom_raw,
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,

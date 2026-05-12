@@ -329,8 +329,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Save the data
       tadat$available_param_num_custom <- dat_viewer_count_num
-
-      tadat$custom_raw <- dat_match_custom
+      tadat$custom_raw <- dat_match_custom2
       
       # tadat$dat_yes_custom <- dat_yes
       # tadat$dat_no_custom <- dat_no

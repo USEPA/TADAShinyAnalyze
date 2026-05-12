@@ -123,12 +123,12 @@ mod_batch_analysis_ui <- function(id) {
     #   )
     # ),
     
-    fluidRow(
-      column(
-        width = 12,
-        mod_tada_plots_ui(ns("TADA_Plots"))
-      )
-    )
+    # fluidRow(
+    #   column(
+    #     width = 12,
+    #     mod_tada_plots_ui(ns("TADA_Plots"))
+    #   )
+    # )
     
   )
 }
@@ -844,13 +844,13 @@ mod_batch_analysis_server <- function(id, tadat){
                               tabname = "batch")
     
     ###############################
-    mod_tada_plots_server(
-      id = "TADA_Plots",
-      data_react = reactive({
-        req(tadat$df_mlid_input)
-        tadat$df_mlid_input
-      })
-    )
+    # mod_tada_plots_server(
+    #   id = "TADA_Plots",
+    #   data_react = reactive({
+    #     req(tadat$df_mlid_input)
+    #     tadat$df_mlid_input
+    #   })
+    # )
     
   })
 }
