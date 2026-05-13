@@ -50,8 +50,15 @@ mod_analysis_data_viewer_custom_server <- function(id, tadat){
     output$Matched_Data_Custom <- DT::renderDataTable({
       shiny::validate(need(!is.null(tadat$custom_raw), "No matched data."))
       
+      custom_raw <- tadat$custom_raw |>
+        dplyr::select(
+          ATTAINS.ParameterName, TADA.CharacteristicName, TADA.ResultSampleFractionText,
+          TADA.MethodSpeciationName, TADA.ResultMeasure.MeasureUnitCode
+        ) |>
+        dplyr::distinct()
+      
       # render table
-      DT::datatable(tadat$custom_raw,
+      DT::datatable(custom_raw,
                     filter = "top",
                     class = "compact",
                     options = list(scrollX = TRUE,
