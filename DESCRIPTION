@@ -42,7 +42,8 @@ Imports:
     readr,
     slider,
     rExpertQuery,
-    graphics
+    graphics,
+    plotly
 Remotes:
     USEPA/EPATADA,
     USEPA/TADACommunityHub,

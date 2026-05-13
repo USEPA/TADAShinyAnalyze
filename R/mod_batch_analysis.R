@@ -113,7 +113,7 @@ mod_batch_analysis_ui <- function(id) {
       )
     ),
     
-    # # Horizontal divider
+    # Horizontal divider
     # htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
     # 
     # fluidRow(
@@ -121,7 +121,15 @@ mod_batch_analysis_ui <- function(id) {
     #     width = 12,
     #     mod_exceedance_viewer_ui(ns("Summary_Exceed_View"))
     #   )
+    # ),
+    
+    # fluidRow(
+    #   column(
+    #     width = 12,
+    #     mod_tada_plots_ui(ns("TADA_Plots"))
+    #   )
     # )
+    
   )
 }
 
@@ -351,7 +359,7 @@ mod_batch_analysis_server <- function(id, tadat){
         # Count available parameter
         dat_match <- dplyr::bind_rows(dat_yes, dat_no)
         dat_match2 <- dat_match |>
-          dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
+          dplyr::distinct(ATTAINS.ParameterName, TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
                           TADA.ResultMeasure.MeasureUnitCode)
         
         # Get the sample size
@@ -532,8 +540,11 @@ mod_batch_analysis_server <- function(id, tadat){
       }
       
       tadat$excurse_dat <- dat5
+      # Prefer ATTAINS when non-NA; otherwise use TADA
+      tadat$excurse_dat <- tadat$excurse_dat |>
+        dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
       tadat$excurse_dat_filtered <- tadat$excurse_dat
-      
+
       if (tadat$use_type_batch %in% "Option 1"){
         # Create a table for the map-table selector
         site_AU_table <- dat5 |>
@@ -582,6 +593,9 @@ mod_batch_analysis_server <- function(id, tadat){
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select)
       
       tadat$exceed_summary <- dat9
+      # Prefer ATTAINS when non-NA; otherwise use TADA
+      tadat$exceed_summary <- tadat$exceed_summary |>
+        dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
       
       ### Step 10. Join the data
       dat9_1 <- dat9 |>
@@ -716,8 +730,12 @@ mod_batch_analysis_server <- function(id, tadat){
         return()  # Exit early
       }
       
-      # Get the parameter names
-      params <- sort(unique(tadat$excursion_summary2$TADA.CharacteristicName))
+      # Prefer ATTAINS when non-NA; otherwise use TADA
+      tadat$excursion_summary2 <- tadat$excursion_summary2 |>
+        dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
+      
+      # Build choices from the unified column
+      params <- sort(unique(tadat$excursion_summary2$ParameterForFilter))
       
       # Only update if we have parameters to show
       if (length(params) > 0) {
@@ -754,7 +772,7 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$excurse_summary_f <- NULL
       } else {
         excurse_summary3 <- tadat$excursion_summary2 |>
-          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
+          dplyr::filter(ParameterForFilter %in% input$parameter_filter)
         
         # Save the data to tadat
         tadat$excurse_summary_f <- excurse_summary3
@@ -762,17 +780,17 @@ mod_batch_analysis_server <- function(id, tadat){
       
       if (!is.null(tadat$excurse_summary_f) && nrow(tadat$excurse_summary_f) > 0) {
         # Get the filtered parameters and locations
-        filtered_params <- unique(tadat$excurse_summary_f$TADA.CharacteristicName)
+        filtered_params <- unique(tadat$excurse_summary_f$ParameterForFilter)
         
         if (tadat$loc_select %in% c("MLid")) {
           filtered_locs <- unique(tadat$excurse_summary_f$TADA.MonitoringLocationIdentifier)
           tadat$excurse_dat_filtered <- tadat$excurse_dat |>
-            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+            dplyr::filter(ParameterForFilter %in% filtered_params,
                           TADA.MonitoringLocationIdentifier %in% filtered_locs)
         } else {
           filtered_aus <- unique(tadat$excurse_summary_f$ATTAINS.AssessmentUnitIdentifier)
           tadat$excurse_dat_filtered <- tadat$excurse_dat |>
-            dplyr::filter(TADA.CharacteristicName %in% filtered_params,
+            dplyr::filter(ParameterForFilter %in% filtered_params,
                           ATTAINS.AssessmentUnitIdentifier %in% filtered_aus)
         }
       } else {
@@ -818,7 +836,7 @@ mod_batch_analysis_server <- function(id, tadat){
         tadat$exceed_summary_f <- NULL
       } else {
         exceedance_summary3 <- exceedance_summary2 |>
-          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
+          dplyr::filter(ParameterForFilter %in% input$parameter_filter)
         
         # Save the data to tadat
         tadat$exceed_summary_f <- exceedance_summary3
@@ -835,6 +853,14 @@ mod_batch_analysis_server <- function(id, tadat){
                               loc_select = reactive(tadat$loc_select),
                               tabname = "batch")
     
+    ###############################
+    # mod_tada_plots_server(
+    #   id = "TADA_Plots",
+    #   data_react = reactive({
+    #     req(tadat$df_mlid_input)
+    #     tadat$df_mlid_input
+    #   })
+    # )
     
   })
 }

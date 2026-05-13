@@ -28,6 +28,13 @@ mod_custom_analysis_ui <- function(id) {
     fluidRow(
       column(
         width = 12,
+        mod_analysis_data_viewer_custom_ui(ns("Custom_Data_Viewer"))
+      )
+    ),
+    
+    fluidRow(
+      column(
+        width = 12,
         mod_map_table_selector_custom_ui(ns("Custom_map_table_selector"))
       )
     ),
@@ -135,7 +142,7 @@ mod_custom_analysis_server <- function(id, tadat){
     }, priority = 100)
     
     # # Run Custom_Data_Viewer
-    # mod_analysis_data_viewer_custom_server("Custom_Data_Viewer", tadat)
+    mod_analysis_data_viewer_custom_server("Custom_Data_Viewer", tadat)
     
     ### If the input data are ready, conduct the analysis
     shiny::observe({
@@ -296,24 +303,24 @@ mod_custom_analysis_server <- function(id, tadat){
       
       dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
       
-      dat_match <- dplyr::bind_rows(dat_yes, dat_no)
-      dat_match2 <- dat_match |>
-        dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
+      dat_match_custom <- dplyr::bind_rows(dat_yes, dat_no)
+      dat_match_custom2 <- dat_match_custom |>
+        dplyr::distinct(ATTAINS.ParameterName, TADA.CharacteristicName, TADA.ResultSampleFractionText, TADA.MethodSpeciationName,
                         TADA.ResultMeasure.MeasureUnitCode)
       
-      dat_viewer_count_num <- nrow(dat_match2)
+      dat_viewer_count_num <- nrow(dat_match_custom2)
       
       # Create a table for the map-table selector
       if (tadat$use_type_custom %in% "Option 1"){
         # Create a table for the map-table selector
-        site_AU_table <- dat_match |>
+        site_AU_table <- dat_match_custom |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
                           TADA.LatitudeMeasure,
                           ATTAINS.AssessmentUnitIdentifier)
       } else {
-        site_AU_table <- dat_match |>
+        site_AU_table <- dat_match_custom |>
           dplyr::distinct(TADA.MonitoringLocationIdentifier,
                           TADA.MonitoringLocationName,
                           TADA.LongitudeMeasure,
@@ -322,8 +329,11 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Save the data
       tadat$available_param_num_custom <- dat_viewer_count_num
-
-      tadat$custom_raw <- dat_match
+      # Keep the full dataset with site columns and criteria fields
+      tadat$custom_raw <- dat_match_custom
+      
+      # (Optional) Keep the parameter-only view separately if you still need it
+      tadat$custom_raw_param_view <- dat_match_custom2
       
       # tadat$dat_yes_custom <- dat_yes
       # tadat$dat_no_custom <- dat_no
@@ -345,7 +355,12 @@ mod_custom_analysis_server <- function(id, tadat){
       tadat$custom_raw2 <- tadat$custom_raw |>
         dplyr::filter(TADA.MonitoringLocationIdentifier %in% tadat$selected_monitoring_locations_custom)
       
-      params <- sort(unique(tadat$custom_raw2$TADA.CharacteristicName))
+      # Prefer ATTAINS when non-NA; otherwise use TADA
+      tadat$custom_raw2 <- tadat$custom_raw2 |>
+        dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
+      
+      # Build choices from the unified column
+      params <- sort(unique(na.omit(tadat$custom_raw2$ParameterForFilter)))
       
       # Update parameter filter choices based on filtered data
       if (length(params) > 0) {
@@ -372,12 +387,10 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Check if any parameters are selected
       if (is.null(input$parameter_filter_custom) || length(input$parameter_filter_custom) == 0) {
-        # If no parameters selected, use all data
         tadat$custom_raw3 <- tadat$custom_raw2
       } else {
-        # Filter based on selected parameters
         tadat$custom_raw3 <- tadat$custom_raw2 |>
-          dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter_custom)
+          dplyr::filter(ParameterForFilter %in% input$parameter_filter_custom)
       }
       
     }, ignoreNULL = FALSE)
@@ -719,7 +732,7 @@ mod_custom_analysis_server <- function(id, tadat){
     observe({
       req(tadat$exceed_summary_custom)
       
-      params <- sort(unique(tadat$exceed_summary_custom$TADA.CharacteristicName))
+      params <- sort(unique(tadat$exceed_summary_custom$ParameterForFilter))
       uses <- sort(unique(tadat$exceed_summary_custom$ATTAINS.UseName))  
       
       updateSelectInput(session, "selected_use", choices = uses, selected = uses[1])
@@ -732,7 +745,7 @@ mod_custom_analysis_server <- function(id, tadat){
       
       # Get the uses after selecting the param
       filtered_data <- tadat$exceed_summary_custom |>
-        dplyr::filter(TADA.CharacteristicName %in% input$selected_param)
+        dplyr::filter(ParameterForFilter %in% input$selected_param)
       
       use_param <- sort(unique(filtered_data$ATTAINS.UseName))  
       

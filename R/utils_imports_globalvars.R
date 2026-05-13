@@ -10,6 +10,7 @@ utils::globalVariables(c(
   ".data",
   "ATTAINS.AssessmentUnitIdentifier",
   "ATTAINS.OrganizationIdentifier",
+  "ATTAINS.ParameterName",
   "ATTAINS.UseName",
   "ActivityStartDate",
   "ActivityStartDateTime",
