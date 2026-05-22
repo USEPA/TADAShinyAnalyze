@@ -86,5 +86,6 @@ utils::globalVariables(c(
   "params_exceeding_list",
   "sites_in_au",
   "total_params",
-  "use_param_exceeding"
+  "use_param_exceeding",
+  "ParameterForFilter"
 ))

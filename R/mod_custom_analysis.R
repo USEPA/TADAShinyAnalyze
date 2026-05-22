@@ -360,7 +360,7 @@ mod_custom_analysis_server <- function(id, tadat){
         dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
       
       # Build choices from the unified column
-      params <- sort(unique(na.omit(tadat$custom_raw2$ParameterForFilter)))
+      params <- sort(unique(stats::na.omit(tadat$custom_raw2$ParameterForFilter)))
       
       # Update parameter filter choices based on filtered data
       if (length(params) > 0) {
