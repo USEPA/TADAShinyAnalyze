@@ -610,8 +610,10 @@ mod_batch_analysis_server <- function(id, tadat){
       dat11 <- dat10 |> simplify_duration_frequency()
       
       # Save the data to tadat
-      tadat$excurse_summary <- dat11
-      
+      tadat$excurse_summary <- dat11 |>
+        dplyr::mutate(
+          ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName)
+        )
       ### Step 10. Download the batch analysis results
       output$download_results <- shiny::downloadHandler(
         
@@ -711,7 +713,10 @@ mod_batch_analysis_server <- function(id, tadat){
         }
         
         # Save excursion_summary2 to tadat
-        tadat$excursion_summary2 <- excursion_summary2
+        tadat$excursion_summary2 <- excursion_summary2 |>
+          dplyr::mutate(
+            ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName)
+          )
       }
       
     }, ignoreNULL = FALSE)
@@ -729,11 +734,7 @@ mod_batch_analysis_server <- function(id, tadat){
         )
         return()  # Exit early
       }
-      
-      # Prefer ATTAINS when non-NA; otherwise use TADA
-      tadat$excursion_summary2 <- tadat$excursion_summary2 |>
-        dplyr::mutate(ParameterForFilter = dplyr::coalesce(ATTAINS.ParameterName, TADA.CharacteristicName))
-      
+
       # Build choices from the unified column
       params <- sort(unique(tadat$excursion_summary2$ParameterForFilter))
       

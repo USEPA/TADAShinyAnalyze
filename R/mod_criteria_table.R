@@ -19,6 +19,10 @@ mod_criteria_table_ui <- function(id) {
     
     # Instructions
     htmltools::p("Use this tab to generate the criteria table based on the following options:"),
+    htmltools::p(
+      "Users are recommended to review the data dictionary and allowable values tab from the excel spreadsheet generated file as values may be limited to certain drop down selected values compatible for anlysis.",
+      style = "font-weight: bold; color: red;"
+    ),
     htmltools::tags$ul(
       htmltools::tags$li(
         htmltools::strong("Option A:"), 
@@ -644,36 +648,7 @@ mod_criteria_table_server <- function(id, tadat) {
         dplyr::distinct()
       
       # check for accepted/rejected values in columns using TADACommunityHub functions
-      checks <- list(
-        validateATTAINSParam = TADACommunityHub::validateATTAINSParam(df_template2),
-        validateATTAINSUse   = TADACommunityHub::validateATTAINSUse(df_template2),
-        validateWQXUnits     = TADACommunityHub::validateWQXUnits(df_template2),
-        validateDurationMethod = TADACommunityHub::validateDurationMethod(df_template2),
-        validateDurationUnits = TADACommunityHub::validateDurationUnits(df_template2)
-        # add remaining validations below...
-      ) 
-      
-      # Store accepted/rejected in lists
-      accepted_list <- names(Filter(function(x) identical(x$status, "Accepted"), checks))
-      rejected_list <- names(Filter(function(x) identical(x$status, "Rejected"), checks))
-      
-      # Return only messages for rejected
-      if (length(rejected_list) == 0) {
-        validat <- paste0("All column values accepted.\n")
-      } else {
-        for (nm in rejected_list) {
-          msg <- checks[[nm]]$message
-          msg2 <- checks[[nm]]$issues
-          
-          lines <- paste(sapply(seq_len(nrow(msg2)), function(i) {
-            sprintf(" - %s | %s", as.character(msg2[i, 1]), as.character(msg2[i, 2]))
-          }),  collapse = "\n")
-          
-          if (is.list(msg)) msg <- paste(unlist(msg), collapse = "; ")
-          if (length(msg) == 0 || is.null(msg)) msg <- "(no message provided)"
-          validat <- paste(msg,"\n", lines)
-        }
-      }
+      status <- TADACommunityHub::runAllValidations(df_template2)
       
       # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
       eq_text <- paste0("")
@@ -701,7 +676,7 @@ mod_criteria_table_server <- function(id, tadat) {
       }
       
       # Prints final message
-      paste(paste0(text, "\n", validat), sep = "\n")
+      paste(paste0(text, "\n", status$overall_status, sep = "\n"))
     })
     
     ### Generate the template summary table (adds missing required columns to the output)
