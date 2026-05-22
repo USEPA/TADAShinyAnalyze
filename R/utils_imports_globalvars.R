@@ -87,5 +87,6 @@ utils::globalVariables(c(
   "sites_in_au",
   "total_params",
   "use_param_exceeding",
-  "ParameterForFilter"
+  "ParameterForFilter",
+  "MagnitudeUnit"
 ))

@@ -46,7 +46,7 @@ Imports:
     plotly
 Remotes:
     USEPA/EPATADA,
-    USEPA/TADACommunityHub,
+    USEPA/TADACommunityHub@validation-function-updates,
     USEPA/rExpertQuery
 Suggests: 
     spelling,

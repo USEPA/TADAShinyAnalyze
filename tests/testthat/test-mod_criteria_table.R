@@ -64,7 +64,7 @@ testthat::test_that("mod_criteria_table_server Option E upload and summary works
     TADA_GetCriteriaFile = function(display_name) {
       data.frame(ATTAINS.OrganizationIdentifier = "MTDEQ", stringsAsFactors = FALSE)
     },
-    TADA_DefineCriteriaMethodology = function(...) tibble::tibble()
+    TADA_DefineCriteriaMethodology = function(...) dplyr::tibble()
   )
   
   # should run without error when using fake deps
