@@ -90,7 +90,7 @@ mod_batch_analysis_ui <- function(id) {
         column(
           width = 12,
           shiny::selectizeInput(inputId = ns("parameter_filter"),
-                                label = "Filter parameter to view the results",
+                                label = "Filter ATTAINS parameter to view the results",
                                 choices = NULL,
                                 multiple = TRUE)
         )
