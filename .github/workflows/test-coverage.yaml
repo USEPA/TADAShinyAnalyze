@@ -20,92 +20,107 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v6
+  - uses: actions/checkout@v6
 
-      - uses: r-lib/actions/setup-r@v2
-        with:
-          use-public-rspm: true
+  - uses: r-lib/actions/setup-r@v2
+    with:
+      use-public-rspm: true
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::covr, any::xml2
-          needs: coverage
+  - uses: r-lib/actions/setup-r-dependencies@v2
+    with:
+      extra-packages: any::covr, any::xml2, any::rcmdcheck
+      needs: coverage
 
-      - name: Capture Environment Info
-        run: |
-          Rscript -e '
-            env_vars <- Sys.getenv()
-            pkg_versions <- installed.packages()[, c("Package", "Version")]
-            sys_info <- Sys.info()
-            save(env_vars, pkg_versions, sys_info, file = "ci_env_info.RData")
-          '
+  - name: Capture Environment Info
+    run: |
+      Rscript -e '
+        env_vars <- Sys.getenv()
+        pkg_versions <- installed.packages()[, c("Package", "Version")]
+        sys_info <- Sys.info()
+        save(env_vars, pkg_versions, sys_info, file = "ci_env_info.RData")
+      '
 
-      - name: Upload Environment Info
-        uses: actions/upload-artifact@v7
-        with:
-          name: ci_env_info
-          path: ci_env_info.RData
-          if-no-files-found: ignore
+  - name: Upload Environment Info
+    uses: actions/upload-artifact@v7
+    with:
+      name: ci_env_info
+      path: ci_env_info.RData
+      if-no-files-found: ignore
 
-      - name: Test coverage
-        run: |
-          orig <- getwd(); on.exit(setwd(orig), add = TRUE)
-          cat("Working dir (start):", getwd(), "\n")
-          cov <- covr::package_coverage(
-            path = ".",
-            quiet = FALSE,
-            clean = FALSE,
-            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
-          )
-          print(cov)
-          out <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "cobertura.xml")
-          covr::to_cobertura(cov, filename = out)
-          message("Wrote: ", out, " exists? ", file.exists(out))
-          cat("Working dir (end):", getwd(), "\n")
-        shell: Rscript {0}
+  - name: Test coverage
+    run: |
+      orig <- getwd(); on.exit(setwd(orig), add = TRUE)
+      cat("Working dir (start):", getwd(), "\n")
+      cov <- covr::package_coverage(
+        path = ".",
+        quiet = FALSE,
+        clean = FALSE,
+        install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
+      )
+      print(cov)
+      out <- file.path(Sys.getenv("GITHUB_WORKSPACE"), "cobertura.xml")
+      covr::to_cobertura(cov, file = out)
+      message("Wrote: ", out, " exists? ", file.exists(out))
+      cat("Working dir (end):", getwd(), "\n")
+    shell: Rscript {0}
 
-      - name: Show testthat output
-        if: always()
-        run: |
-          ## --------------------------------------------------------------------
-          find '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \; || true
-        shell: bash
+  - name: R CMD check (for logs only)
+    if: always()
+    run: |
+      Rscript -e 'rcmdcheck::rcmdcheck(args = c("--no-manual"), error_on = "never", check_dir = "check")'
 
-      - name: Verify coverage file
-        if: always()
-        run: |
-          echo "PWD: $(pwd)"
-          ls -lah
-          echo "Searching for cobertura.xml in workspace and temp..."
-          find "$GITHUB_WORKSPACE" -maxdepth 3 -name 'cobertura.xml' -ls || true
-          find "$RUNNER_TEMP" -maxdepth 5 -name 'cobertura.xml' -ls || true
-        shell: bash
+  - name: Show testthat output and check logs
+    if: always()
+    run: |
+      echo "Listing 'check' directory (if present):"
+      ls -laR check || true
 
-      - name: Upload test results
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-test-failures
-          path: ${{ runner.temp }}/package
-          if-no-files-found: ignore
+      echo "---- testthat outputs ----"
+      find check -type f -name 'testthat.Rout*' -print -exec sed -n '1,200p' {} \; || true
 
-      - name: Upload coverage report
-        if: ${{ hashFiles('cobertura.xml') != '' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: coverage-report
-          path: ${{ github.workspace }}/cobertura.xml
-          if-no-files-found: error
+      echo "---- 00check.log ----"
+      find check -type f -name '00check.log' -print -exec sed -n '1,200p' {} \; || true
 
-      - name: Comment coverage
-        if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && hashFiles('cobertura.xml') != '' }}
-        uses: 5monkeys/cobertura-action@master
-        with:
-          report_name: coverage-report
-          path: ${{ github.workspace }}/cobertura.xml
-          minimum_coverage: 20
-          only_changed_files: true
-          show_missing: true
-          link_missing_lines: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      echo "---- 00install.out (if install failed) ----"
+      find check -type f -name '00install.out' -print -exec sed -n '1,200p' {} \; || true
+    shell: bash
+
+  - name: Verify coverage file
+    if: always()
+    run: |
+      echo "PWD: $(pwd)"
+      ls -lah
+      echo "Searching for cobertura.xml in workspace and temp..."
+      find "$GITHUB_WORKSPACE" -maxdepth 3 -name 'cobertura.xml' -ls || true
+      find "$RUNNER_TEMP" -maxdepth 5 -name 'cobertura.xml' -ls || true
+    shell: bash
+
+  - name: Upload test results
+    if: failure()
+    uses: actions/upload-artifact@v7
+    with:
+      name: coverage-test-failures
+      path: check
+      if-no-files-found: ignore
+
+  - name: Upload coverage report
+    if: ${{ hashFiles('cobertura.xml') != '' }}
+    uses: actions/upload-artifact@v7
+    with:
+      name: coverage-report
+      path: ${{ github.workspace }}/cobertura.xml
+      if-no-files-found: error
+
+  - name: Comment coverage
+    if: ${{ github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork && hashFiles('cobertura.xml') != '' }}
+    uses: 5monkeys/cobertura-action@master
+    with:
+      report_name: coverage-report
+      path: ${{ github.workspace }}/cobertura.xml
+      minimum_coverage: 20
+      only_changed_files: true
+      show_missing: true
+      link_missing_lines: true
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
