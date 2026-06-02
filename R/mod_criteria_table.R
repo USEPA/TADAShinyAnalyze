@@ -648,7 +648,11 @@ mod_criteria_table_server <- function(id, tadat) {
         dplyr::distinct()
       
       # check for accepted/rejected values in columns using TADACommunityHub functions
-      status <- TADACommunityHub::runAllValidations(df_template2)
+      # wrap the validator call in tryCatch so a validation error can’t take down the output
+      status <- tryCatch(
+        TADACommunityHub::runAllValidations(df_template2),
+        error = function(e) list(overall_status = paste("Validation error:", e$message))
+      )
       
       # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
       eq_text <- paste0("")
