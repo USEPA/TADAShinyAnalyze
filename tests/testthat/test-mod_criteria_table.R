@@ -43,9 +43,9 @@ test_that("mod_criteria_table_server Option D (blank template) runs without erro
   fake_tadat <- list(
     criteria_file_list = data.frame(display_name = character(), stringsAsFactors = FALSE),
     ATTAINS_orgs_vec   = character(),
-    df_mlid_input      = tibble::tibble(TADA.ComparableDataIdentifier = character()),
-    df_mltoau_input    = tibble::tibble(),
-    df_autouse_input   = tibble::tibble()
+    df_mlid_input      = dplyr::tibble(TADA.ComparableDataIdentifier = character()),
+    df_mltoau_input    = dplyr::tibble(),
+    df_autouse_input   = dplyr::tibble()
   )
   
   expect_error(
@@ -92,9 +92,9 @@ test_that("mod_criteria_table_server Option E upload path runs without error", {
   fake_tadat <- list(
     criteria_file_list = data.frame(display_name = character(), stringsAsFactors = FALSE),
     ATTAINS_orgs_vec   = character(),
-    df_mlid_input      = tibble::tibble(TADA.ComparableDataIdentifier = character()),
-    df_mltoau_input    = tibble::tibble(),
-    df_autouse_input   = tibble::tibble()
+    df_mlid_input      = dplyr::tibble(TADA.ComparableDataIdentifier = character()),
+    df_mltoau_input    = dplyr::tibble(),
+    df_autouse_input   = dplyr::tibble()
   )
   
   # Simulate a Shiny fileInput value
@@ -165,9 +165,9 @@ test_that("mod_criteria_table_server Option E upload and summary works (mocked v
   fake_tadat <- list(
     criteria_file_list = data.frame(display_name = character(), stringsAsFactors = FALSE),
     ATTAINS_orgs_vec   = character(),
-    df_mlid_input      = tibble::tibble(TADA.ComparableDataIdentifier = character()),
-    df_mltoau_input    = tibble::tibble(),
-    df_autouse_input   = tibble::tibble()
+    df_mlid_input      = dplyr::tibble(TADA.ComparableDataIdentifier = character()),
+    df_mltoau_input    = dplyr::tibble(),
+    df_autouse_input   = dplyr::tibble()
   )
   
   # Simulate Shiny fileInput value
