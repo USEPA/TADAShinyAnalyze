@@ -5,3 +5,6 @@
 ^dev$
 ^rsconnect$
 ^TADAShinyAnalyze\.Rproj$
+.rscignore
+.github
+LICENSE.md
