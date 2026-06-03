@@ -3,7 +3,7 @@
 [![](https://img.shields.io/badge/lifecycle-experimental-orange.svg)](https://lifecycle.r-lib.org/articles/stages.html#experimental)
 
 ## Overview
-`TADAShinyAnalyze` is an extension of the `TADAShiny` application that enables users to evluate water quality monitoring data against assessment criteria. Built on the EPATADA R package, this module allows users to analyze monitoring location and assessment unit data generated from earlier TADAShiny workflows. Users can apply existing criteria tables or define custom criteria to support water quality assessments and management decisions.
+`TADAShinyAnalyze` is an extension of the `TADAShiny` application that enables users to evaluate water quality monitoring data against assessment criteria. Built on the EPATADA R package, this module allows users to analyze monitoring location and assessment unit data generated from earlier TADAShiny workflows. Users can apply existing criteria tables or define custom criteria to support water quality assessments and management decisions.
 
 ## Install and run application from R Studio (recommended)
 
@@ -19,7 +19,7 @@ remotes::install_github("USEPA/EPATADA", ref = "develop", dependencies = TRUE, f
 library(EPATADA)
 ```
 
-The `TADAShinyAnalyze` application can be run on the web (R and R Studio install not required), or within R Studio. We recommend running it within R Studio if possible to avoid time out issues (especially when working with large datasets) and to make sure you are using the most up to date version. The web version of the application is on a slightly lagged update schedule. Run the following code within R Studio to install or update and run the most recent version of the `TADAShinyAnalyze` application and its dependecy `TADACommunityHub`:
+The `TADAShinyAnalyze` application can be run on the web (R and R Studio install not required), or within R Studio. We recommend running it within R Studio if possible to avoid time out issues (especially when working with large datasets) and to make sure you are using the most up to date version. The web version of the application is on a slightly lagged update schedule. Run the following code within R Studio to install or update and run the most recent version of the `TADAShinyAnalyze` application and its dependency `TADACommunityHub`:
 
 ``` r
 if(!"remotes"%in%installed.packages()){
