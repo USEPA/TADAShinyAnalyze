@@ -1552,7 +1552,7 @@ hardness_eq <- function(hardness, E_A, E_B, CF_A, CF_B, CF_C){
 }
 
 # helper to display message from EPATADA::TADA_DefineCriteriaMethodology()
-capture_all_output <- function(expr, width = 100) {
+capture_all_output <- function(expr, width = 150) {
   msgs <- character()
   res <- NULL
   

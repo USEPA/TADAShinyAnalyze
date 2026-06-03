@@ -20,7 +20,7 @@ mod_criteria_table_ui <- function(id) {
     # Instructions
     htmltools::p("Use this tab to generate the criteria table based on the following options:"),
     htmltools::p(
-      "Users are recommended to review the data dictionary and allowable values tab from the excel spreadsheet generated file as values may be limited to certain drop down selected values compatible for anlysis.",
+      "After generating the template for your TADA-compatible Criteria and Methodology table, review the Data Dictionary and Allowable Values tabs in the Excel file. Some fields are restricted to predefined dropdown selections to ensure compatibility with performing analysis.",
       style = "font-weight: bold; color: red;"
     ),
     htmltools::tags$ul(
