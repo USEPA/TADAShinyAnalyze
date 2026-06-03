@@ -11,26 +11,12 @@
 #' @importFrom shiny tags tagAppendAttributes tagList
 list_to_li <- function(list, class = NULL) {
   if (is.null(class)) {
-    tagList(
-      lapply(
-        list,
-        tags$li
-      )
-    )
+    tagList(lapply(list, tags$li))
   } else {
-    res <- lapply(
-      list,
-      tags$li
-    )
-    res <- lapply(
-      res,
-      function(x) {
-        tagAppendAttributes(
-          x,
-          class = class
-        )
-      }
-    )
+    res <- lapply(list, tags$li)
+    res <- lapply(res, function(x) {
+      tagAppendAttributes(x, class = class)
+    })
     tagList(res)
   }
 }
@@ -48,26 +34,12 @@ list_to_li <- function(list, class = NULL) {
 #'
 list_to_p <- function(list, class = NULL) {
   if (is.null(class)) {
-    tagList(
-      lapply(
-        list,
-        tags$p
-      )
-    )
+    tagList(lapply(list, tags$p))
   } else {
-    res <- lapply(
-      list,
-      tags$p
-    )
-    res <- lapply(
-      res,
-      function(x) {
-        tagAppendAttributes(
-          x,
-          class = class
-        )
-      }
-    )
+    res <- lapply(list, tags$p)
+    res <- lapply(res, function(x) {
+      tagAppendAttributes(x, class = class)
+    })
     tagList(res)
   }
 }
@@ -77,11 +49,7 @@ named_to_li <- function(list, class = NULL) {
   if (is.null(class)) {
     res <- mapply(
       function(x, y) {
-        tags$li(
-          HTML(
-            sprintf("<b>%s:</b> %s", y, x)
-          )
-        )
+        tags$li(HTML(sprintf("<b>%s:</b> %s", y, x)))
       },
       list,
       names(list),
@@ -91,25 +59,15 @@ named_to_li <- function(list, class = NULL) {
   } else {
     res <- mapply(
       function(x, y) {
-        tags$li(
-          HTML(
-            sprintf("<b>%s:</b> %s", y, x)
-          )
-        )
+        tags$li(HTML(sprintf("<b>%s:</b> %s", y, x)))
       },
       list,
       names(list),
       SIMPLIFY = FALSE
     )
-    res <- lapply(
-      res,
-      function(x) {
-        tagAppendAttributes(
-          x,
-          class = class
-        )
-      }
-    )
+    res <- lapply(res, function(x) {
+      tagAppendAttributes(x, class = class)
+    })
     tagList(res)
   }
 }
@@ -150,13 +108,9 @@ tagRemoveAttributes <- function(tag, ...) {
 undisplay <- function(tag) {
   # if not already hidden
   if (
-    !is.null(tag$attribs$style) &&
-      !grepl("display:\\s+none", tag$attribs$style)
+    !is.null(tag$attribs$style) && !grepl("display:\\s+none", tag$attribs$style)
   ) {
-    tag$attribs$style <- paste(
-      "display: none;",
-      tag$attribs$style
-    )
+    tag$attribs$style <- paste("display: none;", tag$attribs$style)
   } else {
     tag$attribs$style <- "display: none;"
   }
@@ -166,8 +120,7 @@ undisplay <- function(tag) {
 #' @importFrom shiny tagList
 display <- function(tag) {
   if (
-    !is.null(tag$attribs$style) &&
-      grepl("display:\\s+none", tag$attribs$style)
+    !is.null(tag$attribs$style) && grepl("display:\\s+none", tag$attribs$style)
   ) {
     tag$attribs$style <- gsub(
       "(\\s)*display:(\\s)*none(\\s)*(;)*(\\s)*",
@@ -203,19 +156,11 @@ jq_hide <- function(id) {
 #' with_red_star("Enter your name here")
 #' @importFrom shiny tags HTML
 with_red_star <- function(text) {
-  shiny::tags$span(
-    HTML(
-      paste0(
-        text,
-        shiny::tags$span(
-          style = "color:red",
-          "*"
-        )
-      )
-    )
-  )
+  shiny::tags$span(HTML(paste0(
+    text,
+    shiny::tags$span(style = "color:red", "*")
+  )))
 }
-
 
 
 #' Repeat tags$br
@@ -299,7 +244,6 @@ col_1 <- function(...) {
 }
 
 
-
 #' Make the current tag behave like an action button
 #'
 #' Only works with compatible tags like button or links
@@ -331,27 +275,29 @@ col_1 <- function(...) {
 #' }
 make_action_button <- function(tag, inputId = NULL) {
   # some obvious checks
-  if (!inherits(tag, "shiny.tag")) stop("Must provide a shiny tag.")
+  if (!inherits(tag, "shiny.tag")) {
+    stop("Must provide a shiny tag.")
+  }
   if (!is.null(tag$attribs$class)) {
     if (isTRUE(grepl("action-button", tag$attribs$class))) {
       stop("tag is already an action button")
     }
   }
   if (is.null(inputId) && is.null(tag$attribs$id)) {
-    stop("tag does not have any id. Please use inputId to be able to
-           access it on the server side.")
+    stop(
+      "tag does not have any id. Please use inputId to be able to
+           access it on the server side."
+    )
   }
 
   # handle id
   if (!is.null(inputId)) {
     if (!is.null(tag$attribs$id)) {
-      warning(
-        paste(
-          "tag already has an id. Please use input$",
-          tag$attribs$id,
-          "to access it from the server side. inputId will be ignored."
-        )
-      )
+      warning(paste(
+        "tag already has an id. Please use input$",
+        tag$attribs$id,
+        "to access it from the server side. inputId will be ignored."
+      ))
     } else {
       tag$attribs$id <- inputId
     }
@@ -366,7 +312,6 @@ make_action_button <- function(tag, inputId = NULL) {
   # return tag
   tag
 }
-
 
 # UNCOMMENT AND USE
 #
