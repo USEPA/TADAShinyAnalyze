@@ -1,18 +1,12 @@
 testServer(
   mod_map_table_selector_server,
   # Add here your module params
-  args = list()
-  , {
+  args = list(),
+  {
     ns <- session$ns
-    expect_true(
-      inherits(ns, "function")
-    )
-    expect_true(
-      grepl(id, ns(""))
-    )
-    expect_true(
-      grepl("test", ns("test"))
-    )
+    expect_true(inherits(ns, "function"))
+    expect_true(grepl(id, ns("")))
+    expect_true(grepl("test", ns("test")))
     # Here are some examples of tests you can
     # run on your module
     # - Testing the setting of inputs
@@ -24,15 +18,15 @@ testServer(
     # expect_true(r$x == 1)
     # - Testing output
     # expect_true(inherits(output$tbl$html, "html"))
-})
- 
+  }
+)
+
 test_that("module ui works", {
   ui <- mod_map_table_selector_ui(id = "test")
   golem::expect_shinytaglist(ui)
   # Check that formals have not been removed
   fmls <- formals(mod_map_table_selector_ui)
-  for (i in c("id")){
+  for (i in c("id")) {
     expect_true(i %in% names(fmls))
   }
 })
- 

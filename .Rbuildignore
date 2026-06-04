@@ -8,3 +8,4 @@
 .rscignore
 .github
 LICENSE.md
+.pre-commit-config.yaml

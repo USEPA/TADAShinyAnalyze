@@ -14,10 +14,9 @@ run_app <- function(
   uiPattern = "/",
   ...
 ) {
-  
   # set options (moved from top-level to avoid running during package load)
   options(shiny.maxRequestSize = get_golem_config("MB_LIMIT") * 1024^2)
-  
+
   with_golem_options(
     app = shinyApp(
       ui = app_ui,
