@@ -922,3 +922,475 @@ test_that("criteria_join tolerates duplicate criteria rows and preserves Matched
   expect_true("Matched" %in% names(out))
   expect_true(all(out$Matched %in% c("Yes", "No")))
 })
+
+test_that("duration_excursion_fun flags based on extremes and standard methods", {
+  # Extremes: min below lower threshold
+  x_ext <- data.frame(
+    DurationMethod = "Arithmetic Extremes",
+    Threshold_Lower_win = 5,
+    Threshold_Upper_win = NA_real_,
+    Value_win_min = 4,
+    Value_win_max = 10,
+    E_Value = NA_real_,
+    stringsAsFactors = FALSE
+  )
+  res_ext <- duration_excursion_fun(x_ext)
+  expect_true(res_ext$Duration_Excursion)
+  
+  # Standard: E_Value above upper threshold
+  x_std <- data.frame(
+    DurationMethod = "Arithmetic Mean",
+    Threshold_Lower_win = NA_real_,
+    Threshold_Upper_win = 10,
+    Value_win_min = NA_real_,
+    Value_win_max = NA_real_,
+    E_Value = 11,
+    stringsAsFactors = FALSE
+  )
+  res_std <- duration_excursion_fun(x_std)
+  expect_true(res_std$Duration_Excursion)
+  
+  # Standard: E_Value within thresholds => FALSE
+  x_std2 <- data.frame(
+    DurationMethod = "Arithmetic Mean",
+    Threshold_Lower_win = 5,
+    Threshold_Upper_win = 10,
+    Value_win_min = NA_real_,
+    Value_win_max = NA_real_,
+    E_Value = 7,
+    stringsAsFactors = FALSE
+  )
+  res_std2 <- duration_excursion_fun(x_std2)
+  expect_false(res_std2$Duration_Excursion)
+})
+
+test_that("criteria_join with filter_type = TRUE returns empty when no matches", {
+  skip_if_not_installed("EPATADA")
+  
+  x <- data.frame(
+    TADA.CharacteristicName = c("ParamX"),
+    TADA.ResultSampleFractionText = c("Total"),
+    TADA.MethodSpeciationName = c(NA),
+    TADA.ResultMeasure.MeasureUnitCode = c("mg/L"),
+    ATTAINS.UseName = c("Aquatic Life"),
+    ATTAINS.OrganizationIdentifier = c("Org1"),
+    TADA.MonitoringLocationIdentifier = c("S1"),
+    TADA.MonitoringLocationTypeName = c("River/Stream"),
+    TADA.LatitudeMeasure = c(45),
+    TADA.LongitudeMeasure = c(-122),
+    DateTime = as.POSIXct("2020-01-01 08:00:00", tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  
+  y <- data.frame(
+    TADA.CharacteristicName = c("ParamY"), # different
+    TADA.ResultSampleFractionText = c("Dissolved"),
+    TADA.MethodSpeciationName = c(NA),
+    MagnitudeUnit = c("ug/L"),
+    ATTAINS.UseName = c("Recreation"),
+    ATTAINS.OrganizationIdentifier = c("Org2"),
+    MagnitudeValueUpper = c(5),
+    stringsAsFactors = FALSE
+  )
+  
+  out <- criteria_join(
+    x = x, y = y,
+    match_type = "Option 1",
+    use_type = "Option 1",
+    filter_type = TRUE
+  )
+  expect_s3_class(out, "data.frame")
+  expect_equal(nrow(out), 0L)
+})
+
+test_that("pH_join handles tie on nearest DateTime and still returns single match per x row", {
+  x <- data.frame(
+    DateTime = as.POSIXct(c("2020-01-01 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    TADA.MonitoringLocationIdentifier = c("S1", "S1"),
+    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
+    TADA.LatitudeMeasure = c(45, 45),
+    TADA.LongitudeMeasure = c(-122, -122),
+    TADA.CharacteristicName = c("ParamA", "ParamA"),
+    TADA.ResultMeasureValue = c(1, 2),
+    stringsAsFactors = FALSE
+  )
+  # pH records symmetric around first DateTime
+  ph <- data.frame(
+    DateTime = as.POSIXct(c("2020-01-01 09:00:00", "2020-01-01 11:00:00"), tz = "UTC"),
+    TADA.MonitoringLocationIdentifier = c("S1", "S1"),
+    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
+    TADA.LatitudeMeasure = c(45, 45),
+    TADA.LongitudeMeasure = c(-122, -122),
+    pH = c(7.0, 7.2),
+    DateTime_upper = as.POSIXct(c("2020-01-02 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    DateTime_lower = as.POSIXct(c("2019-12-31 10:00:00", "2019-12-31 10:00:00"), tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  out <- pH_join(x, ph)
+  # ensure one row per input DateTime
+  expect_equal(nrow(out), nrow(x))
+  expect_true(all(!is.na(out$DateTime)))
+})
+
+test_that("temp_join handles tie on nearest DateTime and returns single match per x row", {
+  x <- data.frame(
+    DateTime = as.POSIXct(c("2020-01-01 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    TADA.MonitoringLocationIdentifier = c("S1", "S1"),
+    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
+    TADA.LatitudeMeasure = c(45, 45),
+    TADA.LongitudeMeasure = c(-122, -122),
+    TADA.CharacteristicName = c("ParamA", "ParamA"),
+    TADA.ResultMeasureValue = c(1, 2),
+    stringsAsFactors = FALSE
+  )
+  tf <- data.frame(
+    DateTime = as.POSIXct(c("2020-01-01 09:00:00", "2020-01-01 11:00:00"), tz = "UTC"),
+    TADA.MonitoringLocationIdentifier = c("S1", "S1"),
+    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
+    TADA.LatitudeMeasure = c(45, 45),
+    TADA.LongitudeMeasure = c(-122, -122),
+    Temperature = c(9.0, 10.2),
+    DateTime_upper = as.POSIXct(c("2020-01-02 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    DateTime_lower = as.POSIXct(c("2019-12-31 10:00:00", "2019-12-31 10:00:00"), tz = "UTC"),
+    stringsAsFactors = FALSE
+  )
+  out <- temp_join(x, tf)
+  expect_equal(nrow(out), nrow(x))
+  expect_true(all(!is.na(out$DateTime)))
+})
+
+test_that("GetURL supports custom host", {
+  url <- GetURL("USGSTopo", host = "example.com")
+  expect_true(grepl("example.com", url))
+  expect_true(grepl("USGSTopo", url))
+})
+
+test_that("simplify_duration_frequency handles NA fields gracefully", {
+  x <- data.frame(
+    DurationUnit = NA_character_,
+    DurationMethod = NA_character_,
+    DurationValue = NA_real_,
+    FreqValue = NA_real_,
+    FreqMethod = NA_character_,
+    stringsAsFactors = FALSE
+  )
+  y <- simplify_duration_frequency(x)
+  expect_true(all(c("Duration", "Frequency") %in% names(y)))
+  expect_true(is.na(y$Duration))
+  expect_true(is.na(y$Frequency))
+})
+
+test_that("time_aggregate works for type = 'AU' and preserves ordering", {
+  x <- data.frame(
+    TADA.MonitoringLocationIdentifier = rep("S1", 3),
+    TADA.MonitoringLocationName = rep("Site 1", 3),
+    TADA.LatitudeMeasure = rep(45, 3),
+    TADA.LongitudeMeasure = rep(-122, 3),
+    ATTAINS.AssessmentUnitIdentifier = rep("AU1", 3),
+    ATTAINS.ParameterName = rep("ParamX", 3),
+    TADA.CharacteristicName = rep("ParamX", 3),
+    TADA.ResultSampleFractionText = rep(NA_character_, 3),
+    TADA.MethodSpeciationName = rep(NA_character_, 3),
+    TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 3),
+    ATTAINS.UseName = rep("Aquatic Life", 3),
+    AcuteChronic = rep(NA_character_, 3),
+    UniqueSpatialCriteria = rep(NA_character_, 3),
+    Season = rep(NA_character_, 3),
+    ATTAINS.OrganizationIdentifier = rep("Org", 3),
+    EquationBased = rep(NA_character_, 3),
+    DurationUnit = rep("n-day", 3),
+    DurationMethod = rep("Arithmetic Mean", 3),
+    DurationValue = rep(1, 3),
+    FreqValue = rep(0, 3),
+    FreqMethod = rep("NumberNotMeeting", 3),
+    EquationType = rep(NA_character_, 3),
+    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03")),
+    DateTime = as.POSIXct(
+      c(
+        "2020-01-01 08:00:00",
+        "2020-01-02 08:00:00",
+        "2020-01-03 08:00:00"
+      ),
+      tz = "UTC"
+    ),
+    TADA.ResultMeasureValue = c(1, 2, 3),
+    MagnitudeValueLower = c(NA, NA, NA),
+    MagnitudeValueUpper = c(10, 10, 10),
+    pH = c(7, 7.1, 7.2),
+    Temperature = c(10, 11, 12),
+    Hardness = c(100, 110, 120),
+    stringsAsFactors = FALSE
+  )
+  agg <- time_aggregate(x, type = "AU")
+  expect_true("DateTime" %in% names(agg))
+  expect_true(is.unsorted(agg$DateTime) == FALSE) # sorted by DateTime
+})
+
+test_that("magnitude_update returns empty when no applicable EquationType rows present", {
+  x <- data.frame(
+    EquationType = c("Other"),
+    Hardness_win = NA_real_,
+    pH_win = NA_real_,
+    Temperature_win = NA_real_,
+    TADA.ResultSampleFractionText = c("Total"),
+    MagnitudeValueUpper = NA_real_,
+    stringsAsFactors = FALSE
+  )
+  out <- magnitude_update(
+    x = x,
+    match_type = "Option 1",
+    hardness_equation = data.frame(),
+    pH_equation = data.frame(),
+    pH_Hardness_equation = data.frame(),
+    pH_Temperature_equation = data.frame()
+  )
+  expect_true(nrow(out) == 0)
+})
+
+test_that("window_before_period handles unknown unit fallback to days", {
+  wb <- window_before_period("n-week", 3)
+  expect_true(lubridate::is.period(wb))
+  expect_equal(
+    lubridate::time_length(lubridate::as.duration(wb), "days"),
+    2 # v - 1 days
+  )
+})
+
+test_that("capture_all_output wraps long messages respecting width and returns result", {
+  msg <- paste(rep("long message fragment", 20), collapse = " ")
+  res <- capture_all_output({
+    message(msg)
+    99L
+  }, width = 40)
+  expect_equal(res$result, 99L)
+  # Expect wrapped lines (multiple lines)
+  expect_true(length(res$lines) >= 2)
+  expect_true(any(grepl("^MESSAGE:", res$lines)))
+})
+
+test_that("duration_cal computes window statistics and handles extremes and complete_windows flag (via time_aggregate)", {
+  skip_if_not_installed("slider")
+  
+  # Build raw measurements (must flow through time_aggregate to create Value)
+  x <- data.frame(
+    TADA.MonitoringLocationIdentifier = rep("S1", 4),
+    TADA.MonitoringLocationName = rep("Site 1", 4),
+    TADA.LatitudeMeasure = rep(45, 4),
+    TADA.LongitudeMeasure = rep(-122, 4),
+    ATTAINS.AssessmentUnitIdentifier = rep("AU1", 4),
+    ATTAINS.ParameterName = rep("ParamX", 4),
+    TADA.CharacteristicName = rep("ParamX", 4),
+    TADA.ResultSampleFractionText = rep(NA_character_, 4),
+    TADA.MethodSpeciationName = rep(NA_character_, 4),
+    TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 4),
+    ATTAINS.UseName = rep("Aquatic Life", 4),
+    AcuteChronic = rep(NA_character_, 4),
+    UniqueSpatialCriteria = rep(NA_character_, 4),
+    Season = rep(NA_character_, 4),
+    ATTAINS.OrganizationIdentifier = rep("Org", 4),
+    EquationBased = rep(NA_character_, 4),
+    DurationUnit = rep("n-day", 4),
+    # Mix extremes and mean so we can test both branches
+    DurationMethod = c("Arithmetic Extremes", "Arithmetic Extremes", "Arithmetic Mean", "Arithmetic Mean"),
+    DurationValue = rep(1L, 4),
+    FreqValue = rep(0L, 4),
+    FreqMethod = rep("NumberNotMeeting", 4),
+    EquationType = rep(NA_character_, 4),
+    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-01", "2020-01-02")),
+    DateTime = as.POSIXct(
+      c(
+        "2020-01-01 08:00:00", "2020-01-02 08:00:00",
+        "2020-01-01 08:00:00", "2020-01-02 08:00:00"
+      ),
+      tz = "UTC"
+    ),
+    TADA.ResultMeasureValue = c(1, 3, 2, 4),
+    MagnitudeValueLower = c(NA, NA, NA, NA),
+    MagnitudeValueUpper = c(10, 10, 10, 10),
+    pH = c(7, 7, 7, 7),
+    Temperature = c(10, 10, 10, 10),
+    Hardness = c(100, 100, 100, 100),
+    stringsAsFactors = FALSE
+  )
+  
+  # Pipeline: aggregate -> duration windows
+  agg <- time_aggregate(x, type = "MLid")
+  expect_true("Value" %in% names(agg))
+  out_true <- duration_cal(agg, type = "MLid", complete_windows = TRUE)
+  
+  expect_true(all(c(
+    "Result_Duration", "Window_Start_win", "Window_End_win",
+    "Value_win_min", "Value_win_max", "Window_Status"
+  ) %in% names(out_true)))
+  
+  # Extremes should have NA Result_Duration per implementation
+  ext_rows <- out_true[grep("Arithmetic Extremes", out_true$DurationMethod, ignore.case = TRUE), , drop = FALSE]
+  # Ensure we actually have extremes rows
+  expect_true(nrow(ext_rows) >= 1)
+  expect_true(all(is.na(ext_rows$Result_Duration)))
+  
+  # Means should be finite
+  mean_rows <- out_true[grep("Arithmetic Mean", out_true$DurationMethod, ignore.case = TRUE), , drop = FALSE]
+  expect_true(nrow(mean_rows) >= 1)
+  expect_true(all(is.finite(mean_rows$Result_Duration)))
+  
+  # complete_windows = FALSE should still return complete windows
+  out_false <- duration_cal(agg, type = "MLid", complete_windows = FALSE)
+  expect_true(any(out_false$Window_Status == "complete"))
+})
+
+test_that("frequency_summary computes outputs for all frequency methods (via duration_cal)", {
+  skip_if_not_installed("slider")
+  
+  # Helper to run the pipeline and frequency summary
+  run_freq <- function(df, type) {
+    agg <- time_aggregate(df, type = type)
+    dur <- duration_cal(agg, type = type, complete_windows = TRUE)
+    frequency_summary(dur, type = type)
+  }
+  
+  # Base raw measurements for NumberNotMeeting and Percent of samples not meeting
+  x_num <- data.frame(
+    TADA.MonitoringLocationIdentifier = rep("S1", 4),
+    TADA.MonitoringLocationName = rep("Site 1", 4),
+    TADA.LatitudeMeasure = rep(45, 4),
+    TADA.LongitudeMeasure = rep(-122, 4),
+    ATTAINS.AssessmentUnitIdentifier = rep("AU1", 4),
+    ATTAINS.ParameterName = rep("ParamA", 4),
+    TADA.CharacteristicName = rep("ParamA", 4),
+    TADA.ResultSampleFractionText = rep(NA_character_, 4),
+    TADA.MethodSpeciationName = rep(NA_character_, 4),
+    TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 4),
+    ATTAINS.UseName = rep("Aquatic Life", 4),
+    AcuteChronic = rep(NA_character_, 4),
+    UniqueSpatialCriteria = rep(NA_character_, 4),
+    Season = rep(NA_character_, 4),
+    ATTAINS.OrganizationIdentifier = rep("Org", 4),
+    EquationBased = rep(NA_character_, 4),
+    DurationUnit = rep("n-day", 4),
+    DurationMethod = rep("Arithmetic Mean", 4),
+    DurationValue = rep(1L, 4),
+    FreqValue = rep(0L, 4),
+    FreqMethod = rep("NumberNotMeeting", 4),
+    EquationType = rep(NA_character_, 4),
+    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04")),
+    DateTime = as.POSIXct(
+      c("2020-01-01 08:00:00", "2020-01-02 08:00:00",
+        "2020-01-03 08:00:00", "2020-01-04 08:00:00"),
+      tz = "UTC"
+    ),
+    TADA.ResultMeasureValue = c(9, 11, 10, 12),  # 2 excursions if upper=10
+    MagnitudeValueLower = rep(NA_real_, 4),
+    MagnitudeValueUpper = rep(10, 4),
+    pH = c(7, 7, 7, 7),
+    Temperature = c(10, 10, 10, 10),
+    Hardness = c(100, 100, 100, 100),
+    stringsAsFactors = FALSE
+  )
+  
+  fs_num <- run_freq(x_num, type = "MLid")
+  expect_true(all(c("Exceedance", "Sample_Count", "Number_of_Excursions") %in% names(fs_num)))
+  expect_true(any(fs_num$Exceedance == "Exceed"))
+  
+  # Percent of samples not meeting: 50% excursions vs threshold 20% => Exceed
+  x_pct <- x_num
+  x_pct$FreqMethod <- "Percent of samples not meeting"
+  x_pct$FreqValue <- 20
+  fs_pct <- run_freq(x_pct, type = "MLid")
+  expect_true(any(fs_pct$Exceedance == "Exceed"))
+  expect_true(is.finite(fs_pct$Excursion_Percentage))
+  
+  # Percentile: make a dataset with an outlier; 90th percentile should exceed upper 10
+  x_perc <- data.frame(
+    TADA.MonitoringLocationIdentifier = rep("S1", 5),
+    TADA.MonitoringLocationName = rep("Site 1", 5),
+    TADA.LatitudeMeasure = rep(45, 5),
+    TADA.LongitudeMeasure = rep(-122, 5),
+    ATTAINS.AssessmentUnitIdentifier = rep("AU1", 5),
+    ATTAINS.ParameterName = rep("ParamB", 5),
+    TADA.CharacteristicName = rep("ParamB", 5),
+    TADA.ResultSampleFractionText = rep(NA_character_, 5),
+    TADA.MethodSpeciationName = rep(NA_character_, 5),
+    TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 5),
+    ATTAINS.UseName = rep("Aquatic Life", 5),
+    AcuteChronic = rep(NA_character_, 5),
+    UniqueSpatialCriteria = rep(NA_character_, 5),
+    Season = rep(NA_character_, 5),
+    ATTAINS.OrganizationIdentifier = rep("Org", 5),
+    EquationBased = rep(NA_character_, 5),
+    DurationUnit = rep("n-day", 5),
+    DurationMethod = rep("Arithmetic Mean", 5),
+    DurationValue = rep(1L, 5),
+    FreqValue = rep(90, 5),
+    FreqMethod = rep("Percentile", 5),
+    EquationType = rep(NA_character_, 5),
+    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05")),
+    DateTime = as.POSIXct(
+      c("2020-01-01 08:00:00", "2020-01-02 08:00:00",
+        "2020-01-03 08:00:00", "2020-01-04 08:00:00",
+        "2020-01-05 08:00:00"),
+      tz = "UTC"
+    ),
+    TADA.ResultMeasureValue = c(1, 2, 3, 4, 100),
+    MagnitudeValueLower = rep(NA_real_, 5),
+    MagnitudeValueUpper = rep(10, 5),
+    pH = c(7, 7, 7, 7, 7),
+    Temperature = c(10, 10, 10, 10, 10),
+    Hardness = c(100, 100, 100, 100, 100),
+    stringsAsFactors = FALSE
+  )
+  fs_perc <- run_freq(x_perc, type = "MLid")
+  expect_true("Percentile" %in% names(fs_perc))
+  expect_true(any(fs_perc$Exceedance == "Exceed"))
+  
+  # n-samples in 3 years: allow 1 excursion in 3 years; build a 3.5-year series with multiple excursions
+  x_n3 <- data.frame(
+    TADA.MonitoringLocationIdentifier = rep("S1", 8),
+    TADA.MonitoringLocationName = rep("Site 1", 8),
+    TADA.LatitudeMeasure = rep(45, 8),
+    TADA.LongitudeMeasure = rep(-122, 8),
+    ATTAINS.AssessmentUnitIdentifier = rep("AU1", 8),
+    ATTAINS.ParameterName = rep("ParamC", 8),
+    TADA.CharacteristicName = rep("ParamC", 8),
+    TADA.ResultSampleFractionText = rep(NA_character_, 8),
+    TADA.MethodSpeciationName = rep(NA_character_, 8),
+    TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 8),
+    ATTAINS.UseName = rep("Aquatic Life", 8),
+    AcuteChronic = rep(NA_character_, 8),
+    UniqueSpatialCriteria = rep(NA_character_, 8),
+    Season = rep(NA_character_, 8),
+    ATTAINS.OrganizationIdentifier = rep("Org", 8),
+    EquationBased = rep(NA_character_, 8),
+    DurationUnit = rep("n-day", 8),
+    DurationMethod = rep("Arithmetic Mean", 8),
+    DurationValue = rep(1L, 8),
+    FreqValue = rep(1L, 8), # allow 1 excursion in 3 years
+    FreqMethod = rep("n-samples in 3 years", 8),
+    EquationType = rep(NA_character_, 8),
+    ActivityStartDate = as.Date(
+      c(
+        "2018-01-01", "2018-06-01", "2019-01-01", "2019-06-01",
+        "2020-01-01", "2020-06-01", "2021-01-01", "2021-06-01"
+      )
+    ),
+    DateTime = as.POSIXct(
+      c(
+        "2018-01-01 08:00:00", "2018-06-01 08:00:00",
+        "2019-01-01 08:00:00", "2019-06-01 08:00:00",
+        "2020-01-01 08:00:00", "2020-06-01 08:00:00",
+        "2021-01-01 08:00:00", "2021-06-01 08:00:00"
+      ),
+      tz = "UTC"
+    ),
+    TADA.ResultMeasureValue = c(9, 11, 12, 9, 8, 15, 9, 9),
+    MagnitudeValueLower = rep(NA_real_, 8),
+    MagnitudeValueUpper = rep(10, 8),
+    pH = rep(7, 8),
+    Temperature = rep(10, 8),
+    Hardness = rep(100, 8),
+    stringsAsFactors = FALSE
+  )
+  fs_n3 <- run_freq(x_n3, type = "AU")
+  expect_true("Exceedance" %in% names(fs_n3))
+  expect_true(any(fs_n3$Exceedance %in% c("Exceed", "Not Exceed")))
+})
