@@ -22,36 +22,36 @@ app_sys <- function(...) {
 #'
 #' @noRd
 get_golem_config <- function(
-    value,
-    default = NULL,
-    config = Sys.getenv(
-      "GOLEM_CONFIG_ACTIVE",
-      Sys.getenv("R_CONFIG_ACTIVE", "default")
-    ),
-    use_parent = TRUE,
-    file = app_sys("golem-config.yml")
+  value,
+  default = NULL,
+  config = Sys.getenv(
+    "GOLEM_CONFIG_ACTIVE",
+    Sys.getenv("R_CONFIG_ACTIVE", "default")
+  ),
+  use_parent = TRUE,
+  file = app_sys("golem-config.yml")
 ) {
   cfg <- tryCatch(
     config::get(config = config, file = file, use_parent = use_parent),
     error = function(e) NULL
   )
-  
+
   if (is.null(cfg)) {
     return(default)
   }
-  
+
   if (missing(value) || is.null(value)) {
     return(cfg)
   }
-  
+
   # Guard against invalid keys
   if (!is.character(value) || length(value) != 1L || is.na(value)) {
     return(default)
   }
-  
+
   if (!is.null(cfg[[value]])) {
     return(cfg[[value]])
   }
-  
+
   default
 }
