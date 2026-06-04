@@ -26,10 +26,7 @@ get_golem_config <- function(
   value,
   config = Sys.getenv(
     "GOLEM_CONFIG_ACTIVE",
-    Sys.getenv(
-      "R_CONFIG_ACTIVE",
-      "default"
-    )
+    Sys.getenv("R_CONFIG_ACTIVE", "default")
   ),
   use_parent = TRUE,
   # Modify this if your config file is somewhere else

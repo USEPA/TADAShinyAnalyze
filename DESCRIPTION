@@ -11,50 +11,56 @@ Authors@R: c(
            comment = c(ORCID = "0000-0003-1427-4363")),
     person("Yu-Chen", "Wang", role = "aut")
   )
-Description: The overall goal of the `TADAShinyAnalyze` shiny app is to provide a third module to the `TADAShiny` shiny app where users can complete batch and custom analyses by monitoring locations or assessment units (AUs) with the ultimate goal of supporting water quality management.
+Description: The overall goal of the `TADAShinyAnalyze` shiny app is to
+    provide a third module to the `TADAShiny` shiny app where users can
+    complete batch and custom analyses by monitoring locations or
+    assessment units (AUs) with the ultimate goal of supporting water
+    quality management.
 License: CC0
 URL: https://github.com/USEPA/TADAShinyAnalyze
 BugReports: https://github.com/USEPA/TADAShinyAnalyze/issues
+Depends: 
+    R (>= 4.1.0)
 Imports: 
-    stats,
     config,
     dplyr (>= 1.1.0),
+    DT,
     EPATADA,
-    TADACommunityHub,
+    ggplot2,
     golem,
     gotop,
+    graphics,
     htmltools,
     leaflet,
-    shiny,
-    shinyjs,
-    utils,
-    viridis,
-    DT,
-    shinyWidgets,
-    shinybusy,
-    readxl,
-    purrr,
-    tidyr,
     lubridate,
-    stringr,
-    ggplot2,
+    purrr,
     readr,
-    slider,
+    readxl,
     rExpertQuery,
-    graphics
-Remotes:
-    USEPA/EPATADA,
-    USEPA/TADACommunityHub,
-    USEPA/rExpertQuery
+    shiny,
+    shinybusy,
+    shinyjs,
+    shinyWidgets,
+    slider,
+    stats,
+    stringr,
+    TADACommunityHub,
+    tidyr,
+    tools,
+    utils,
+    viridis
 Suggests: 
-    spelling,
-    testthat (>= 3.0.0),
     rprojroot,
+    spelling,
     writexl
 Depends: 
     R (>= 4.1.0)
+Remotes:
+    USEPA/EPATADA,
+    USEPA/rExpertQuery,
+    USEPA/TADACommunityHub
+Config/roxygen2/version: 8.0.0
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 LazyData: true
-Config/roxygen2/version: 8.0.0

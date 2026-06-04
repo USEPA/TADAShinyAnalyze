@@ -27,128 +27,128 @@ attachment::att_amend_desc()
 # usethis::use_package("purrr")
 # usethis::use_package("readxl")
 # usethis::use_package("zip")
-usethis::use_package("gotop")
-usethis::use_package("utils")
-usethis::use_package("shinyjs")
-usethis::use_package("dplyr")
-usethis::use_package("sf")
-usethis::use_package("leaflet")
-usethis::use_package("EPATADA")
+# usethis::use_package("gotop")
+# usethis::use_package("utils")
+# usethis::use_package("shinyjs")
+# usethis::use_package("dplyr")
+# usethis::use_package("sf")
+# usethis::use_package("leaflet")
+# usethis::use_package("EPATADA")
 
 ## Add modules ----
 ## Create a module infrastructure in R/
 
 ## Create test scripts only
-golem::add_module(
-  name = "map_viewer",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "map_table_selector_custom",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "map_table_selector",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "load_file",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "excursion_viewer",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "exceedance_viewer_custom",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "exceedance_viewer",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "custom_analysis",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "batch_analysis",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "analysis_selector_custom",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "analysis_selector",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "analysis_plots",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "analysis_plots_custom",
-  with_test = TRUE,
-  module_template = function(...) ""
-)
-golem::add_module(
-  name = "analysis_data_viewer",
-  with_test = TRUE,
-)
-golem::add_module(
-  name = "analysis_data_viewer_custom",
-  with_test = TRUE,
-)
-golem::add_module(
-  name = "criteria_table",
-  with_test = TRUE,
-)
-golem::add_module(
-  name = "TADA_summary",
-  with_test = TRUE,
-)
+# golem::add_module(
+#   name = "map_viewer",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "map_table_selector_custom",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "map_table_selector",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "load_file",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "excursion_viewer",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "exceedance_viewer_custom",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "exceedance_viewer",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "custom_analysis",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "batch_analysis",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "analysis_selector_custom",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "analysis_selector",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "analysis_plots",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "analysis_plots_custom",
+#   with_test = TRUE,
+#   module_template = function(...) ""
+# )
+# golem::add_module(
+#   name = "analysis_data_viewer",
+#   with_test = TRUE,
+# )
+# golem::add_module(
+#   name = "analysis_data_viewer_custom",
+#   with_test = TRUE,
+# )
+# golem::add_module(
+#   name = "criteria_table",
+#   with_test = TRUE,
+# )
+# golem::add_module(
+#   name = "TADA_summary",
+#   with_test = TRUE,
+# )
 
 
 
 ## Add helper functions ----
 ## Creates fct_* and utils_*
-golem::add_fct("helpers", with_test = TRUE)
-golem::add_utils("helpers", with_test = TRUE)
+# golem::add_fct("helpers", with_test = TRUE)
+# golem::add_utils("helpers", with_test = TRUE)
 
 ## External resources
 ## Creates .js and .css files at inst/app/www
-golem::add_js_file("script")
-golem::add_js_handler("handlers")
-golem::add_css_file("custom")
-golem::add_sass_file("custom")
-golem::add_any_file("file.json")
+# golem::add_js_file("script")
+# golem::add_js_handler("handlers")
+# golem::add_css_file("custom")
+# golem::add_sass_file("custom")
+# golem::add_any_file("file.json")
 
 ## Add internal datasets ----
 ## If you have data in your package
-usethis::use_data_raw(name = "my_dataset", open = FALSE)
+# usethis::use_data_raw(name = "my_dataset", open = FALSE)
 
 ## Tests ----
 ## Add one line by test you want to create
-usethis::use_test("app")
+# usethis::use_test("app")
 
 # Documentation
 
 ## Vignette ----
-usethis::use_vignette("TADAShinyAnalyze")
-devtools::build_vignettes()
+# usethis::use_vignette("TADAShinyAnalyze")
+# devtools::build_vignettes()
 
 ## Code Coverage----
 ## Set the code coverage service ("codecov" or "coveralls")
@@ -183,6 +183,10 @@ usethis::use_jenkins()
 
 # GitLab CI
 usethis::use_gitlab_ci()
+
+# Spelling check
+spelling::spell_check_package()
+spelling::update_wordlist()
 
 # You're now set! ----
 # go to dev/03_deploy.R
