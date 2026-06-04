@@ -1,16 +1,37 @@
-#' helpers
+#' Helper functions for analysis and mapping
 #'
-#' @description A fct function
+#' @description
+#' A collection of helper functions used throughout the analysis pipeline:
+#' - Criteria join utilities
+#' - Covariate joins (pH, Temperature, Hardness)
+#' - Excursion flagging and summaries
+#' - Time aggregation and duration calculations
+#' - Frequency summaries and exceedance evaluation
+#' - Mapping utilities (USGS basemaps and summary maps)
+#' - Small numerical helpers (NA-safe summaries and geometric means)
 #'
-#' @return The return value, if any, from executing the function.
+#' @details
+#' Function groups:
+#' - Criteria: criteria_join()
+#' - Covariates: pH_filter/pH_join/pH_fun, temp_filter/temp_join/Temperature_fun,
+#'   hardness_filter/hardness_join/hardness_fun
+#' - Excursions: excursion_fun(), excursion_summary()
+#' - Time & duration: time_aggregate(), duration_cal(), duration_excursion_fun()
+#' - Magnitude/equations: magnitude_update(), hardness_eq()
+#' - Frequency/exceedance: frequency_summary(), simplify_duration_frequency()
+#' - Mapping: add_USGS_base(), create_overall_map(), create_use_map(),
+#'   create_parameter_map()
+#' - Utilities: window_before_period(), na_mean()/na_min()/na_max()/na_gmean(),
+#'   modSum(), step_label(), capture_all_output()
 #'
 #' @noRd
+
 criteria_join <- function(
-  x,
-  y,
-  match_type = "Option 2",
-  use_type = "Option 1",
-  filter_type = TRUE
+    x,
+    y,
+    match_type = "Option 2",
+    use_type = "Option 1",
+    filter_type = TRUE
 ) {
   # creates TADA.ComparableDataIdentifier (if it doesn't already exist) or updates it to reflect the fraction, speciation and units shown (converts units appropriately - need to reconvert it back)
   y <- EPATADA::TADA_CreateComparableID(dplyr::rename(
@@ -18,15 +39,15 @@ criteria_join <- function(
     TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit
   )) |>
     dplyr::rename(MagnitudeUnit = TADA.ResultMeasure.MeasureUnitCode)
-
+  
   # Add flags to criteria table
   y2 <- y |> dplyr::mutate(Matched = "Yes") |> EPATADA::TADA_CorrectColType()
-
+  
   join_cols <- c(
     "TADA.CharacteristicName",
     "TADA.ResultMeasure.MeasureUnitCode == MagnitudeUnit"
   )
-
+  
   # Conditionally add columns
   if (use_type == "Option 1") {
     join_cols <- c(
@@ -35,7 +56,7 @@ criteria_join <- function(
       "ATTAINS.OrganizationIdentifier"
     )
   }
-
+  
   if (match_type == "Option 1") {
     join_cols <- c(
       join_cols,
@@ -43,11 +64,11 @@ criteria_join <- function(
       "TADA.MethodSpeciationName"
     )
   }
-
+  
   # Build the join_by expression safely and evaluate it
   exprs <- rlang::parse_exprs(join_cols)
   by <- rlang::eval_tidy(rlang::call2(dplyr::join_by, !!!exprs))
-
+  
   # Handle x table modifications for Option 2 (no use)
   # In this case, the final ATTAINS.UseName is from the criteria table
   if (use_type == "Option 2") {
@@ -57,7 +78,7 @@ criteria_join <- function(
   } else {
     x2 <- x
   }
-
+  
   # Handle y table modifications for Option 2 (no fraction or speciation)
   if (match_type == "Option 2") {
     y_col <- names(y2)
@@ -67,17 +88,17 @@ criteria_join <- function(
     ]
     y2 <- y2 |> dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
   }
-
+  
   # Perform the join
   x3 <- x2 |>
     dplyr::left_join(y2, by = by, relationship = "many-to-many") |>
     dplyr::mutate(Matched = dplyr::if_else(is.na(Matched), "No", Matched))
-
+  
   # Apply filter if requested
   if (filter_type) {
     x3 <- x3 |> dplyr::filter(Matched == "Yes")
   }
-
+  
   return(x3)
 }
 
@@ -110,7 +131,7 @@ pH_join <- function(x, y) {
     TADA.LongitudeMeasure,
     dplyr::between(DateTime, DateTime_lower, DateTime_upper)
   )
-
+  
   x2 <- x |>
     dplyr::left_join(y, by = by, relationship = "many-to-many") |>
     dplyr::rename(DateTime = DateTime.x, DateTime_pH = DateTime.y) |>
@@ -127,7 +148,7 @@ pH_join <- function(x, y) {
     dplyr::slice_min(dt_diff, n = 1, with_ties = FALSE) |>
     dplyr::ungroup() |>
     dplyr::select(-DateTime_lower, -DateTime_upper, -dt_diff)
-
+  
   return(x2)
 }
 
@@ -166,7 +187,7 @@ temp_join <- function(x, y) {
     TADA.LongitudeMeasure,
     dplyr::between(DateTime, DateTime_lower, DateTime_upper)
   )
-
+  
   x2 <- x |>
     dplyr::left_join(y, by = by, relationship = "many-to-many") |>
     dplyr::rename(DateTime = DateTime.x, DateTime_Temperature = DateTime.y) |>
@@ -187,7 +208,7 @@ temp_join <- function(x, y) {
     dplyr::slice_min(dt_diff, n = 1, with_ties = FALSE) |>
     dplyr::ungroup() |>
     dplyr::select(-DateTime_lower, -DateTime_upper, -dt_diff)
-
+  
   return(x2)
 }
 
@@ -254,7 +275,7 @@ excursion_fun <- function(x) {
         !is.na(MagnitudeValueLower) &
           !is.na(MagnitudeValueUpper) &
           (TADA.ResultMeasureValue < MagnitudeValueLower |
-            TADA.ResultMeasureValue > MagnitudeValueUpper) ~ TRUE,
+             TADA.ResultMeasureValue > MagnitudeValueUpper) ~ TRUE,
         TRUE ~ FALSE
       )
     )
@@ -279,9 +300,9 @@ modSum <- function(x) {
 excursion_summary <- function(x, type) {
   # A look up table for "TADA.MonitoringLocationIdentifier", "TADA.MonitoringLocationName",
   # "ATTAINS.AssessmentUnitIdentifier", "TADA.LongitudeMeasure", "TADA.LatitudeMeasure"
-
+  
   x_cols <- names(x)
-
+  
   coords_cols <- c(
     "TADA.MonitoringLocationIdentifier",
     "TADA.MonitoringLocationName",
@@ -289,11 +310,11 @@ excursion_summary <- function(x, type) {
     "TADA.LongitudeMeasure",
     "TADA.LatitudeMeasure"
   )
-
+  
   dist_cols <- base::intersect(x_cols, coords_cols)
-
+  
   coords <- x |> dplyr::distinct(dplyr::across(dplyr::all_of(dist_cols)))
-
+  
   id_cols <- c(
     "ATTAINS.ParameterName",
     "TADA.CharacteristicName",
@@ -313,7 +334,7 @@ excursion_summary <- function(x, type) {
     "FreqMethod",
     "EquationType"
   )
-
+  
   if (type %in% "MLid") {
     id_cols <- c(
       "TADA.MonitoringLocationIdentifier",
@@ -328,10 +349,10 @@ excursion_summary <- function(x, type) {
   } else {
     id_cols <- id_cols
   }
-
+  
   # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
-
+  
   x2 <- x |>
     dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
     dplyr::summarize(
@@ -347,9 +368,9 @@ excursion_summary <- function(x, type) {
     dplyr::mutate(
       Excursion_Percentage = Number_of_Excursions / Sample_Count * 100
     )
-
+  
   ans <- list(data = x2, coords = coords)
-
+  
   return(ans)
 }
 
@@ -403,7 +424,7 @@ add_USGS_base <- function(x) {
     attribution = att,
     layers = "0"
   )
-
+  
   # Add the tiled overlay for the National Hydrography Dataset to the map widget:
   opt <- leaflet::WMSTileOptions(format = "image/png", transparent = TRUE)
   x <- leaflet::addWMSTiles(
@@ -414,7 +435,7 @@ add_USGS_base <- function(x) {
     layers = "0"
   )
   x <- leaflet::hideGroup(x, grp[5])
-
+  
   # Add layer controls
   opt2 <- leaflet::layersControlOptions(collapsed = FALSE)
   x <- leaflet::addLayersControl(
@@ -423,16 +444,16 @@ add_USGS_base <- function(x) {
     overlayGroups = grp[5],
     options = opt2
   )
-
+  
   return(x)
 }
 
 ### Overall exceedance map
 create_overall_map <- function(
-  data,
-  coords_data = NULL,
-  type = "MLid",
-  use_type
+    data,
+    coords_data = NULL,
+    type = "MLid",
+    use_type
 ) {
   if (type %in% "MLid") {
     # Finalize the grouping variables based on the use_type
@@ -442,13 +463,13 @@ create_overall_map <- function(
       "TADA.LongitudeMeasure",
       "TADA.LatitudeMeasure"
     )
-
+    
     if (use_type %in% "Option 1") {
       group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
     } else {
       group_cols2 <- group_cols
     }
-
+    
     # For MLid grouping, coordinates are in the main data
     map_data <- data |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
@@ -493,7 +514,7 @@ create_overall_map <- function(
         ),
         .groups = 'drop'
       )
-
+    
     # Join with coordinates
     map_data <- coords_data |>
       dplyr::left_join(au_summary, by = "ATTAINS.AssessmentUnitIdentifier") |>
@@ -528,7 +549,7 @@ create_overall_map <- function(
         ),
         .groups = 'drop'
       )
-
+    
     # Join with coordinates
     map_data <- coords_data |>
       tidyr::crossing(cg_summary) |>
@@ -539,11 +560,11 @@ create_overall_map <- function(
         use_param_exceeding = tidyr::replace_na(use_param_exceeding, "")
       )
   }
-
+  
   # Build popup content as a column in the data frame
   has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
   has_sites_col <- "sites_in_au" %in% names(map_data)
-
+  
   map_data <- map_data |>
     dplyr::mutate(
       popup_content = paste0(
@@ -625,7 +646,7 @@ create_overall_map <- function(
         )
       )
     )
-
+  
   # Create the map
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
@@ -652,17 +673,17 @@ create_overall_map <- function(
 
 ### Use-Specific Map
 create_use_map <- function(
-  data,
-  coords_data = NULL,
-  selected_use = NULL,
-  type = "MLid",
-  use_type = "Option 1"
+    data,
+    coords_data = NULL,
+    selected_use = NULL,
+    type = "MLid",
+    use_type = "Option 1"
 ) {
   # Filter for selected use
   if (!is.null(selected_use)) {
     data <- data |> dplyr::filter(ATTAINS.UseName == selected_use)
   }
-
+  
   if (type %in% "MLid") {
     # Finalize the grouping variables based on the use_type
     group_cols <- c(
@@ -671,13 +692,13 @@ create_use_map <- function(
       "TADA.LongitudeMeasure",
       "TADA.LatitudeMeasure"
     )
-
+    
     if (use_type %in% "Option 1") {
       group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
     } else {
       group_cols2 <- group_cols
     }
-
+    
     # MLid grouping
     map_data <- data |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
@@ -697,7 +718,7 @@ create_use_map <- function(
         ATTAINS.AssessmentUnitIdentifier %in%
           data$ATTAINS.AssessmentUnitIdentifier
       )
-
+    
     au_use_summary <- data |>
       dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
@@ -710,13 +731,13 @@ create_use_map <- function(
         ),
         .groups = 'drop'
       )
-
+    
     coords_data_filtered <- coords_data |>
       dplyr::filter(
         ATTAINS.AssessmentUnitIdentifier %in%
           au_use_summary$ATTAINS.AssessmentUnitIdentifier
       )
-
+    
     map_data <- coords_data_filtered |>
       dplyr::left_join(
         au_use_summary,
@@ -741,7 +762,7 @@ create_use_map <- function(
         ),
         .groups = 'drop'
       )
-
+    
     map_data <- coords_data |>
       tidyr::crossing(cg_use_summary) |>
       dplyr::mutate(
@@ -751,10 +772,10 @@ create_use_map <- function(
         params_exceeding_list = tidyr::replace_na(params_exceeding_list, "None")
       )
   }
-
+  
   # Build popup content as a column before leaflet
   has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
-
+  
   map_data <- map_data |>
     dplyr::mutate(
       popup_content = if (has_au_col) {
@@ -796,7 +817,7 @@ create_use_map <- function(
         )
       }
     )
-
+  
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
     leaflet::addCircleMarkers(
@@ -819,23 +840,23 @@ create_use_map <- function(
 
 ### Parameter-specific map
 create_parameter_map <- function(
-  data,
-  coords_data = NULL,
-  selected_param = NULL,
-  selected_use = NULL,
-  type = "MLid",
-  use_type = "Option 1"
+    data,
+    coords_data = NULL,
+    selected_param = NULL,
+    selected_use = NULL,
+    type = "MLid",
+    use_type = "Option 1"
 ) {
   # Filter on ParameterForFilter
   if (!is.null(selected_param)) {
     data <- data |> dplyr::filter(ParameterForFilter %in% selected_param)
   }
-
+  
   # Filter for selected use
   if (!is.null(selected_use)) {
     data <- data |> dplyr::filter(ATTAINS.UseName == selected_use)
   }
-
+  
   if (type %in% "MLid") {
     # Finalize the grouping variables based on the use_type
     group_cols <- c(
@@ -844,13 +865,13 @@ create_parameter_map <- function(
       "TADA.LongitudeMeasure",
       "TADA.LatitudeMeasure"
     )
-
+    
     if (use_type %in% "Option 1") {
       group_cols2 <- c(group_cols, "ATTAINS.AssessmentUnitIdentifier")
     } else {
       group_cols2 <- group_cols
     }
-
+    
     map_data <- data |>
       dplyr::group_by(dplyr::across(dplyr::all_of(group_cols2))) |>
       dplyr::summarise(
@@ -863,21 +884,21 @@ create_parameter_map <- function(
         ATTAINS.AssessmentUnitIdentifier %in%
           data$ATTAINS.AssessmentUnitIdentifier
       )
-
+    
     au_param_summary <- data |>
       dplyr::group_by(ATTAINS.AssessmentUnitIdentifier) |>
       dplyr::summarise(
         has_exceedance = any(Exceedance == "Exceed"),
         .groups = 'drop'
       )
-
+    
     # Filter coords_data to only include AUs present in the filtered data
     coords_data_filtered <- coords_data |>
       dplyr::filter(
         ATTAINS.AssessmentUnitIdentifier %in%
           au_param_summary$ATTAINS.AssessmentUnitIdentifier
       )
-
+    
     map_data <- coords_data_filtered |>
       dplyr::left_join(
         au_param_summary,
@@ -891,15 +912,15 @@ create_parameter_map <- function(
         has_exceedance = any(Exceedance == "Exceed"),
         .groups = 'drop'
       )
-
+    
     map_data <- coords_data |>
       tidyr::crossing(cg_param_summary) |>
       dplyr::mutate(has_exceedance = tidyr::replace_na(has_exceedance, FALSE))
   }
-
+  
   # Build popup content as a column before leaflet
   has_au_col <- "ATTAINS.AssessmentUnitIdentifier" %in% names(map_data)
-
+  
   map_data <- map_data |>
     dplyr::mutate(
       popup_content = if (has_au_col) {
@@ -941,7 +962,7 @@ create_parameter_map <- function(
         )
       }
     )
-
+  
   leaflet::leaflet(map_data) |>
     add_USGS_base() |>
     leaflet::addCircleMarkers(
@@ -966,9 +987,9 @@ time_aggregate <- function(x, type) {
   x <- x |>
     dplyr::rename(Date = ActivityStartDate) |>
     dplyr::mutate(DateTime = lubridate::as_datetime(DateTime))
-
+  
   x_cols <- names(x)
-
+  
   id_cols <- c(
     "ATTAINS.ParameterName",
     "TADA.CharacteristicName",
@@ -988,7 +1009,7 @@ time_aggregate <- function(x, type) {
     "FreqMethod",
     "EquationType"
   )
-
+  
   if (type %in% "MLid") {
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
@@ -1002,10 +1023,10 @@ time_aggregate <- function(x, type) {
   } else {
     id_cols <- id_cols
   }
-
+  
   # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
-
+  
   # Collapse duplicate samples at the SAME DateTime (per id_cols) via mean
   collapsed <- x |>
     dplyr::group_by(dplyr::across(dplyr::all_of(c(
@@ -1023,10 +1044,10 @@ time_aggregate <- function(x, type) {
       N_in_Step = dplyr::n(),
       .groups = "drop"
     )
-
+  
   # Hourly canonical series (post-collapse)
   hourly <- collapsed |> dplyr::filter(DurationUnit %in% "n-hour")
-
+  
   # Daily canonical series (mean of timestamp-collapsed values per day)
   daily <- collapsed |>
     dplyr::filter(DurationUnit %in% c("n-day", "n-season", "n-month")) |>
@@ -1042,13 +1063,13 @@ time_aggregate <- function(x, type) {
       .groups = "drop"
     ) |>
     dplyr::mutate(DateTime = as.POSIXct(Date, tz = "UTC"))
-
+  
   # Bind and sort
   result <- dplyr::bind_rows(hourly, daily)
-
+  
   result <- result |>
     dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), DateTime)
-
+  
   return(result)
 }
 
@@ -1059,9 +1080,9 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
     dplyr::mutate(Window_Start = DateTime) |>
     dplyr::mutate(Window_End = DateTime) |>
     dplyr::mutate(DurationMethod_norm = trimws(tolower(DurationMethod)))
-
+  
   x_cols <- names(x)
-
+  
   id_cols <- c(
     "ATTAINS.ParameterName",
     "TADA.CharacteristicName",
@@ -1081,7 +1102,7 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
     "FreqMethod",
     "EquationType"
   )
-
+  
   if (type %in% "MLid") {
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
@@ -1095,32 +1116,32 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
   } else {
     id_cols <- id_cols
   }
-
+  
   # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
-
+  
   x_ordered <- x |>
     dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), Window_Start)
-
+  
   result <- x_ordered |>
     dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
     dplyr::mutate(G_ID = dplyr::cur_group_id()) |>
     dplyr::group_modify(
       function(x2, keys) {
         df <- x2 |> dplyr::arrange(Window_Start)
-
+        
         idx <- df$Window_Start
         before_per <- window_before_period(
           df$DurationUnit[1],
           df$DurationValue[1]
         )
         agg_norm <- df$DurationMethod_norm[1]
-
+        
         # Handle NA in agg_norm
         if (is.na(agg_norm)) {
           agg_norm <- "arithmetic mean" # Default value
         }
-
+        
         # Measurement windows (compute multiple stats so we can map by label)
         win_mean <- slider::slide_index_dbl(
           df$Value,
@@ -1150,11 +1171,11 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
           .before = before_per,
           .complete = complete_windows
         )
-
+        
         # Also compute window min/max for "extremes" evaluation later
         Value_win_min <- win_min
         Value_win_max <- win_max
-
+        
         Result_Duration <- dplyr::case_when(
           agg_norm %in%
             c("arithmetic mean", "rolling arithmetic mean") ~ win_mean,
@@ -1164,7 +1185,7 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
           agg_norm %in% "arithmetic extremes" ~ NA_real_, # use Value_win_min / Value_win_max vs thresholds later
           TRUE ~ win_mean
         )
-
+        
         # Covariates — always means
         pH_win <- slider::slide_index_dbl(
           df$pH,
@@ -1187,7 +1208,7 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
           .before = before_per,
           .complete = complete_windows
         )
-
+        
         # Counts & explicit bounds
         N_in_Window <- slider::slide_index_int(
           !is.na(df$Value),
@@ -1196,7 +1217,7 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
           .before = before_per,
           .complete = complete_windows
         )
-
+        
         Window_Start_win <- slider::slide_index_vec(
           idx,
           idx,
@@ -1212,14 +1233,14 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
           .ptype = df$Window_Start
         )
         Window_End_win <- idx
-
+        
         # Status logic
         time_complete <- !is.na(Window_Start_win)
         Window_Status <- dplyr::case_when(
           !time_complete ~ "incomplete",
           TRUE ~ "complete"
         )
-
+        
         dplyr::tibble(
           G_ID = df$G_ID[1],
           # keep canonical point value for reference
@@ -1255,7 +1276,7 @@ duration_cal <- function(x, type, complete_windows = TRUE) {
     ) |>
     dplyr::ungroup() |>
     dplyr::select(-G_ID)
-
+  
   return(result)
 }
 
@@ -1265,7 +1286,7 @@ duration_excursion_fun <- function(x) {
     dplyr::mutate(
       # Normalize the duration method for consistent comparison
       DurationMethod_norm = trimws(tolower(DurationMethod)),
-
+      
       Duration_Excursion = dplyr::case_when(
         # ===== ARITHMETIC EXTREMES: Check both min and max against thresholds =====
         DurationMethod_norm %in%
@@ -1273,37 +1294,37 @@ duration_excursion_fun <- function(x) {
           is.na(Threshold_Lower_win) &
           !is.na(Threshold_Upper_win) &
           Value_win_max > Threshold_Upper_win ~ TRUE,
-
+        
         DurationMethod_norm %in%
           "arithmetic extremes" &
           !is.na(Threshold_Lower_win) &
           is.na(Threshold_Upper_win) &
           Value_win_min < Threshold_Lower_win ~ TRUE,
-
+        
         DurationMethod_norm %in%
           "arithmetic extremes" &
           !is.na(Threshold_Lower_win) &
           !is.na(Threshold_Upper_win) &
           (Value_win_min < Threshold_Lower_win |
-            Value_win_max > Threshold_Upper_win) ~ TRUE,
-
+             Value_win_max > Threshold_Upper_win) ~ TRUE,
+        
         # ===== STANDARD METHODS: Use E_Value =====
         !(DurationMethod_norm %in% "arithmetic extremes") &
           is.na(Threshold_Lower_win) &
           !is.na(Threshold_Upper_win) &
           E_Value > Threshold_Upper_win ~ TRUE,
-
+        
         !(DurationMethod_norm %in% "arithmetic extremes") &
           !is.na(Threshold_Lower_win) &
           is.na(Threshold_Upper_win) &
           E_Value < Threshold_Lower_win ~ TRUE,
-
+        
         !(DurationMethod_norm %in% "arithmetic extremes") &
           !is.na(Threshold_Lower_win) &
           !is.na(Threshold_Upper_win) &
           (E_Value < Threshold_Lower_win |
-            E_Value > Threshold_Upper_win) ~ TRUE,
-
+             E_Value > Threshold_Upper_win) ~ TRUE,
+        
         TRUE ~ FALSE
       )
     )
@@ -1312,30 +1333,30 @@ duration_excursion_fun <- function(x) {
 
 # A function to update the magnitude
 magnitude_update <- function(
-  x,
-  match_type,
-  hardness_equation,
-  pH_equation,
-  pH_Hardness_equation,
-  pH_Temperature_equation
+    x,
+    match_type,
+    hardness_equation,
+    pH_equation,
+    pH_Hardness_equation,
+    pH_Temperature_equation
 ) {
   ## Hardness
   dat_hardness <- x |>
     dplyr::filter(EquationType %in% "Hardness") |>
     # Check the completeness of the input data
     dplyr::filter(dplyr::if_any(c(Hardness_win), ~ !is.na(.)))
-
+  
   if (nrow(dat_hardness) > 0) {
     if (match_type %in% "Option 1") {
       hardness_equation2 <- hardness_equation
     } else {
       y_col <- names(hardness_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-
+      
       hardness_equation2 <- hardness_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-
+    
     dat_hardness2 <- dat_hardness |>
       dplyr::left_join(hardness_equation2) |>
       dplyr::mutate(
@@ -1354,23 +1375,23 @@ magnitude_update <- function(
   } else {
     dat_hardness2 <- dat_hardness
   }
-
+  
   # pH
   dat_pH <- x |>
     dplyr::filter(EquationType %in% "pH") |>
     dplyr::filter(dplyr::if_any(c(pH_win), ~ !is.na(.)))
-
+  
   if (nrow(dat_pH) > 0) {
     if (match_type %in% "Option 1") {
       pH_equation2 <- pH_equation
     } else {
       y_col <- names(pH_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-
+      
       pH_equation2 <- pH_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-
+    
     dat_pH2 <- dat_pH |>
       dplyr::left_join(pH_equation2) |>
       dplyr::mutate(
@@ -1383,23 +1404,23 @@ magnitude_update <- function(
   } else {
     dat_pH2 <- dat_pH
   }
-
+  
   # pH and Hardness
   dat_pH_hardness <- x |>
     dplyr::filter(EquationType %in% "pH and Hardness") |>
     dplyr::filter(dplyr::if_any(c(pH_win, Hardness_win), ~ !is.na(.)))
-
+  
   if (nrow(dat_pH_hardness) > 0) {
     if (match_type %in% "Option 1") {
       pH_Hardness_equation2 <- pH_Hardness_equation
     } else {
       y_col <- names(pH_Hardness_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-
+      
       pH_Hardness_equation2 <- pH_Hardness_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-
+    
     dat_pH_hardness2 <- dat_pH_hardness |>
       dplyr::left_join(pH_Hardness_equation2) |>
       dplyr::mutate(
@@ -1425,23 +1446,23 @@ magnitude_update <- function(
   } else {
     dat_pH_hardness2 <- dat_pH_hardness
   }
-
+  
   # pH and Temperature
   dat_pH_temperature <- x |>
     dplyr::filter(EquationType %in% "pH and Temperature") |>
     dplyr::filter(dplyr::if_any(c(pH_win, Temperature_win), ~ !is.na(.)))
-
+  
   if (nrow(dat_pH_temperature) > 0) {
     if (match_type %in% "Option 1") {
       pH_Temperature_equation2 <- pH_Temperature_equation
     } else {
       y_col <- names(pH_Temperature_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-
+      
       pH_Temperature_equation2 <- pH_Temperature_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-
+    
     dat_pH_temperature2 <- dat_pH_temperature |>
       dplyr::left_join(pH_Temperature_equation2) |>
       dplyr::mutate(
@@ -1458,7 +1479,7 @@ magnitude_update <- function(
   } else {
     dat_pH_temperature2 <- dat_pH_temperature
   }
-
+  
   dplyr::bind_rows(
     dat_hardness2,
     dat_pH2,
@@ -1488,9 +1509,9 @@ frequency_summary <- function(x, type) {
     "FreqMethod",
     "EquationType"
   )
-
+  
   x_cols <- names(x)
-
+  
   if (type %in% "MLid") {
     base_id_cols <- c("TADA.MonitoringLocationIdentifier")
     # Only add JoinToAU if it exists
@@ -1504,10 +1525,10 @@ frequency_summary <- function(x, type) {
   } else {
     id_cols <- id_cols
   }
-
+  
   # Check if ATTAINS.AssessmentUnitIdentifier exists
   id_cols2 <- base::intersect(x_cols, id_cols)
-
+  
   # Remove methods not able to be calculated for now
   x2 <- x |>
     dplyr::filter(
@@ -1519,12 +1540,12 @@ frequency_summary <- function(x, type) {
           "Percentile"
         )
     )
-
+  
   # Percentile
   x_P <- x2 |> dplyr::filter(FreqMethod %in% "Percentile")
-
+  
   x_other <- x2 |> dplyr::filter(!FreqMethod %in% "Percentile")
-
+  
   # Copy the Result_Duration value to E_Value if the frequency
   # is not the percentile method
   if (nrow(x_other) > 0) {
@@ -1536,9 +1557,9 @@ frequency_summary <- function(x, type) {
       dplyr::mutate(E_Value = NA_real_) |>
       dplyr::mutate(Percentile = NA_real_)
   }
-
+  
   # Apply different methods to each group
-
+  
   # Percentile: Calculate the percentile
   if (nrow(x_P) > 0) {
     x_P2 <- x_P |>
@@ -1568,23 +1589,23 @@ frequency_summary <- function(x, type) {
       dplyr::mutate(Percentile = NA_real_) |>
       dplyr::mutate(E_Value = NA_real_)
   }
-
+  
   # Evaluate the excursions
-
+  
   x3 <- dplyr::bind_rows(x_other2, x_P2)
   x4 <- x3 |> duration_excursion_fun()
-
+  
   # Evaluate the exceedance based on id_cols
   # Separate x4 based on FreqMethod
   x4_number <- x4 |> dplyr::filter(FreqMethod %in% "NumberNotMeeting")
-
+  
   x4_n3years <- x4 |> dplyr::filter(FreqMethod %in% "n-samples in 3 years")
-
+  
   x4_percentage <- x4 |>
     dplyr::filter(FreqMethod %in% "Percent of samples not meeting")
-
+  
   x4_percentile <- x4 |> dplyr::filter(FreqMethod %in% "Percentile")
-
+  
   # NumberNotMeeting method
   if (nrow(x4_number) > 0) {
     x4_number2 <- x4_number |>
@@ -1618,7 +1639,7 @@ frequency_summary <- function(x, type) {
         Sufficient_Data = NA_character_
       )
   }
-
+  
   # Percent of samples not meeting Method
   if (nrow(x4_percentage) > 0) {
     x4_percentage2 <- x4_percentage |>
@@ -1657,7 +1678,7 @@ frequency_summary <- function(x, type) {
         Sufficient_Data = NA_character_
       )
   }
-
+  
   # Percentile Method
   if (nrow(x4_percentile) > 0) {
     x4_percentile2 <- x4_percentile |>
@@ -1694,30 +1715,30 @@ frequency_summary <- function(x, type) {
         Sufficient_Data = NA_character_
       )
   }
-
+  
   # "n-samples in 3 years"
-
+  
   # --- n-samples in 3 years ----------------------------------------------------
   # Assumptions:
   # - x4_n3years has one row per window with columns:
   #     Window_End_win (date/time), Duration_Excursion (0/1), FreqValue
   # - We count windows with Duration_Excursion == 1 within each trailing 3-year span.
   # - We report the "worst" (max excursions) 3-year block per group.
-
+  
   if (nrow(x4_n3years) > 0) {
     # trailing span length: 3 years inclusive
     three_year_span <- lubridate::years(3) - lubridate::days(1)
-
+    
     # helper to coalesce NA excursions to 0
     nz <- function(z) ifelse(is.na(z), 0L, as.integer(z))
-
+    
     x4_n3years2 <- x4_n3years |>
       dplyr::arrange(dplyr::across(dplyr::all_of(id_cols2)), Window_End_win) |>
       dplyr::group_by(dplyr::across(dplyr::all_of(id_cols2))) |>
       dplyr::group_modify(
         function(df, keys) {
           idx <- df$Window_End_win
-
+          
           # Check if data exist
           has_span <- {
             earliest <- suppressWarnings(min(idx, na.rm = TRUE))
@@ -1728,7 +1749,7 @@ frequency_summary <- function(x, type) {
               (latest - earliest) >= three_year_span
             }
           }
-
+          
           # rolling count of excursions over trailing 3 years
           n_exc_3yr <- slider::slide_index_int(
             .x = nz(df$Duration_Excursion),
@@ -1737,7 +1758,7 @@ frequency_summary <- function(x, type) {
             .before = three_year_span,
             .complete = FALSE
           )
-
+          
           # number of windows contributing to each 3-year span
           n_win_3yr <- slider::slide_index_int(
             .x = !is.na(df$Duration_Excursion),
@@ -1746,7 +1767,7 @@ frequency_summary <- function(x, type) {
             .before = three_year_span,
             .complete = FALSE
           )
-
+          
           # corresponding start date of each 3-year span
           start_3yr <- slider::slide_index_vec(
             .x = idx,
@@ -1756,9 +1777,9 @@ frequency_summary <- function(x, type) {
             .complete = FALSE,
             .ptype = df$Window_End_win
           )
-
+          
           end_3yr <- idx
-
+          
           # pick the "worst" window (max excursions) per group
           worst_i <- which.max(ifelse(is.na(n_exc_3yr), -Inf, n_exc_3yr))
           if (
@@ -1766,25 +1787,25 @@ frequency_summary <- function(x, type) {
           ) {
             return(dplyr::tibble())
           }
-
+          
           Number_of_Excursions <- n_exc_3yr[worst_i]
           Sample_Count <- n_win_3yr[worst_i]
           Start_Date <- start_3yr[worst_i]
           End_Date <- end_3yr[worst_i]
-
+          
           # compare to allowable count in 3 years
           allow_n <- suppressWarnings(as.integer(df$FreqValue[worst_i]))
           # if NA, treat as 0 allowed (or choose your policy)
           if (is.na(allow_n)) {
             allow_n <- 0L
           }
-
+          
           Exceedance <- ifelse(
             Number_of_Excursions > allow_n,
             "Exceed",
             "Not Exceed"
           )
-
+          
           dplyr::tibble(
             Sample_Count = Sample_Count,
             Start_Date = Start_Date,
@@ -1813,7 +1834,7 @@ frequency_summary <- function(x, type) {
         Sufficient_Data = NA_character_
       )
   }
-
+  
   # Combine the data
   x5 <- dplyr::bind_rows(
     x4_number2,
@@ -1822,7 +1843,7 @@ frequency_summary <- function(x, type) {
     x4_n3years2
   ) |>
     dplyr::relocate("Exceedance", .after = "Percentile")
-
+  
   return(x5)
 }
 
@@ -1834,16 +1855,16 @@ window_before_period <- function(unit, value) {
   if (is.na(unit)) {
     unit <- "n-day"
   }
-
+  
   v <- max(value, 1)
-
+  
   if (unit == "n-hour") {
     return(lubridate::hours(v - 1))
   }
   if (unit == "n-day") {
     return(lubridate::days(v - 1))
   }
-
+  
   # Use periods for month/season windows
   if (unit == "n-month") {
     return(lubridate::period(v, "months") - lubridate::days(1))
@@ -1851,7 +1872,7 @@ window_before_period <- function(unit, value) {
   if (unit == "n-season") {
     return(lubridate::period(3L * v, "months") - lubridate::days(1))
   }
-
+  
   # Fallback: treat as days
   lubridate::days(v - 1)
 }
@@ -1887,21 +1908,21 @@ na_gmean <- function(x) {
 simplify_duration_frequency <- function(x) {
   # x is a data.frame with DurationUnit, DurationMethod, DurationValue, FreqValue, FreqMethod
   unit_clean <- sub("^n-", "", x$DurationUnit)
-
+  
   # Hyphenate value-unit and append method
   duration <- ifelse(
     !is.na(x$DurationValue) & !is.na(unit_clean) & !is.na(x$DurationMethod),
     paste0(x$DurationValue, "-", unit_clean, " ", x$DurationMethod),
     NA_character_
   )
-
+  
   # Build Frequency as "<value> <method>"
   frequency <- ifelse(
     !is.na(x$FreqValue) & !is.na(x$FreqMethod),
     paste(x$FreqValue, x$FreqMethod),
     NA_character_
   )
-
+  
   # Return x with two new columns (do not drop existing columns)
   x$Duration <- duration
   x$Frequency <- frequency
@@ -1923,7 +1944,7 @@ hardness_eq <- function(hardness, E_A, E_B, CF_A, CF_B, CF_C) {
 capture_all_output <- function(expr, width = 150) {
   msgs <- character()
   res <- NULL
-
+  
   out <- utils::capture.output(
     {
       res <- try(
@@ -1965,6 +1986,6 @@ capture_all_output <- function(expr, width = 150) {
     },
     type = "output"
   )
-
+  
   list(result = res, lines = c(out, msgs))
 }
