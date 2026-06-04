@@ -65,7 +65,7 @@ make_base_obs <- function() {
     TADA.ResultMeasure.MeasureUnitCode = c(rep(NA_character_, 4), rep("C", 4)),
     stringsAsFactors = FALSE
   )
-  
+
   hard_tbl <- data.frame(
     TADA.MonitoringLocationIdentifier = "S1",
     TADA.MonitoringLocationName = "Site 1",
@@ -85,7 +85,7 @@ make_base_obs <- function() {
     TADA.ResultMeasure.MeasureUnitCode = NA_character_,
     stringsAsFactors = FALSE
   )
-  
+
   out <- rbind(base_tbl, hard_tbl)
   out
 }
@@ -135,37 +135,34 @@ test_that("na_* helpers and step/window helpers behave as expected", {
   expect_true(is.na(na_mean(numeric(0))))
   expect_true(is.na(na_mean(c(NA, NA))))
   expect_equal(na_mean(c(1, NA, 3)), 2)
-  
+
   expect_true(is.na(na_min(c(NA, NA))))
   expect_equal(na_min(c(NA, 2, 5)), 2)
-  
+
   expect_true(is.na(na_max(c(NA, NA))))
   expect_equal(na_max(c(NA, 2, 5)), 5)
-  
+
   expect_true(is.na(na_gmean(c(NA, -1, 0))))
   expect_equal(
     round(na_gmean(c(1, 4, 16)), 6),
     round(exp(mean(log(c(1, 4, 16)))), 6)
   )
-  
+
   expect_equal(step_label(NA), "1 day")
   expect_equal(step_label("n-hour"), "1 hour")
   expect_equal(step_label("n-day"), "1 day")
-  
+
   wb_h1 <- window_before_period("n-hour", 1)
   wb_d3 <- window_before_period("n-day", 3)
-  
+
   expect_true(lubridate::is.period(wb_h1))
   expect_true(lubridate::is.period(wb_d3))
-  
+
   expect_equal(
     lubridate::time_length(lubridate::as.duration(wb_h1), "seconds"),
     0
   )
-  expect_equal(
-    lubridate::time_length(lubridate::as.duration(wb_d3), "days"),
-    2
-  )
+  expect_equal(lubridate::time_length(lubridate::as.duration(wb_d3), "days"), 2)
 })
 
 test_that("hardness_eq implements coefficient fallback and formula", {
@@ -212,7 +209,11 @@ test_that("excursion_summary aggregates correctly for MLid and AU", {
     ATTAINS.AssessmentUnitIdentifier = c("AU1", "AU1", "AU2"),
     ATTAINS.ParameterName = c("ParamA", "ParamA", "ParamB"),
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
-    TADA.ResultSampleFractionText = c(NA_character_, NA_character_, NA_character_),
+    TADA.ResultSampleFractionText = c(
+      NA_character_,
+      NA_character_,
+      NA_character_
+    ),
     TADA.MethodSpeciationName = c(NA_character_, NA_character_, NA_character_),
     TADA.ResultMeasure.MeasureUnitCode = rep("mg/L", 3),
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Aquatic Life"),
@@ -234,7 +235,7 @@ test_that("excursion_summary aggregates correctly for MLid and AU", {
     stringsAsFactors = FALSE
   )
   x <- excursion_fun(x)
-  
+
   ml <- excursion_summary(x, type = "MLid")
   expect_type(ml, "list")
   expect_true(all(c("data", "coords") %in% names(ml)))
@@ -242,7 +243,7 @@ test_that("excursion_summary aggregates correctly for MLid and AU", {
     c("Sample_Count", "Number_of_Excursions", "Excursion_Percentage") %in%
       names(ml$data)
   ))
-  
+
   au <- excursion_summary(x, type = "AU")
   expect_type(au, "list")
   expect_true(all(c("data", "coords") %in% names(au)))
@@ -297,10 +298,10 @@ test_that("time_aggregate collapses timestamp duplicates and computes daily mean
     Hardness = c(100, 100, 120, 110, 90),
     stringsAsFactors = FALSE
   )
-  
+
   agg <- time_aggregate(x, type = "MLid")
   expect_true(all(c("Value", "N_in_Step", "DateTime") %in% names(agg)))
-  
+
   d2 <- agg[as.Date(agg$DateTime) == as.Date("2020-01-02"), , drop = FALSE]
   expect_equal(unique(d2$Value), 12)
 })
@@ -311,18 +312,23 @@ test_that("magnitude_update computes updated thresholds for hardness, pH, and co
     Hardness_win = c(100, NA, 150, NA),
     pH_win = c(NA, 7.5, 6.8, 8.0),
     Temperature_win = c(NA, NA, NA, 20),
-    TADA.ResultSampleFractionText = c("Dissolved", "Dissolved", "Total", "Total"),
+    TADA.ResultSampleFractionText = c(
+      "Dissolved",
+      "Dissolved",
+      "Total",
+      "Total"
+    ),
     MagnitudeValueUpper = c(NA_real_, NA_real_, NA_real_, NA_real_),
     stringsAsFactors = FALSE
   )
-  
+
   hardness_equation <- data.frame(
     EquationType = "Hardness",
-    hardness_param_1 = 2,    # CF_A
-    hardness_param_2 = 0.5,  # CF_B
-    hardness_param_3 = 1.5,  # CF_C
-    hardness_param_4 = 0.1,  # E_A
-    hardness_param_5 = 1,    # E_B
+    hardness_param_1 = 2, # CF_A
+    hardness_param_2 = 0.5, # CF_B
+    hardness_param_3 = 1.5, # CF_C
+    hardness_param_4 = 0.1, # E_A
+    hardness_param_5 = 1, # E_B
     stringsAsFactors = FALSE
   )
   pH_equation <- data.frame(
@@ -345,7 +351,7 @@ test_that("magnitude_update computes updated thresholds for hardness, pH, and co
     Equation = "pH + Temperature",
     stringsAsFactors = FALSE
   )
-  
+
   out1 <- magnitude_update(
     x = x,
     match_type = "Option 1",
@@ -354,19 +360,19 @@ test_that("magnitude_update computes updated thresholds for hardness, pH, and co
     pH_Hardness_equation = pH_Hardness_equation,
     pH_Temperature_equation = pH_Temperature_equation
   )
-  
+
   expect_true(all(c("MagnitudeValueUpper", "EquationType") %in% names(out1)))
-  
-  h_row  <- out1[out1$EquationType == "Hardness", , drop = FALSE]
+
+  h_row <- out1[out1$EquationType == "Hardness", , drop = FALSE]
   pH_row <- out1[out1$EquationType == "pH", , drop = FALSE]
   phh_row <- out1[out1$EquationType == "pH and Hardness", , drop = FALSE]
   pht_row <- out1[out1$EquationType == "pH and Temperature", , drop = FALSE]
-  
+
   expect_true(is.finite(pmin(h_row$MagnitudeValueUpper, Inf)))
   expect_equal(pH_row$MagnitudeValueUpper, 7.5 * 2, tolerance = 1e-8)
   expect_true(phh_row$MagnitudeValueUpper <= 30 + 1e-8)
   expect_equal(pht_row$MagnitudeValueUpper, 8.0 + 20, tolerance = 1e-8)
-  
+
   out2 <- magnitude_update(
     x = x,
     match_type = "Option 2",
@@ -381,10 +387,10 @@ test_that("magnitude_update computes updated thresholds for hardness, pH, and co
 test_that("GetURL and add_USGS_base return expected types", {
   skip_on_cran()
   skip_if_not_installed("leaflet")
-  
+
   url <- GetURL("USGSTopo")
   expect_true(grepl("USGSTopo", url))
-  
+
   m <- add_USGS_base(leaflet::leaflet())
   expect_s3_class(m, "leaflet")
 })
@@ -392,13 +398,13 @@ test_that("GetURL and add_USGS_base return expected types", {
 test_that("create_overall_map returns a leaflet map and builds popup", {
   skip_on_cran()
   skip_if_not_installed("leaflet")
-  
+
   data <- make_exceedance_data()
   coords <- make_coords_for_map()
-  
+
   map1 <- create_overall_map(data, type = "MLid", use_type = "Option 1")
   expect_s3_class(map1, "leaflet")
-  
+
   map2 <- create_overall_map(
     data,
     coords_data = coords,
@@ -406,7 +412,7 @@ test_that("create_overall_map returns a leaflet map and builds popup", {
     use_type = "Option 1"
   )
   expect_s3_class(map2, "leaflet")
-  
+
   map3 <- create_overall_map(
     data,
     coords_data = coords,
@@ -419,10 +425,10 @@ test_that("create_overall_map returns a leaflet map and builds popup", {
 test_that("create_use_map filters by selected_use and returns leaflet", {
   skip_on_cran()
   skip_if_not_installed("leaflet")
-  
+
   data <- make_exceedance_data()
   coords <- make_coords_for_map()
-  
+
   map_ml <- create_use_map(
     data,
     selected_use = "Aquatic Life",
@@ -430,7 +436,7 @@ test_that("create_use_map filters by selected_use and returns leaflet", {
     use_type = "Option 1"
   )
   expect_s3_class(map_ml, "leaflet")
-  
+
   map_au <- create_use_map(
     data,
     coords_data = coords,
@@ -439,7 +445,7 @@ test_that("create_use_map filters by selected_use and returns leaflet", {
     use_type = "Option 1"
   )
   expect_s3_class(map_au, "leaflet")
-  
+
   map_cg <- create_use_map(
     data,
     coords_data = coords,
@@ -453,10 +459,10 @@ test_that("create_use_map filters by selected_use and returns leaflet", {
 test_that("create_parameter_map filters by parameter and returns leaflet", {
   skip_on_cran()
   skip_if_not_installed("leaflet")
-  
+
   data <- make_exceedance_data()
   coords <- make_coords_for_map()
-  
+
   map_ml <- create_parameter_map(
     data,
     selected_param = "ParamA",
@@ -465,7 +471,7 @@ test_that("create_parameter_map filters by parameter and returns leaflet", {
     use_type = "Option 1"
   )
   expect_s3_class(map_ml, "leaflet")
-  
+
   map_au <- create_parameter_map(
     data,
     coords_data = coords,
@@ -475,7 +481,7 @@ test_that("create_parameter_map filters by parameter and returns leaflet", {
     use_type = "Option 1"
   )
   expect_s3_class(map_au, "leaflet")
-  
+
   map_cg <- create_parameter_map(
     data,
     coords_data = coords,
@@ -517,16 +523,16 @@ test_that("capture_all_output collects messages and warnings and returns result"
 test_that("window_before_period returns valid periods for n-month and n-season", {
   wb_m2 <- window_before_period("n-month", 2)
   wb_s1 <- window_before_period("n-season", 1)
-  
+
   expect_true(lubridate::is.period(wb_m2))
   expect_true(lubridate::is.period(wb_s1))
-  
+
   dm2 <- lubridate::as.duration(wb_m2)
   ds1 <- lubridate::as.duration(wb_s1)
-  
+
   expect_true(lubridate::time_length(dm2, "days") > 58)
   expect_true(lubridate::time_length(dm2, "days") < 63)
-  
+
   expect_true(lubridate::time_length(ds1, "days") > 88)
   expect_true(lubridate::time_length(ds1, "days") < 94)
 })
@@ -536,11 +542,11 @@ test_that("pH_filter, pH_join, and pH_fun compute means and nearest joins", {
   ph <- pH_filter(x)
   expect_true(all(c("DateTime_upper", "DateTime_lower", "pH") %in% names(ph)))
   expect_true(nrow(ph) >= 1)
-  
+
   out_join <- pH_join(x, ph)
   expect_true(all(c("DateTime", "DateTime_pH") %in% names(out_join)))
   expect_true(!anyDuplicated(out_join$DateTime))
-  
+
   out_fun <- pH_fun(x)
   expect_true("pH" %in% names(out_fun))
 })
@@ -548,13 +554,15 @@ test_that("pH_filter, pH_join, and pH_fun compute means and nearest joins", {
 test_that("temp_filter, temp_join, and Temperature_fun compute means and nearest joins", {
   x <- make_base_obs()
   tf <- temp_filter(x)
-  expect_true(all(c("DateTime_upper", "DateTime_lower", "Temperature") %in% names(tf)))
+  expect_true(all(
+    c("DateTime_upper", "DateTime_lower", "Temperature") %in% names(tf)
+  ))
   expect_true(nrow(tf) >= 1)
-  
+
   out_join <- temp_join(x, tf)
   expect_true(all(c("DateTime", "DateTime_Temperature") %in% names(out_join)))
   expect_true(!anyDuplicated(out_join$DateTime))
-  
+
   out_fun <- Temperature_fun(x)
   expect_true("Temperature" %in% names(out_fun))
 })
@@ -574,7 +582,7 @@ test_that("hardness_filter and hardness_fun cap hardness at 400", {
   hf <- hardness_filter(hdat)
   expect_true("Hardness" %in% names(hf))
   expect_true(all(is.finite(hf$Hardness)))
-  
+
   capped <- hardness_fun(hdat)
   expect_true("Hardness" %in% names(capped))
   expect_true(all(capped$Hardness <= 400))
@@ -619,7 +627,7 @@ test_that("capture_all_output returns try-error on stop()", {
 
 test_that("criteria_join handles options and filtering robustly", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -628,7 +636,11 @@ test_that("criteria_join handles options and filtering robustly", {
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -637,7 +649,7 @@ test_that("criteria_join handles options and filtering robustly", {
     ),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -648,7 +660,7 @@ test_that("criteria_join handles options and filtering robustly", {
     MagnitudeValueUpper = c(10, 5),
     stringsAsFactors = FALSE
   )
-  
+
   out1 <- criteria_join(
     x = x,
     y = y,
@@ -661,7 +673,7 @@ test_that("criteria_join handles options and filtering robustly", {
   expect_equal(nrow(out1), nrow(x))
   expect_true(all(out1$Matched %in% c("Yes", "No")))
   expect_true("MagnitudeValueUpper" %in% names(out1))
-  
+
   out2 <- criteria_join(
     x = x,
     y = y,
@@ -674,7 +686,7 @@ test_that("criteria_join handles options and filtering robustly", {
   expect_equal(nrow(out2), nrow(x))
   expect_true(all(out2$Matched %in% c("Yes", "No")))
   expect_true("ATTAINS.UseName" %in% names(out2))
-  
+
   out3 <- criteria_join(
     x = x,
     y = y,
@@ -690,7 +702,7 @@ test_that("criteria_join handles options and filtering robustly", {
 
 test_that("criteria_join returns consistent structure for Option 1/Option 1 with filter_type = FALSE", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -699,7 +711,11 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -708,7 +724,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     ),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -719,7 +735,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     MagnitudeValueUpper = c(10, 5),
     stringsAsFactors = FALSE
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,
@@ -727,17 +743,20 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     use_type = "Option 1",
     filter_type = FALSE
   )
-  
+
   expect_s3_class(out, "data.frame")
   expect_equal(nrow(out), nrow(x))
   expect_true("Matched" %in% names(out))
   expect_true(all(out$Matched %in% c("Yes", "No")))
-  expect_true(all(c(
-    "TADA.CharacteristicName",
-    "TADA.ResultMeasure.MeasureUnitCode",
-    "ATTAINS.UseName",
-    "ATTAINS.OrganizationIdentifier"
-  ) %in% names(out)))
+  expect_true(all(
+    c(
+      "TADA.CharacteristicName",
+      "TADA.ResultMeasure.MeasureUnitCode",
+      "ATTAINS.UseName",
+      "ATTAINS.OrganizationIdentifier"
+    ) %in%
+      names(out)
+  ))
   if ("MagnitudeValueUpper" %in% names(out)) {
     expect_true(is.numeric(out$MagnitudeValueUpper))
   }
@@ -745,7 +764,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
 
 test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type = FALSE keeps structure", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -754,7 +773,11 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -763,7 +786,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     ),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -774,7 +797,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     MagnitudeValueUpper = c(10, 5),
     stringsAsFactors = FALSE
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,
@@ -782,7 +805,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     use_type = "Option 2",
     filter_type = FALSE
   )
-  
+
   expect_s3_class(out, "data.frame")
   expect_equal(nrow(out), nrow(x))
   expect_true("Matched" %in% names(out))
@@ -792,7 +815,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
 
 test_that("criteria_join Option 2 match_type works with both filter settings", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -801,7 +824,11 @@ test_that("criteria_join Option 2 match_type works with both filter settings", {
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -810,7 +837,7 @@ test_that("criteria_join Option 2 match_type works with both filter settings", {
     ),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -821,7 +848,7 @@ test_that("criteria_join Option 2 match_type works with both filter settings", {
     MagnitudeValueUpper = c(10, 5),
     stringsAsFactors = FALSE
   )
-  
+
   out_all <- criteria_join(
     x = x,
     y = y,
@@ -833,7 +860,7 @@ test_that("criteria_join Option 2 match_type works with both filter settings", {
   expect_equal(nrow(out_all), nrow(x))
   expect_true("Matched" %in% names(out_all))
   expect_true(all(out_all$Matched %in% c("Yes", "No")))
-  
+
   out_filt <- criteria_join(
     x = x,
     y = y,
@@ -854,7 +881,7 @@ test_that("criteria_join Option 2 match_type works with both filter settings", {
 
 test_that("criteria_join tolerates duplicate criteria rows and preserves Matched", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -872,7 +899,7 @@ test_that("criteria_join tolerates duplicate criteria rows and preserves Matched
     ),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Dissolved", "Total"),
@@ -883,7 +910,7 @@ test_that("criteria_join tolerates duplicate criteria rows and preserves Matched
     MagnitudeValueUpper = c(10, 12, 5),
     stringsAsFactors = FALSE
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,
