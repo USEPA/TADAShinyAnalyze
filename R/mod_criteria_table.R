@@ -20,7 +20,9 @@ mod_criteria_table_ui <- function(id) {
       "After you create the Criteria and Methodology template, open the Excel file. Check the Data Dictionary and Allowable Values tabs, and use the drop-down options where shown so the analysis works correctly.",
       style = "font-weight: bold; color: red;"
     ),
-    htmltools::p("Use this tab to generate the criteria table based on the following options:"),
+    htmltools::p(
+      "Use this tab to generate the criteria table based on the following options:"
+    ),
     htmltools::tags$ul(
       htmltools::tags$li(
         htmltools::strong("Option A:"),
@@ -43,8 +45,10 @@ mod_criteria_table_ui <- function(id) {
         " Upload a template users have filled out and reviewed using the file uploader. The tool will check if there is any missing information."
       )
     ),
-    htmltools::p('Once the selection is completed, click the "Generate and Download Template" button to generate an Excel file with the criteria table template.'),
-    
+    htmltools::p(
+      'Once the selection is completed, click the "Generate and Download Template" button to generate an Excel file with the criteria table template.'
+    ),
+
     htmltools::hr(),
 
     # Options to generate the draft criteria and methods template
@@ -73,11 +77,12 @@ mod_criteria_table_ui <- function(id) {
           label = "",
           status = "info"
         ),
-        shinyjs::disabled(
-          shiny::actionButton(ns("Generate_Template"), "Generate and Download Template", shiny::icon("computer"),
-                              style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
-          )
-        )
+        shinyjs::disabled(shiny::actionButton(
+          ns("Generate_Template"),
+          "Generate and Download Template",
+          shiny::icon("computer"),
+          style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+        ))
       ),
       shiny::column(
         width = 6,
@@ -704,35 +709,57 @@ mod_criteria_table_server <- function(id, tadat) {
 
       # after checking missing rows, assume remaining rows are EquationBased = No if left blank (common occurrence from beta testing.)
       df_template2 <- df_template2 |>
-        dplyr::mutate(EquationBased = dplyr::if_else(is.na(EquationBased), "No", EquationBased))
-      
+        dplyr::mutate(
+          EquationBased = dplyr::if_else(
+            is.na(EquationBased),
+            "No",
+            EquationBased
+          )
+        )
+
       # check for mismatching WQP Char, Fraction, Speciation and Units with the Criteria table
-      df_template2_ID <-  EPATADA::TADA_CreateComparableID(dplyr::rename(df_template2, TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit))
+      df_template2_ID <- EPATADA::TADA_CreateComparableID(dplyr::rename(
+        df_template2,
+        TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit
+      ))
       non_matches <- dplyr::anti_join(
-        df_template2_ID, tadat$df_mlid_input,
-        "TADA.ComparableDataIdentifier") |>
+        df_template2_ID,
+        tadat$df_mlid_input,
+        "TADA.ComparableDataIdentifier"
+      ) |>
         dplyr::select(
-          TADA.ComparableDataIdentifier, TADA.ResultSampleFractionText, TADA.MethodSpeciationName, TADA.ResultMeasure.MeasureUnitCode
-          ) |>
+          TADA.ComparableDataIdentifier,
+          TADA.ResultSampleFractionText,
+          TADA.MethodSpeciationName,
+          TADA.ResultMeasure.MeasureUnitCode
+        ) |>
         dplyr::distinct()
-      
+
       # check for accepted/rejected values in columns using TADACommunityHub functions
       # wrap the validator call in tryCatch so a validation error can’t take down the output
       status <- tryCatch(
         TADACommunityHub::runAllValidations(df_template2),
-        error = function(e) list(overall_status = paste("Validation error:", e$message))
+        error = function(e) {
+          list(overall_status = paste("Validation error:", e$message))
+        }
       )
-      
+
       # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
       eq_text <- paste0("")
       if (equationBased_NA > 0) {
-        eq_text <- paste0("Warning: EquationBased must be populated - Your uploaded criteria table contains ", equationBased_NA, " rows for analysis with EquationBased values populated as 'NA'. \n",
-        "   These NAs will be filled in as 'No'. \n")
+        eq_text <- paste0(
+          "Warning: EquationBased must be populated - Your uploaded criteria table contains ",
+          equationBased_NA,
+          " rows for analysis with EquationBased values populated as 'NA'. \n",
+          "   These NAs will be filled in as 'No'. \n"
+        )
       }
-      
+
       # Build summary text
       text <- paste0(
-        "Your criteria table contains ", nrow(df_template2), " rows of information populated that are needed for analysis. \n", 
+        "Your criteria table contains ",
+        nrow(df_template2),
+        " rows of information populated that are needed for analysis. \n",
         "   Any rows missing criteria or methodology information has been removed. \n"
       )
 
@@ -747,7 +774,7 @@ mod_criteria_table_server <- function(id, tadat) {
         )
         text <- paste(text, eq_text, extra_text, sep = "\n")
       }
-      
+
       # Prints final message
       paste(paste0(text, "\n", status$overall_status, sep = "\n"))
     })

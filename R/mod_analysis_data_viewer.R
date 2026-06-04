@@ -16,9 +16,10 @@ mod_analysis_data_viewer_ui <- function(id) {
         htmltools::h4("Summary of the selected data"),
         shiny::verbatimTextOutput(ns("Avail_Data"), placeholder = TRUE)
       ),
-      column(width = 12,
-               htmltools::h4("Matched Parameters"),
-               DT::DTOutput(ns("Matched_Data"))
+      column(
+        width = 12,
+        htmltools::h4("Matched Parameters"),
+        DT::DTOutput(ns("Matched_Data"))
       ),
     ) #,
     # fluidRow(
@@ -56,23 +57,27 @@ mod_analysis_data_viewer_server <- function(id, tadat) {
           )
         }
       )
-      
+
       # See mod_batch_analysis.R for what tadat$dat_match looks like.
       output$Matched_Data <- DT::renderDataTable({
         shiny::validate(need(!is.null(tadat$dat_match), "No matched data."))
 
         # render table
-        DT::datatable(tadat$dat_match,
-                      filter = "top",
-                      class = "compact",
-                      options = list(scrollX = TRUE,
-                                     scrollY = "400px",
-                                     scrollCollapse = TRUE,
-                                     paging = TRUE,
-                                     pageLength = 5,
-                                     lengthMenu = c(5, 10, 25, 50, 100),
-                                     autoWidth = FALSE, 
-                                     fillContainer = TRUE ))
+        DT::datatable(
+          tadat$dat_match,
+          filter = "top",
+          class = "compact",
+          options = list(
+            scrollX = TRUE,
+            scrollY = "400px",
+            scrollCollapse = TRUE,
+            paging = TRUE,
+            pageLength = 5,
+            lengthMenu = c(5, 10, 25, 50, 100),
+            autoWidth = FALSE,
+            fillContainer = TRUE
+          )
+        )
       })
 
       # output$Not_Matched_Data <- DT::renderDT({

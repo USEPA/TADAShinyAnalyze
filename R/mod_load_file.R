@@ -428,9 +428,7 @@ mod_load_file_server <- function(id, tadat) {
         )
       }
     }) # end renderText
-    
 
-    
     #### 2. ml to au crosswalk file loaded event ####
     df_mltoau_input <- shiny::eventReactive(input$mltoau_input_file, {
       # validate file is selected
@@ -778,7 +776,6 @@ mod_load_file_server <- function(id, tadat) {
       tadat$files_loaded_mltoau <- files_loaded$mltoau
       tadat$files_loaded_autouse <- files_loaded$autouse
     })
-    
   }) # end of moduleServer
 } # end of server function
 
