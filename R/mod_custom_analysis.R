@@ -11,28 +11,28 @@
 mod_custom_analysis_ui <- function(id) {
   # set module session id
   ns <- shiny::NS(id)
-  
+
   # start taglist
   shiny::tagList(
     # header
     htmltools::h2("4. Custom Analysis"),
-    
+
     # Components
     shiny::fluidRow(shiny::column(
       width = 12,
       mod_analysis_selector_custom_ui(ns("Custom_Select"))
     )),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       mod_analysis_data_viewer_custom_ui(ns("Custom_Data_Viewer"))
     )),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       mod_map_table_selector_custom_ui(ns("Custom_map_table_selector"))
     )),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       shiny::selectizeInput(
@@ -42,7 +42,7 @@ mod_custom_analysis_ui <- function(id) {
         multiple = TRUE
       )
     )),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h4(
@@ -55,9 +55,9 @@ mod_custom_analysis_ui <- function(id) {
         style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
       ))
     )),
-    
+
     htmltools::br(),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h4(
@@ -69,16 +69,16 @@ mod_custom_analysis_ui <- function(id) {
         style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
       ))
     )),
-    
+
     # Horizontal divider
     htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h3("Summary Table"),
       mod_excursion_viewer_ui(ns("Summary_View_Custom"))
     )),
-    
+
     # Summary Maps
     shiny::fluidRow(shiny::column(
       12,
@@ -87,7 +87,10 @@ mod_custom_analysis_ui <- function(id) {
         "Use the maps to view the exceedance results with different levels."
       ),
       shiny::tabsetPanel(
-        shiny::tabPanel("Overall Status", leaflet::leafletOutput(ns("overall_map"))),
+        shiny::tabPanel(
+          "Overall Status",
+          leaflet::leafletOutput(ns("overall_map"))
+        ),
         shiny::tabPanel(
           "By Use",
           shiny::selectInput(ns("selected_use"), "Select Use:", choices = NULL),
@@ -109,7 +112,7 @@ mod_custom_analysis_ui <- function(id) {
         )
       )
     )),
-    
+
     shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h3("Plots"),
@@ -131,10 +134,10 @@ mod_custom_analysis_ui <- function(id) {
 mod_custom_analysis_server <- function(id, tadat) {
   shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # Run the Custom_Select
     mod_analysis_selector_custom_server("Custom_Select", tadat)
-    
+
     # Reset dependent values when state/tribe changes
     shiny::observeEvent(
       list(
@@ -155,10 +158,10 @@ mod_custom_analysis_server <- function(id, tadat) {
       },
       priority = 100
     )
-    
+
     # Run Custom_Data_Viewer
     mod_analysis_data_viewer_custom_server("Custom_Data_Viewer", tadat)
-    
+
     # If the input data are ready, conduct the analysis
     shiny::observe({
       shiny::req(
@@ -169,17 +172,17 @@ mod_custom_analysis_server <- function(id, tadat) {
         tadat$criteria_template,
         tadat$uses_select_re_custom
       )
-      
+
       if (
         is.null(tadat$uses_select_re_custom) ||
-        length(tadat$uses_select_re_custom) == 0
+          length(tadat$uses_select_re_custom) == 0
       ) {
         tadat$custom_raw <- NULL
         tadat$site_AU_table_custom <- NULL
         tadat$available_param_num_custom <- NULL
         return()
       }
-      
+
       dat <- tadat$df_mlid_input |>
         dplyr::mutate(
           ActivityStartDateTime = suppressWarnings(lubridate::parse_date_time(
@@ -189,38 +192,38 @@ mod_custom_analysis_server <- function(id, tadat) {
         ) |>
         dplyr::mutate(ActivityStartDate = lubridate::ymd(ActivityStartDate)) |>
         dplyr::mutate(DateTime = ActivityStartDateTime)
-      
+
       # Step 1: Join pH, Temperature, and Hardness data
       dat2 <- dat |> pH_fun() |> Temperature_fun() |> hardness_fun()
-      
+
       # Step 2: Join the criteria table
       if (tadat$use_type_custom %in% "Option 1") {
         shiny::req(tadat$df_mltoau_input, tadat$df_autouse_input)
-        
+
         criteria_table_f1 <- tadat$criteria_template |>
           dplyr::filter(
             ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
           ) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
-        
+
         AU_Use <- tadat$df_autouse_input
         AU_MLID <- tadat$df_mltoau_input
-        
+
         AU_Use_f1 <- AU_Use |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
-        
+
         AU_MLID_f1 <- AU_MLID |>
           dplyr::filter(
             ATTAINS.AssessmentUnitIdentifier %in%
               AU_Use_f1$ATTAINS.AssessmentUnitIdentifier
           )
-        
+
         dat3 <- dat2 |>
           dplyr::filter(
             TADA.MonitoringLocationIdentifier %in%
               AU_MLID_f1$TADA.MonitoringLocationIdentifier
           )
-        
+
         dat4 <- dat3 |>
           dplyr::filter(
             TADA.CharacteristicName %in%
@@ -249,7 +252,7 @@ mod_custom_analysis_server <- function(id, tadat) {
             ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
           ) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
-        
+
         dat4 <- dat2 |>
           criteria_join(
             criteria_table_f1,
@@ -259,7 +262,7 @@ mod_custom_analysis_server <- function(id, tadat) {
           tidyr::drop_na(TADA.ResultMeasureValue) |>
           tidyr::drop_na(DateTime)
       }
-      
+
       # Construct the selected columns (no changes to include/remove Equation)
       selected_cols <- c(
         "TADA.MonitoringLocationIdentifier",
@@ -304,7 +307,7 @@ mod_custom_analysis_server <- function(id, tadat) {
         "pH_param_3",
         "pH_param_4"
       )
-      
+
       if (tadat$use_type_custom %in% "Option 1") {
         selected_cols2 <- c(
           selected_cols[1:4],
@@ -314,16 +317,16 @@ mod_custom_analysis_server <- function(id, tadat) {
       } else {
         selected_cols2 <- selected_cols
       }
-      
+
       dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
-      
+
       # Step 3: Separate the dataset based on if criteria exist
       dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
       dat_yes <- dat4_1 |>
         dplyr::filter(EquationBased %in% "Yes") |>
         dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
-      
+
       dat_match_custom <- dplyr::bind_rows(dat_yes, dat_no)
       dat_match_custom2 <- dat_match_custom |>
         dplyr::distinct(
@@ -333,9 +336,9 @@ mod_custom_analysis_server <- function(id, tadat) {
           TADA.MethodSpeciationName,
           TADA.ResultMeasure.MeasureUnitCode
         )
-      
+
       dat_viewer_count_num <- nrow(dat_match_custom2)
-      
+
       # Create a table for the map-table selector
       if (tadat$use_type_custom %in% "Option 1") {
         site_AU_table <- dat_match_custom |>
@@ -355,16 +358,16 @@ mod_custom_analysis_server <- function(id, tadat) {
             TADA.LatitudeMeasure
           )
       }
-      
+
       tadat$available_param_num_custom <- dat_viewer_count_num
       tadat$custom_raw <- dat_match_custom
       tadat$custom_raw_param_view <- dat_match_custom2
       tadat$site_AU_table_custom <- site_AU_table
     })
-    
+
     # Activate the map-table selector
     mod_map_table_selector_custom_server("Custom_map_table_selector", tadat)
-    
+
     # Filter tadat$custom_raw based on selected monitoring locations
     shiny::observeEvent(
       tadat$selected_monitoring_locations_custom,
@@ -372,7 +375,7 @@ mod_custom_analysis_server <- function(id, tadat) {
         shiny::req(tadat$custom_raw)
         shiny::req(tadat$selected_monitoring_locations_custom)
         shiny::req(length(tadat$selected_monitoring_locations_custom) > 0)
-        
+
         tadat$custom_raw2 <- tadat$custom_raw |>
           dplyr::filter(
             TADA.MonitoringLocationIdentifier %in%
@@ -384,11 +387,11 @@ mod_custom_analysis_server <- function(id, tadat) {
               TADA.CharacteristicName
             )
           )
-        
+
         params <- sort(unique(stats::na.omit(
           tadat$custom_raw2$ParameterForFilter
         )))
-        
+
         if (length(params) > 0) {
           shiny::updateSelectizeInput(
             session = session,
@@ -407,16 +410,16 @@ mod_custom_analysis_server <- function(id, tadat) {
       },
       ignoreNULL = FALSE
     )
-    
+
     # Update tadat$custom_raw3 based on parameter_filter_custom
     shiny::observeEvent(
       input$parameter_filter_custom,
       {
         shiny::req(tadat$custom_raw2)
-        
+
         if (
           is.null(input$parameter_filter_custom) ||
-          length(input$parameter_filter_custom) == 0
+            length(input$parameter_filter_custom) == 0
         ) {
           tadat$custom_raw3 <- tadat$custom_raw2
         } else {
@@ -426,7 +429,7 @@ mod_custom_analysis_server <- function(id, tadat) {
       },
       ignoreNULL = FALSE
     )
-    
+
     # Enable Run when ready
     shiny::observe({
       shiny::req(tadat$custom_raw3)
@@ -435,24 +438,24 @@ mod_custom_analysis_server <- function(id, tadat) {
         condition = nrow(tadat$custom_raw3) > 0
       )
     })
-    
+
     shiny::observeEvent(input$Run_Custom, {
       shiny::req(tadat$custom_raw3)
-      
+
       shinybusy::show_modal_spinner(
         spin = "double-bounce",
         color = "#0071bc",
         text = "Running the analysis ...",
         session = shiny::getDefaultReactiveDomain()
       )
-      
+
       dat4_2 <- tadat$custom_raw3
-      
+
       dat_yes <- dat4_2 |>
         dplyr::filter(EquationBased %in% "Yes") |>
         dplyr::filter(!EquationType %in% "Additional Information")
       dat_no <- dat4_2 |> dplyr::filter(EquationBased %in% "No")
-      
+
       drop_cols <- c(
         "EquationFormula",
         "hardness_param_1",
@@ -466,17 +469,17 @@ mod_custom_analysis_server <- function(id, tadat) {
         "pH_param_3",
         "pH_param_4"
       )
-      
+
       # Step 4: Non-equation-based
       dat_no2 <- dat_no |>
         excursion_fun() |>
         dplyr::select(-dplyr::all_of(drop_cols))
-      
+
       # Hardness
       dat_hardness <- dat_yes |>
         dplyr::filter(EquationType %in% "Hardness") |>
         dplyr::filter(dplyr::if_all(c(Hardness), ~ !is.na(.)))
-      
+
       if (nrow(dat_hardness) > 0) {
         dat_hardness2 <- dat_hardness |>
           dplyr::mutate(
@@ -497,12 +500,12 @@ mod_custom_analysis_server <- function(id, tadat) {
       } else {
         dat_hardness2 <- dat_hardness
       }
-      
+
       # pH
       dat_pH <- dat_yes |>
         dplyr::filter(EquationType %in% "pH") |>
         dplyr::filter(dplyr::if_all(c(pH), ~ !is.na(.)))
-      
+
       if (nrow(dat_pH) > 0) {
         dat_pH2 <- dat_pH |>
           dplyr::mutate(
@@ -517,12 +520,12 @@ mod_custom_analysis_server <- function(id, tadat) {
       } else {
         dat_pH2 <- dat_pH
       }
-      
+
       # pH and Hardness
       dat_pH_hardness <- dat_yes |>
         dplyr::filter(EquationType %in% "pH and Hardness") |>
         dplyr::filter(dplyr::if_all(c(pH, Hardness), ~ !is.na(.)))
-      
+
       if (nrow(dat_pH_hardness) > 0) {
         dat_pH_hardness2 <- dat_pH_hardness |>
           dplyr::mutate(
@@ -550,12 +553,12 @@ mod_custom_analysis_server <- function(id, tadat) {
       } else {
         dat_pH_hardness2 <- dat_pH_hardness
       }
-      
+
       # pH and Temperature
       dat_pH_temperature <- dat_yes |>
         dplyr::filter(EquationType %in% "pH and Temperature") |>
         dplyr::filter(dplyr::if_all(c(pH, Temperature), ~ !is.na(.)))
-      
+
       if (nrow(dat_pH_temperature) > 0) {
         dat_pH_temperature2 <- dat_pH_temperature |>
           dplyr::mutate(
@@ -569,7 +572,7 @@ mod_custom_analysis_server <- function(id, tadat) {
       } else {
         dat_pH_temperature2 <- dat_pH_temperature
       }
-      
+
       # Combine
       dat5 <- dplyr::bind_rows(
         dat_no2,
@@ -578,9 +581,9 @@ mod_custom_analysis_server <- function(id, tadat) {
         dat_pH_hardness2,
         dat_pH_temperature2
       )
-      
+
       tadat$excurse_dat_custom_filtered <- dat5
-      
+
       if (nrow(dat5) == 0) {
         shinybusy::remove_modal_spinner(
           session = shiny::getDefaultReactiveDomain()
@@ -592,19 +595,19 @@ mod_custom_analysis_server <- function(id, tadat) {
         )
         return()
       }
-      
+
       # Step 6: Summarize the data
       dat6 <- dat5 |> excursion_summary(type = tadat$loc_select_custom)
       dat6a <- dat6 |> purrr::pluck("data")
       dat6b <- dat6 |> purrr::pluck("coords")
-      
+
       # Step 7: Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select_custom)
-      
+
       # Step 8: Duration Analysis
       dat8 <- dat7 |>
         duration_cal(type = tadat$loc_select_custom, complete_windows = FALSE)
-      
+
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |>
@@ -616,13 +619,13 @@ mod_custom_analysis_server <- function(id, tadat) {
           pH_Temperature_equation = tadat$pH_Temperature_equation
         ) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
-      
+
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
       tadat$duration_table_custom <- dat8_3
-      
+
       # Step 9: Frequency summary
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select_custom)
-      
+
       # Step 10: Join the data
       dat9_1 <- dat9 |>
         dplyr::rename(
@@ -637,12 +640,12 @@ mod_custom_analysis_server <- function(id, tadat) {
           -End_Date,
           -Sample_Count
         )
-      
+
       dat10 <- dat6a |> dplyr::left_join(dat9_1)
-      
+
       # Step 11: Prepare the output
       dat11 <- dat10 |> simplify_duration_frequency()
-      
+
       # exceed_summary_custom must be built with ParameterForFilter
       tadat$exceed_summary_custom <- dat11 |>
         dplyr::mutate(
@@ -652,7 +655,7 @@ mod_custom_analysis_server <- function(id, tadat) {
           )
         )
       tadat$exceed_summary_coords_custom <- dat6b
-      
+
       # Download results
       output$download_results_custom <- shiny::downloadHandler(
         filename = function() {
@@ -672,18 +675,18 @@ mod_custom_analysis_server <- function(id, tadat) {
             temp_dir,
             "TADAShinyAnalyze_custom_prog.rda"
           )
-          
+
           custom_docx_source <- app_sys("extdata/ReadMe_Custom.docx")
           custom_docx_path <- file.path(temp_dir, "ReadMe_Custom.docx")
           file.copy(custom_docx_source, custom_docx_path)
-          
+
           write_tadat_file <- function(tadat, filename) {
             default_outfile <- tadat$default_outfile
             job_id <- tadat$job_id
             df_custom_result <- tadat$duration_table_custom
             df_custom_summary <- tadat$exceed_summary_custom
             temp_dir <- tadat$temp_dir
-            
+
             save(
               default_outfile,
               job_id,
@@ -693,9 +696,9 @@ mod_custom_analysis_server <- function(id, tadat) {
               file = filename
             )
           }
-          
+
           write_tadat_file(tadat, progress_file_custom_path)
-          
+
           readr::write_csv(
             x = as.data.frame(tadat$duration_table_custom),
             file = custom_result_path,
@@ -706,7 +709,7 @@ mod_custom_analysis_server <- function(id, tadat) {
             file = custom_summary_path,
             na = ""
           )
-          
+
           utils::zip(
             zipfile = file,
             files = c(
@@ -720,19 +723,19 @@ mod_custom_analysis_server <- function(id, tadat) {
         },
         contentType = "application/zip"
       )
-      
+
       shinyjs::enable("download_results_custom")
-      
+
       shinybusy::remove_modal_spinner(
         session = shiny::getDefaultReactiveDomain()
       )
     })
-    
+
     # Render the summary maps
     output$overall_map <- leaflet::renderLeaflet({
       shiny::req(tadat$exceed_summary_custom)
       shiny::req(tadat$use_type_custom)
-      
+
       create_overall_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
@@ -740,11 +743,11 @@ mod_custom_analysis_server <- function(id, tadat) {
         use_type = tadat$use_type_custom
       )
     })
-    
+
     output$use_map <- leaflet::renderLeaflet({
       shiny::req(tadat$exceed_summary_custom)
       shiny::req(tadat$use_type_custom)
-      
+
       create_use_map(
         data = tadat$exceed_summary_custom,
         coords_data = tadat$exceed_summary_coords_custom,
@@ -753,7 +756,7 @@ mod_custom_analysis_server <- function(id, tadat) {
         use_type = tadat$use_type_custom
       )
     })
-    
+
     # Render param_map (custom)
     output$param_map <- leaflet::renderLeaflet({
       shiny::req(
@@ -762,13 +765,13 @@ mod_custom_analysis_server <- function(id, tadat) {
         input$selected_use_param,
         tadat$use_type_custom
       )
-      
+
       filtered_data <- tadat$exceed_summary_custom |>
         dplyr::filter(
           ParameterForFilter %in% input$selected_param,
           ATTAINS.UseName %in% input$selected_use_param
         )
-      
+
       if (nrow(filtered_data) > 0) {
         create_parameter_map(
           data = filtered_data, # pass filtered
@@ -790,14 +793,14 @@ mod_custom_analysis_server <- function(id, tadat) {
           )
       }
     })
-    
+
     # Update dropdown choices
     shiny::observe({
       shiny::req(tadat$exceed_summary_custom)
-      
+
       params <- sort(unique(tadat$exceed_summary_custom$ParameterForFilter))
       uses <- sort(unique(tadat$exceed_summary_custom$ATTAINS.UseName))
-      
+
       shiny::updateSelectInput(
         session,
         "selected_use",
@@ -811,16 +814,16 @@ mod_custom_analysis_server <- function(id, tadat) {
         selected = params[1]
       )
     })
-    
+
     shiny::observe({
       shiny::req(tadat$exceed_summary_custom)
       shiny::req(input$selected_param)
-      
+
       filtered_data <- tadat$exceed_summary_custom |>
         dplyr::filter(ParameterForFilter %in% input$selected_param)
-      
+
       use_param <- sort(unique(filtered_data$ATTAINS.UseName))
-      
+
       shiny::updateSelectInput(
         session,
         "selected_use_param",
@@ -828,7 +831,7 @@ mod_custom_analysis_server <- function(id, tadat) {
         selected = use_param[1]
       )
     })
-    
+
     mod_excursion_viewer_server(
       "Summary_View_Custom",
       summary_dat = shiny::reactive(tadat$exceed_summary_custom)
