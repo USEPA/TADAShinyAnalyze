@@ -88,5 +88,8 @@ utils::globalVariables(c(
   "total_params",
   "use_param_exceeding",
   "ParameterForFilter",
-  "MagnitudeUnit"
+  "MagnitudeUnit",
+  "DateTime_Temperature",
+  "DateTime_pH",
+  "dt_diff"
 ))
