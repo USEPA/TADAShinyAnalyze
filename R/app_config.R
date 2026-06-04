@@ -12,7 +12,6 @@ app_sys <- function(...) {
   system.file(..., package = "TADAShinyAnalyze")
 }
 
-
 #' Read App Config
 #'
 #' @param value   Value to retrieve from the config file (a key).
@@ -23,35 +22,36 @@ app_sys <- function(...) {
 #'
 #' @noRd
 get_golem_config <- function(
-  value,
-  default = NULL,
-  config = Sys.getenv(
-    "GOLEM_CONFIG_ACTIVE",
-    Sys.getenv("R_CONFIG_ACTIVE", "default")
-  ),
-  use_parent = TRUE,
-  file = app_sys("golem-config.yml")
+    value,
+    default = NULL,
+    config = Sys.getenv(
+      "GOLEM_CONFIG_ACTIVE",
+      Sys.getenv("R_CONFIG_ACTIVE", "default")
+    ),
+    use_parent = TRUE,
+    file = app_sys("golem-config.yml")
 ) {
-  # Try to read the full config for the active profile
   cfg <- tryCatch(
     config::get(config = config, file = file, use_parent = use_parent),
     error = function(e) NULL
   )
-
-  # If config couldn't be read, return default
+  
   if (is.null(cfg)) {
     return(default)
   }
-
-  # If no key requested, return the whole config
+  
   if (missing(value) || is.null(value)) {
     return(cfg)
   }
-
-  # Return key if present; otherwise the default
+  
+  # Guard against invalid keys
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    return(default)
+  }
+  
   if (!is.null(cfg[[value]])) {
     return(cfg[[value]])
   }
-
+  
   default
 }
