@@ -1,10 +1,13 @@
 #' Run the Shiny Application
 #'
-#' @param ... arguments to pass to golem_opts.
-#' See `?golem::get_golem_options` for more details.
+#' @description Launch the Shiny application.
 #'
+#' @inheritParams shiny::shinyApp onStart options enableBookmarking uiPattern
+#' @param ... Named options forwarded to `golem_opts` via [golem::with_golem_options()],
+#'   retrievable with [golem::get_golem_options()].
+#'
+#' @return A shiny.appobj returned by [shiny::shinyApp()].
 #' @export
-#'
 run_app <- function(
     onStart = NULL,
     options = list(),
@@ -12,8 +15,11 @@ run_app <- function(
     uiPattern = "/",
     ...
 ) {
-  # set options (moved from top-level to avoid running during package load)
-  options(shiny.maxRequestSize = get_golem_config("MB_LIMIT") * 1024^2)
+  # Apply a 500 MB upload limit (from config, with 500 as fallback)
+  limit_mb <- as.numeric(golem::get_golem_config("MB_LIMIT", default = 500))
+  if (!is.na(limit_mb)) {
+    options(shiny.maxRequestSize = limit_mb * 1024^2)
+  }
   
   golem::with_golem_options(
     app = shiny::shinyApp(
