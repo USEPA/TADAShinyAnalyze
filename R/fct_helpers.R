@@ -1885,20 +1885,27 @@ na_gmean <- function(x) {
 
 ### This function simplify the duration and frequency summary output
 simplify_duration_frequency <- function(x) {
-  x2 <- x |>
-    dplyr::mutate(DurationUnit = stringr::str_remove(DurationUnit, "^n-")) |>
-    dplyr::mutate(
-      DurationValueUnit = stringr::str_c(DurationValue, " ", DurationUnit),
-      .keep = "unused"
-    ) |>
-    dplyr::mutate(
-      Duration = stringr::str_c(DurationValueUnit, DurationMethod, sep = " "),
-      .keep = "unused"
-    ) |>
-    dplyr::mutate(
-      Frequency = stringr::str_c(FreqValue, FreqMethod, sep = " "),
-      .keep = "unused"
-    )
+  # x is a data.frame with DurationUnit, DurationMethod, DurationValue, FreqValue, FreqMethod
+  unit_clean <- sub("^n-", "", x$DurationUnit)
+  
+  # Hyphenate value-unit and append method
+  duration <- ifelse(
+    !is.na(x$DurationValue) & !is.na(unit_clean) & !is.na(x$DurationMethod),
+    paste0(x$DurationValue, "-", unit_clean, " ", x$DurationMethod),
+    NA_character_
+  )
+  
+  # Build Frequency as "<value> <method>"
+  frequency <- ifelse(
+    !is.na(x$FreqValue) & !is.na(x$FreqMethod),
+    paste(x$FreqValue, x$FreqMethod),
+    NA_character_
+  )
+  
+  # Return x with two new columns (do not drop existing columns)
+  x$Duration <- duration
+  x$Frequency <- frequency
+  x
 }
 
 # Hardness calculation function
