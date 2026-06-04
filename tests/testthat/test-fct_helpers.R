@@ -936,7 +936,7 @@ test_that("duration_excursion_fun flags based on extremes and standard methods",
   )
   res_ext <- duration_excursion_fun(x_ext)
   expect_true(res_ext$Duration_Excursion)
-  
+
   # Standard: E_Value above upper threshold
   x_std <- data.frame(
     DurationMethod = "Arithmetic Mean",
@@ -949,7 +949,7 @@ test_that("duration_excursion_fun flags based on extremes and standard methods",
   )
   res_std <- duration_excursion_fun(x_std)
   expect_true(res_std$Duration_Excursion)
-  
+
   # Standard: E_Value within thresholds => FALSE
   x_std2 <- data.frame(
     DurationMethod = "Arithmetic Mean",
@@ -966,7 +966,7 @@ test_that("duration_excursion_fun flags based on extremes and standard methods",
 
 test_that("criteria_join with filter_type = TRUE returns empty when no matches", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- data.frame(
     TADA.CharacteristicName = c("ParamX"),
     TADA.ResultSampleFractionText = c("Total"),
@@ -981,7 +981,7 @@ test_that("criteria_join with filter_type = TRUE returns empty when no matches",
     DateTime = as.POSIXct("2020-01-01 08:00:00", tz = "UTC"),
     stringsAsFactors = FALSE
   )
-  
+
   y <- data.frame(
     TADA.CharacteristicName = c("ParamY"), # different
     TADA.ResultSampleFractionText = c("Dissolved"),
@@ -992,9 +992,10 @@ test_that("criteria_join with filter_type = TRUE returns empty when no matches",
     MagnitudeValueUpper = c(5),
     stringsAsFactors = FALSE
   )
-  
+
   out <- criteria_join(
-    x = x, y = y,
+    x = x,
+    y = y,
     match_type = "Option 1",
     use_type = "Option 1",
     filter_type = TRUE
@@ -1005,7 +1006,10 @@ test_that("criteria_join with filter_type = TRUE returns empty when no matches",
 
 test_that("pH_join handles tie on nearest DateTime and still returns single match per x row", {
   x <- data.frame(
-    DateTime = as.POSIXct(c("2020-01-01 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    DateTime = as.POSIXct(
+      c("2020-01-01 10:00:00", "2020-01-02 10:00:00"),
+      tz = "UTC"
+    ),
     TADA.MonitoringLocationIdentifier = c("S1", "S1"),
     TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
     TADA.LatitudeMeasure = c(45, 45),
@@ -1016,14 +1020,23 @@ test_that("pH_join handles tie on nearest DateTime and still returns single matc
   )
   # pH records symmetric around first DateTime
   ph <- data.frame(
-    DateTime = as.POSIXct(c("2020-01-01 09:00:00", "2020-01-01 11:00:00"), tz = "UTC"),
+    DateTime = as.POSIXct(
+      c("2020-01-01 09:00:00", "2020-01-01 11:00:00"),
+      tz = "UTC"
+    ),
     TADA.MonitoringLocationIdentifier = c("S1", "S1"),
     TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
     TADA.LatitudeMeasure = c(45, 45),
     TADA.LongitudeMeasure = c(-122, -122),
     pH = c(7.0, 7.2),
-    DateTime_upper = as.POSIXct(c("2020-01-02 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
-    DateTime_lower = as.POSIXct(c("2019-12-31 10:00:00", "2019-12-31 10:00:00"), tz = "UTC"),
+    DateTime_upper = as.POSIXct(
+      c("2020-01-02 10:00:00", "2020-01-02 10:00:00"),
+      tz = "UTC"
+    ),
+    DateTime_lower = as.POSIXct(
+      c("2019-12-31 10:00:00", "2019-12-31 10:00:00"),
+      tz = "UTC"
+    ),
     stringsAsFactors = FALSE
   )
   out <- pH_join(x, ph)
@@ -1034,7 +1047,10 @@ test_that("pH_join handles tie on nearest DateTime and still returns single matc
 
 test_that("temp_join handles tie on nearest DateTime and returns single match per x row", {
   x <- data.frame(
-    DateTime = as.POSIXct(c("2020-01-01 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
+    DateTime = as.POSIXct(
+      c("2020-01-01 10:00:00", "2020-01-02 10:00:00"),
+      tz = "UTC"
+    ),
     TADA.MonitoringLocationIdentifier = c("S1", "S1"),
     TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
     TADA.LatitudeMeasure = c(45, 45),
@@ -1044,14 +1060,23 @@ test_that("temp_join handles tie on nearest DateTime and returns single match pe
     stringsAsFactors = FALSE
   )
   tf <- data.frame(
-    DateTime = as.POSIXct(c("2020-01-01 09:00:00", "2020-01-01 11:00:00"), tz = "UTC"),
+    DateTime = as.POSIXct(
+      c("2020-01-01 09:00:00", "2020-01-01 11:00:00"),
+      tz = "UTC"
+    ),
     TADA.MonitoringLocationIdentifier = c("S1", "S1"),
     TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream"),
     TADA.LatitudeMeasure = c(45, 45),
     TADA.LongitudeMeasure = c(-122, -122),
     Temperature = c(9.0, 10.2),
-    DateTime_upper = as.POSIXct(c("2020-01-02 10:00:00", "2020-01-02 10:00:00"), tz = "UTC"),
-    DateTime_lower = as.POSIXct(c("2019-12-31 10:00:00", "2019-12-31 10:00:00"), tz = "UTC"),
+    DateTime_upper = as.POSIXct(
+      c("2020-01-02 10:00:00", "2020-01-02 10:00:00"),
+      tz = "UTC"
+    ),
+    DateTime_lower = as.POSIXct(
+      c("2019-12-31 10:00:00", "2019-12-31 10:00:00"),
+      tz = "UTC"
+    ),
     stringsAsFactors = FALSE
   )
   out <- temp_join(x, tf)
@@ -1106,11 +1131,7 @@ test_that("time_aggregate works for type = 'AU' and preserves ordering", {
     EquationType = rep(NA_character_, 3),
     ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03")),
     DateTime = as.POSIXct(
-      c(
-        "2020-01-01 08:00:00",
-        "2020-01-02 08:00:00",
-        "2020-01-03 08:00:00"
-      ),
+      c("2020-01-01 08:00:00", "2020-01-02 08:00:00", "2020-01-03 08:00:00"),
       tz = "UTC"
     ),
     TADA.ResultMeasureValue = c(1, 2, 3),
@@ -1158,10 +1179,13 @@ test_that("window_before_period handles unknown unit fallback to days", {
 
 test_that("capture_all_output wraps long messages respecting width and returns result", {
   msg <- paste(rep("long message fragment", 20), collapse = " ")
-  res <- capture_all_output({
-    message(msg)
-    99L
-  }, width = 40)
+  res <- capture_all_output(
+    {
+      message(msg)
+      99L
+    },
+    width = 40
+  )
   expect_equal(res$result, 99L)
   # Expect wrapped lines (multiple lines)
   expect_true(length(res$lines) >= 2)
@@ -1170,7 +1194,7 @@ test_that("capture_all_output wraps long messages respecting width and returns r
 
 test_that("duration_cal computes window statistics and handles extremes and complete_windows flag (via time_aggregate)", {
   skip_if_not_installed("slider")
-  
+
   # Build raw measurements (must flow through time_aggregate to create Value)
   x <- data.frame(
     TADA.MonitoringLocationIdentifier = rep("S1", 4),
@@ -1191,16 +1215,28 @@ test_that("duration_cal computes window statistics and handles extremes and comp
     EquationBased = rep(NA_character_, 4),
     DurationUnit = rep("n-day", 4),
     # Mix extremes and mean so we can test both branches
-    DurationMethod = c("Arithmetic Extremes", "Arithmetic Extremes", "Arithmetic Mean", "Arithmetic Mean"),
+    DurationMethod = c(
+      "Arithmetic Extremes",
+      "Arithmetic Extremes",
+      "Arithmetic Mean",
+      "Arithmetic Mean"
+    ),
     DurationValue = rep(1L, 4),
     FreqValue = rep(0L, 4),
     FreqMethod = rep("NumberNotMeeting", 4),
     EquationType = rep(NA_character_, 4),
-    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-01", "2020-01-02")),
+    ActivityStartDate = as.Date(c(
+      "2020-01-01",
+      "2020-01-02",
+      "2020-01-01",
+      "2020-01-02"
+    )),
     DateTime = as.POSIXct(
       c(
-        "2020-01-01 08:00:00", "2020-01-02 08:00:00",
-        "2020-01-01 08:00:00", "2020-01-02 08:00:00"
+        "2020-01-01 08:00:00",
+        "2020-01-02 08:00:00",
+        "2020-01-01 08:00:00",
+        "2020-01-02 08:00:00"
       ),
       tz = "UTC"
     ),
@@ -1212,28 +1248,43 @@ test_that("duration_cal computes window statistics and handles extremes and comp
     Hardness = c(100, 100, 100, 100),
     stringsAsFactors = FALSE
   )
-  
+
   # Pipeline: aggregate -> duration windows
   agg <- time_aggregate(x, type = "MLid")
   expect_true("Value" %in% names(agg))
   out_true <- duration_cal(agg, type = "MLid", complete_windows = TRUE)
-  
-  expect_true(all(c(
-    "Result_Duration", "Window_Start_win", "Window_End_win",
-    "Value_win_min", "Value_win_max", "Window_Status"
-  ) %in% names(out_true)))
-  
+
+  expect_true(all(
+    c(
+      "Result_Duration",
+      "Window_Start_win",
+      "Window_End_win",
+      "Value_win_min",
+      "Value_win_max",
+      "Window_Status"
+    ) %in%
+      names(out_true)
+  ))
+
   # Extremes should have NA Result_Duration per implementation
-  ext_rows <- out_true[grep("Arithmetic Extremes", out_true$DurationMethod, ignore.case = TRUE), , drop = FALSE]
+  ext_rows <- out_true[
+    grep("Arithmetic Extremes", out_true$DurationMethod, ignore.case = TRUE),
+    ,
+    drop = FALSE
+  ]
   # Ensure we actually have extremes rows
   expect_true(nrow(ext_rows) >= 1)
   expect_true(all(is.na(ext_rows$Result_Duration)))
-  
+
   # Means should be finite
-  mean_rows <- out_true[grep("Arithmetic Mean", out_true$DurationMethod, ignore.case = TRUE), , drop = FALSE]
+  mean_rows <- out_true[
+    grep("Arithmetic Mean", out_true$DurationMethod, ignore.case = TRUE),
+    ,
+    drop = FALSE
+  ]
   expect_true(nrow(mean_rows) >= 1)
   expect_true(all(is.finite(mean_rows$Result_Duration)))
-  
+
   # complete_windows = FALSE should still return complete windows
   out_false <- duration_cal(agg, type = "MLid", complete_windows = FALSE)
   expect_true(any(out_false$Window_Status == "complete"))
@@ -1241,14 +1292,14 @@ test_that("duration_cal computes window statistics and handles extremes and comp
 
 test_that("frequency_summary computes outputs for all frequency methods (via duration_cal)", {
   skip_if_not_installed("slider")
-  
+
   # Helper to run the pipeline and frequency summary
   run_freq <- function(df, type) {
     agg <- time_aggregate(df, type = type)
     dur <- duration_cal(agg, type = type, complete_windows = TRUE)
     frequency_summary(dur, type = type)
   }
-  
+
   # Base raw measurements for NumberNotMeeting and Percent of samples not meeting
   x_num <- data.frame(
     TADA.MonitoringLocationIdentifier = rep("S1", 4),
@@ -1273,13 +1324,22 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
     FreqValue = rep(0L, 4),
     FreqMethod = rep("NumberNotMeeting", 4),
     EquationType = rep(NA_character_, 4),
-    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04")),
+    ActivityStartDate = as.Date(c(
+      "2020-01-01",
+      "2020-01-02",
+      "2020-01-03",
+      "2020-01-04"
+    )),
     DateTime = as.POSIXct(
-      c("2020-01-01 08:00:00", "2020-01-02 08:00:00",
-        "2020-01-03 08:00:00", "2020-01-04 08:00:00"),
+      c(
+        "2020-01-01 08:00:00",
+        "2020-01-02 08:00:00",
+        "2020-01-03 08:00:00",
+        "2020-01-04 08:00:00"
+      ),
       tz = "UTC"
     ),
-    TADA.ResultMeasureValue = c(9, 11, 10, 12),  # 2 excursions if upper=10
+    TADA.ResultMeasureValue = c(9, 11, 10, 12), # 2 excursions if upper=10
     MagnitudeValueLower = rep(NA_real_, 4),
     MagnitudeValueUpper = rep(10, 4),
     pH = c(7, 7, 7, 7),
@@ -1287,11 +1347,13 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
     Hardness = c(100, 100, 100, 100),
     stringsAsFactors = FALSE
   )
-  
+
   fs_num <- run_freq(x_num, type = "MLid")
-  expect_true(all(c("Exceedance", "Sample_Count", "Number_of_Excursions") %in% names(fs_num)))
+  expect_true(all(
+    c("Exceedance", "Sample_Count", "Number_of_Excursions") %in% names(fs_num)
+  ))
   expect_true(any(fs_num$Exceedance == "Exceed"))
-  
+
   # Percent of samples not meeting: 50% excursions vs threshold 20% => Exceed
   x_pct <- x_num
   x_pct$FreqMethod <- "Percent of samples not meeting"
@@ -1299,7 +1361,7 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
   fs_pct <- run_freq(x_pct, type = "MLid")
   expect_true(any(fs_pct$Exceedance == "Exceed"))
   expect_true(is.finite(fs_pct$Excursion_Percentage))
-  
+
   # Percentile: make a dataset with an outlier; 90th percentile should exceed upper 10
   x_perc <- data.frame(
     TADA.MonitoringLocationIdentifier = rep("S1", 5),
@@ -1324,11 +1386,21 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
     FreqValue = rep(90, 5),
     FreqMethod = rep("Percentile", 5),
     EquationType = rep(NA_character_, 5),
-    ActivityStartDate = as.Date(c("2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05")),
+    ActivityStartDate = as.Date(c(
+      "2020-01-01",
+      "2020-01-02",
+      "2020-01-03",
+      "2020-01-04",
+      "2020-01-05"
+    )),
     DateTime = as.POSIXct(
-      c("2020-01-01 08:00:00", "2020-01-02 08:00:00",
-        "2020-01-03 08:00:00", "2020-01-04 08:00:00",
-        "2020-01-05 08:00:00"),
+      c(
+        "2020-01-01 08:00:00",
+        "2020-01-02 08:00:00",
+        "2020-01-03 08:00:00",
+        "2020-01-04 08:00:00",
+        "2020-01-05 08:00:00"
+      ),
       tz = "UTC"
     ),
     TADA.ResultMeasureValue = c(1, 2, 3, 4, 100),
@@ -1342,7 +1414,7 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
   fs_perc <- run_freq(x_perc, type = "MLid")
   expect_true("Percentile" %in% names(fs_perc))
   expect_true(any(fs_perc$Exceedance == "Exceed"))
-  
+
   # n-samples in 3 years: allow 1 excursion in 3 years; build a 3.5-year series with multiple excursions
   x_n3 <- data.frame(
     TADA.MonitoringLocationIdentifier = rep("S1", 8),
@@ -1367,18 +1439,26 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
     FreqValue = rep(1L, 8), # allow 1 excursion in 3 years
     FreqMethod = rep("n-samples in 3 years", 8),
     EquationType = rep(NA_character_, 8),
-    ActivityStartDate = as.Date(
-      c(
-        "2018-01-01", "2018-06-01", "2019-01-01", "2019-06-01",
-        "2020-01-01", "2020-06-01", "2021-01-01", "2021-06-01"
-      )
-    ),
+    ActivityStartDate = as.Date(c(
+      "2018-01-01",
+      "2018-06-01",
+      "2019-01-01",
+      "2019-06-01",
+      "2020-01-01",
+      "2020-06-01",
+      "2021-01-01",
+      "2021-06-01"
+    )),
     DateTime = as.POSIXct(
       c(
-        "2018-01-01 08:00:00", "2018-06-01 08:00:00",
-        "2019-01-01 08:00:00", "2019-06-01 08:00:00",
-        "2020-01-01 08:00:00", "2020-06-01 08:00:00",
-        "2021-01-01 08:00:00", "2021-06-01 08:00:00"
+        "2018-01-01 08:00:00",
+        "2018-06-01 08:00:00",
+        "2019-01-01 08:00:00",
+        "2019-06-01 08:00:00",
+        "2020-01-01 08:00:00",
+        "2020-06-01 08:00:00",
+        "2021-01-01 08:00:00",
+        "2021-06-01 08:00:00"
       ),
       tz = "UTC"
     ),
