@@ -110,11 +110,13 @@ pH_join <- function(x, y) {
     TADA.LongitudeMeasure,
     dplyr::between(DateTime, DateTime_lower, DateTime_upper)
   )
-  
+
   x2 <- x |>
     dplyr::left_join(y, by = by, relationship = "many-to-many") |>
     dplyr::rename(DateTime = DateTime.x, DateTime_pH = DateTime.y) |>
-    dplyr::mutate(dt_diff = abs(as.numeric(difftime(DateTime_pH, DateTime, units = "secs")))) |>
+    dplyr::mutate(
+      dt_diff = abs(as.numeric(difftime(DateTime_pH, DateTime, units = "secs")))
+    ) |>
     dplyr::group_by(
       TADA.MonitoringLocationIdentifier,
       TADA.MonitoringLocationTypeName,
@@ -125,7 +127,7 @@ pH_join <- function(x, y) {
     dplyr::slice_min(dt_diff, n = 1, with_ties = FALSE) |>
     dplyr::ungroup() |>
     dplyr::select(-DateTime_lower, -DateTime_upper, -dt_diff)
-  
+
   return(x2)
 }
 
@@ -164,11 +166,17 @@ temp_join <- function(x, y) {
     TADA.LongitudeMeasure,
     dplyr::between(DateTime, DateTime_lower, DateTime_upper)
   )
-  
+
   x2 <- x |>
     dplyr::left_join(y, by = by, relationship = "many-to-many") |>
     dplyr::rename(DateTime = DateTime.x, DateTime_Temperature = DateTime.y) |>
-    dplyr::mutate(dt_diff = abs(as.numeric(difftime(DateTime_Temperature, DateTime, units = "secs")))) |>
+    dplyr::mutate(
+      dt_diff = abs(as.numeric(difftime(
+        DateTime_Temperature,
+        DateTime,
+        units = "secs"
+      )))
+    ) |>
     dplyr::group_by(
       TADA.MonitoringLocationIdentifier,
       TADA.MonitoringLocationTypeName,
@@ -179,7 +187,7 @@ temp_join <- function(x, y) {
     dplyr::slice_min(dt_diff, n = 1, with_ties = FALSE) |>
     dplyr::ungroup() |>
     dplyr::select(-DateTime_lower, -DateTime_upper, -dt_diff)
-  
+
   return(x2)
 }
 
@@ -1033,9 +1041,7 @@ time_aggregate <- function(x, type) {
       N_in_Step = dplyr::n(),
       .groups = "drop"
     ) |>
-    dplyr::mutate(
-      DateTime = as.POSIXct(Date, tz = "UTC")
-    )
+    dplyr::mutate(DateTime = as.POSIXct(Date, tz = "UTC"))
 
   # Bind and sort
   result <- dplyr::bind_rows(hourly, daily)
@@ -1306,30 +1312,30 @@ duration_excursion_fun <- function(x) {
 
 # A function to update the magnitude
 magnitude_update <- function(
-    x,
-    match_type,
-    hardness_equation,
-    pH_equation,
-    pH_Hardness_equation,
-    pH_Temperature_equation
+  x,
+  match_type,
+  hardness_equation,
+  pH_equation,
+  pH_Hardness_equation,
+  pH_Temperature_equation
 ) {
   ## Hardness
   dat_hardness <- x |>
     dplyr::filter(EquationType %in% "Hardness") |>
     # Check the completeness of the input data
     dplyr::filter(dplyr::if_any(c(Hardness_win), ~ !is.na(.)))
-  
+
   if (nrow(dat_hardness) > 0) {
     if (match_type %in% "Option 1") {
       hardness_equation2 <- hardness_equation
     } else {
       y_col <- names(hardness_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-      
+
       hardness_equation2 <- hardness_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-    
+
     dat_hardness2 <- dat_hardness |>
       dplyr::left_join(hardness_equation2) |>
       dplyr::mutate(
@@ -1348,23 +1354,23 @@ magnitude_update <- function(
   } else {
     dat_hardness2 <- dat_hardness
   }
-  
+
   # pH
   dat_pH <- x |>
     dplyr::filter(EquationType %in% "pH") |>
     dplyr::filter(dplyr::if_any(c(pH_win), ~ !is.na(.)))
-  
+
   if (nrow(dat_pH) > 0) {
     if (match_type %in% "Option 1") {
       pH_equation2 <- pH_equation
     } else {
       y_col <- names(pH_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-      
+
       pH_equation2 <- pH_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-    
+
     dat_pH2 <- dat_pH |>
       dplyr::left_join(pH_equation2) |>
       dplyr::mutate(
@@ -1377,23 +1383,23 @@ magnitude_update <- function(
   } else {
     dat_pH2 <- dat_pH
   }
-  
+
   # pH and Hardness
   dat_pH_hardness <- x |>
     dplyr::filter(EquationType %in% "pH and Hardness") |>
     dplyr::filter(dplyr::if_any(c(pH_win, Hardness_win), ~ !is.na(.)))
-  
+
   if (nrow(dat_pH_hardness) > 0) {
     if (match_type %in% "Option 1") {
       pH_Hardness_equation2 <- pH_Hardness_equation
     } else {
       y_col <- names(pH_Hardness_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-      
+
       pH_Hardness_equation2 <- pH_Hardness_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-    
+
     dat_pH_hardness2 <- dat_pH_hardness |>
       dplyr::left_join(pH_Hardness_equation2) |>
       dplyr::mutate(
@@ -1419,23 +1425,23 @@ magnitude_update <- function(
   } else {
     dat_pH_hardness2 <- dat_pH_hardness
   }
-  
+
   # pH and Temperature
   dat_pH_temperature <- x |>
     dplyr::filter(EquationType %in% "pH and Temperature") |>
     dplyr::filter(dplyr::if_any(c(pH_win, Temperature_win), ~ !is.na(.)))
-  
+
   if (nrow(dat_pH_temperature) > 0) {
     if (match_type %in% "Option 1") {
       pH_Temperature_equation2 <- pH_Temperature_equation
     } else {
       y_col <- names(pH_Temperature_equation)
       y_col2 <- y_col[!y_col %in% "TADA.ResultSampleFractionText"]
-      
+
       pH_Temperature_equation2 <- pH_Temperature_equation |>
         dplyr::distinct(dplyr::across(dplyr::all_of(y_col2)))
     }
-    
+
     dat_pH_temperature2 <- dat_pH_temperature |>
       dplyr::left_join(pH_Temperature_equation2) |>
       dplyr::mutate(
@@ -1452,7 +1458,7 @@ magnitude_update <- function(
   } else {
     dat_pH_temperature2 <- dat_pH_temperature
   }
-  
+
   dplyr::bind_rows(
     dat_hardness2,
     dat_pH2,
@@ -1822,12 +1828,24 @@ frequency_summary <- function(x, type) {
 
 # Helper functions for duration and frequency analysis
 window_before_period <- function(unit, value) {
-  if (is.na(value)) value <- 1
-  if (is.na(unit)) unit <- "n-day"
-  if (unit == "n-hour")   return(lubridate::hours(max(value, 1) - 1))
-  if (unit == "n-day")    return(lubridate::days(max(value, 1) - 1))
-  if (unit == "n-month")  return(lubridate::month(max(value, 1)) - lubridate::days(1))
-  if (unit == "n-season") return(lubridate::month(3L * max(value, 1)) - lubridate::days(1))
+  if (is.na(value)) {
+    value <- 1
+  }
+  if (is.na(unit)) {
+    unit <- "n-day"
+  }
+  if (unit == "n-hour") {
+    return(lubridate::hours(max(value, 1) - 1))
+  }
+  if (unit == "n-day") {
+    return(lubridate::days(max(value, 1) - 1))
+  }
+  if (unit == "n-month") {
+    return(lubridate::month(max(value, 1)) - lubridate::days(1))
+  }
+  if (unit == "n-season") {
+    return(lubridate::month(3L * max(value, 1)) - lubridate::days(1))
+  }
   lubridate::days(max(value, 1) - 1)
 }
 
