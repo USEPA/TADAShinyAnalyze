@@ -1828,18 +1828,30 @@ frequency_summary <- function(x, type) {
 
 # Helper functions for duration and frequency analysis
 window_before_period <- function(unit, value) {
-  if (is.na(value)) value <- 1
-  if (is.na(unit)) unit <- "n-day"
-  
+  if (is.na(value)) {
+    value <- 1
+  }
+  if (is.na(unit)) {
+    unit <- "n-day"
+  }
+
   v <- max(value, 1)
-  
-  if (unit == "n-hour")   return(lubridate::hours(v - 1))
-  if (unit == "n-day")    return(lubridate::days(v - 1))
-  
+
+  if (unit == "n-hour") {
+    return(lubridate::hours(v - 1))
+  }
+  if (unit == "n-day") {
+    return(lubridate::days(v - 1))
+  }
+
   # Use periods for month/season windows
-  if (unit == "n-month")  return(lubridate::period(v, "months") - lubridate::days(1))
-  if (unit == "n-season") return(lubridate::period(3L * v, "months") - lubridate::days(1))
-  
+  if (unit == "n-month") {
+    return(lubridate::period(v, "months") - lubridate::days(1))
+  }
+  if (unit == "n-season") {
+    return(lubridate::period(3L * v, "months") - lubridate::days(1))
+  }
+
   # Fallback: treat as days
   lubridate::days(v - 1)
 }

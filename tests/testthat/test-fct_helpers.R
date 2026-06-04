@@ -521,18 +521,18 @@ test_that("capture_all_output collects messages and warnings and returns result"
 test_that("window_before_period returns valid periods for n-month and n-season", {
   wb_m2 <- window_before_period("n-month", 2)
   wb_s1 <- window_before_period("n-season", 1)
-  
+
   expect_true(lubridate::is.period(wb_m2))
   expect_true(lubridate::is.period(wb_s1))
-  
+
   # Convert to durations for approximate checks (months vary by calendar)
   dm2 <- lubridate::as.duration(wb_m2)
   ds1 <- lubridate::as.duration(wb_s1)
-  
+
   # 2 months - 1 day should be roughly 59-62 days
   expect_true(lubridate::time_length(dm2, "days") > 58)
   expect_true(lubridate::time_length(dm2, "days") < 63)
-  
+
   # 3 months - 1 day (season) should be roughly 89-93 days
   expect_true(lubridate::time_length(ds1, "days") > 88)
   expect_true(lubridate::time_length(ds1, "days") < 94)
@@ -543,12 +543,12 @@ test_that("pH_filter, pH_join, and pH_fun compute means and nearest joins", {
   ph <- pH_filter(x)
   expect_true(all(c("DateTime_upper", "DateTime_lower", "pH") %in% names(ph)))
   expect_true(nrow(ph) >= 1)
-  
+
   out_join <- pH_join(x, ph)
   expect_true(all(c("DateTime", "DateTime_pH") %in% names(out_join)))
   # verify the nearest pH record is selected
   expect_true(!anyDuplicated(out_join$DateTime))
-  
+
   out_fun <- pH_fun(x)
   expect_true("pH" %in% names(out_fun))
 })
@@ -556,13 +556,15 @@ test_that("pH_filter, pH_join, and pH_fun compute means and nearest joins", {
 test_that("temp_filter, temp_join, and Temperature_fun compute means and nearest joins", {
   x <- make_base_obs()
   tf <- temp_filter(x)
-  expect_true(all(c("DateTime_upper", "DateTime_lower", "Temperature") %in% names(tf)))
+  expect_true(all(
+    c("DateTime_upper", "DateTime_lower", "Temperature") %in% names(tf)
+  ))
   expect_true(nrow(tf) >= 1)
-  
+
   out_join <- temp_join(x, tf)
   expect_true(all(c("DateTime", "DateTime_Temperature") %in% names(out_join)))
   expect_true(!anyDuplicated(out_join$DateTime))
-  
+
   out_fun <- Temperature_fun(x)
   expect_true("Temperature" %in% names(out_fun))
 })
@@ -582,7 +584,7 @@ test_that("hardness_filter and hardness_fun cap hardness at 400", {
   hf <- hardness_filter(hdat)
   expect_true("Hardness" %in% names(hf))
   expect_true(all(is.finite(hf$Hardness)))
-  
+
   capped <- hardness_fun(hdat)
   expect_true("Hardness" %in% names(capped))
   expect_true(all(capped$Hardness <= 400))
@@ -628,7 +630,7 @@ test_that("capture_all_output returns try-error on stop()", {
 
 test_that("criteria_join handles options and filtering robustly", {
   skip_if_not_installed("EPATADA")
-  
+
   # Minimal x and y inputs with consistent keys to exercise join logic
   x <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
@@ -638,7 +640,11 @@ test_that("criteria_join handles options and filtering robustly", {
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -646,7 +652,7 @@ test_that("criteria_join handles options and filtering robustly", {
       tz = "UTC"
     )
   )
-  
+
   y <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -656,7 +662,7 @@ test_that("criteria_join handles options and filtering robustly", {
     ATTAINS.OrganizationIdentifier = c("Org1", "Org2"),
     MagnitudeValueUpper = c(10, 5)
   )
-  
+
   # Option 1 match_type + Option 1 use_type (full key usage), keep all rows
   out1 <- criteria_join(
     x = x,
@@ -672,7 +678,7 @@ test_that("criteria_join handles options and filtering robustly", {
   expect_true(all(out1$Matched %in% c("Yes", "No")))
   # If thresholds propagate, MagnitudeValueUpper may be present; test gently
   expect_true("MagnitudeValueUpper" %in% names(out1))
-  
+
   # Option 2 use_type (drop ATTAINS.UseName from x before join), keep all rows
   out2 <- criteria_join(
     x = x,
@@ -687,7 +693,7 @@ test_that("criteria_join handles options and filtering robustly", {
   expect_true(all(out2$Matched %in% c("Yes", "No")))
   # Use comes from y in this path; ensure column exists
   expect_true("ATTAINS.UseName" %in% names(out2))
-  
+
   # Option 2 match_type (do not require fraction/speciation)
   out3 <- criteria_join(
     x = x,
@@ -706,7 +712,7 @@ test_that("criteria_join handles options and filtering robustly", {
 
 test_that("criteria_join returns consistent structure for Option 1/Option 1 with filter_type = FALSE", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -715,7 +721,11 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -723,7 +733,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
       tz = "UTC"
     )
   )
-  
+
   y <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -733,7 +743,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     ATTAINS.OrganizationIdentifier = c("Org1", "Org2"),
     MagnitudeValueUpper = c(10, 5)
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,
@@ -741,7 +751,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
     use_type = "Option 1",
     filter_type = FALSE
   )
-  
+
   expect_s3_class(out, "data.frame")
   # left_join should retain x row count regardless of matches
   expect_equal(nrow(out), nrow(x))
@@ -749,12 +759,15 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
   expect_true("Matched" %in% names(out))
   expect_true(all(out$Matched %in% c("Yes", "No")))
   # Ensure key columns persisted through join
-  expect_true(all(c(
-    "TADA.CharacteristicName",
-    "TADA.ResultMeasure.MeasureUnitCode",
-    "ATTAINS.UseName",
-    "ATTAINS.OrganizationIdentifier"
-  ) %in% names(out)))
+  expect_true(all(
+    c(
+      "TADA.CharacteristicName",
+      "TADA.ResultMeasure.MeasureUnitCode",
+      "ATTAINS.UseName",
+      "ATTAINS.OrganizationIdentifier"
+    ) %in%
+      names(out)
+  ))
   # Threshold column may be present; if present, should be numeric
   if ("MagnitudeValueUpper" %in% names(out)) {
     expect_true(is.numeric(out$MagnitudeValueUpper))
@@ -763,7 +776,7 @@ test_that("criteria_join returns consistent structure for Option 1/Option 1 with
 
 test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type = FALSE keeps structure", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -772,7 +785,11 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -780,7 +797,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
       tz = "UTC"
     )
   )
-  
+
   y <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -790,7 +807,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     ATTAINS.OrganizationIdentifier = c("Org1", "Org2"),
     MagnitudeValueUpper = c(10, 5)
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,
@@ -798,7 +815,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
     use_type = "Option 2",
     filter_type = FALSE
   )
-  
+
   expect_s3_class(out, "data.frame")
   expect_equal(nrow(out), nrow(x))
   expect_true("Matched" %in% names(out))
@@ -809,7 +826,7 @@ test_that("criteria_join Option 1/Option 2 (use dropped from x) with filter_type
 
 test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) works with both filter settings", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total", "Total"),
@@ -818,7 +835,11 @@ test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) work
     ATTAINS.UseName = c("Aquatic Life", "Aquatic Life", "Recreation"),
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     TADA.MonitoringLocationIdentifier = c("S1", "S2", "S3"),
-    TADA.MonitoringLocationTypeName = c("River/Stream", "River/Stream", "River/Stream"),
+    TADA.MonitoringLocationTypeName = c(
+      "River/Stream",
+      "River/Stream",
+      "River/Stream"
+    ),
     TADA.LatitudeMeasure = c(45, 46, 47),
     TADA.LongitudeMeasure = c(-122, -123, -124),
     DateTime = as.POSIXct(
@@ -826,7 +847,7 @@ test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) work
       tz = "UTC"
     )
   )
-  
+
   y <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     # Fraction/speciation will be ignored in match_type Option 2
@@ -837,7 +858,7 @@ test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) work
     ATTAINS.OrganizationIdentifier = c("Org1", "Org2"),
     MagnitudeValueUpper = c(10, 5)
   )
-  
+
   # filter_type = FALSE: row count retained, Matched present
   out_all <- criteria_join(
     x = x,
@@ -850,7 +871,7 @@ test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) work
   expect_equal(nrow(out_all), nrow(x))
   expect_true("Matched" %in% names(out_all))
   expect_true(all(out_all$Matched %in% c("Yes", "No")))
-  
+
   # filter_type = TRUE: zero or more rows, but if rows exist, they should all be "Yes"
   out_filt <- criteria_join(
     x = x,
@@ -868,7 +889,7 @@ test_that("criteria_join Option 2 match_type (ignoring fraction/speciation) work
 
 test_that("criteria_join tolerates duplicate criteria rows (many-to-many) and preserves Matched", {
   skip_if_not_installed("EPATADA")
-  
+
   x <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamB"),
     TADA.ResultSampleFractionText = c("Dissolved", "Total"),
@@ -885,7 +906,7 @@ test_that("criteria_join tolerates duplicate criteria rows (many-to-many) and pr
       tz = "UTC"
     )
   )
-  
+
   # Duplicate criteria rows for ParamA mg/L to exercise many-to-many join
   y <- tibble::tibble(
     TADA.CharacteristicName = c("ParamA", "ParamA", "ParamB"),
@@ -896,7 +917,7 @@ test_that("criteria_join tolerates duplicate criteria rows (many-to-many) and pr
     ATTAINS.OrganizationIdentifier = c("Org1", "Org1", "Org2"),
     MagnitudeValueUpper = c(10, 12, 5)
   )
-  
+
   out <- criteria_join(
     x = x,
     y = y,

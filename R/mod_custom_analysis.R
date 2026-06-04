@@ -639,10 +639,12 @@ mod_custom_analysis_server <- function(id, tadat) {
       # exceed_summary_custom must be built with ParameterForFilter
       # the UI uses it to populate “selected_param” and to filter param_map
       tadat$exceed_summary_custom <- dat11 |>
-        dplyr::mutate(ParameterForFilter = dplyr::coalesce(
-          ATTAINS.ParameterName,
-          TADA.CharacteristicName
-        ))
+        dplyr::mutate(
+          ParameterForFilter = dplyr::coalesce(
+            ATTAINS.ParameterName,
+            TADA.CharacteristicName
+          )
+        )
       tadat$exceed_summary_coords_custom <- dat6b
 
       # Download results
@@ -748,14 +750,19 @@ mod_custom_analysis_server <- function(id, tadat) {
 
     # Render param_map (custom)
     output$param_map <- leaflet::renderLeaflet({
-      req(tadat$exceed_summary_custom, input$selected_param, input$selected_use_param, tadat$use_type_custom)
-      
+      req(
+        tadat$exceed_summary_custom,
+        input$selected_param,
+        input$selected_use_param,
+        tadat$use_type_custom
+      )
+
       filtered_data <- tadat$exceed_summary_custom |>
         dplyr::filter(
           ParameterForFilter %in% input$selected_param,
           ATTAINS.UseName %in% input$selected_use_param
         )
-      
+
       if (nrow(filtered_data) > 0) {
         create_parameter_map(
           data = filtered_data, # pass filtered
