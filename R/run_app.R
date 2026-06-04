@@ -16,7 +16,7 @@ run_app <- function(
     ...
 ) {
   # Apply a 500 MB upload limit (from config, with 500 as fallback)
-  limit_mb <- as.numeric(golem::get_golem_config("MB_LIMIT", default = 500))
+  limit_mb <- as.numeric(get_golem_config("MB_LIMIT", default = 500))
   if (!is.na(limit_mb)) {
     options(shiny.maxRequestSize = limit_mb * 1024^2)
   }

@@ -6,6 +6,8 @@
 #' @noRd
 #'
 
+# Do NOT set global options here. Upload size and timeouts are configured in run_app().
+
 # server
 app_server <- function(input, output, session) {
   # Fetch ATTAINS organization IDs
