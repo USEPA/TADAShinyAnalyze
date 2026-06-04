@@ -17,6 +17,10 @@ mod_criteria_table_ui <- function(id) {
 
     # Instructions
     htmltools::p(
+      "After you create the Criteria and Methodology template, open the Excel file. Check the Data Dictionary and Allowable Values tabs, and use the drop-down options where shown so the analysis works correctly.",
+      style = "font-weight: bold; color: red;"
+    ),
+    htmltools::p(
       "Use this tab to generate the criteria table based on the following options:"
     ),
     htmltools::tags$ul(
@@ -42,7 +46,7 @@ mod_criteria_table_ui <- function(id) {
       )
     ),
     htmltools::p(
-      'Once the selection is completed, click the "Generate Template" button to generate an Excel file with the criteria table template. When the template is ready, click "Download Template" to save.'
+      'Once the selection is completed, click the "Generate and Download Template" button to generate an Excel file with the criteria table template.'
     ),
 
     htmltools::hr(),
@@ -75,7 +79,7 @@ mod_criteria_table_ui <- function(id) {
         ),
         shinyjs::disabled(shiny::actionButton(
           ns("Generate_Template"),
-          "Generate Template",
+          "Generate and Download Template",
           shiny::icon("computer"),
           style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
         ))
@@ -471,7 +475,7 @@ mod_criteria_table_server <- function(id, tadat) {
         if (!is.null(warning_msg()) && nzchar(trimws(warning_msg()))) {
           paste("Template generation issue:\n", warning_msg())
         } else {
-          "Ready to generate template. Select options above and click 'Generate Template'."
+          "Ready to generate template. Select options above and click 'Generate and Download Template'."
         }
       } else if (inherits(cap$result, "try-error")) {
         paste("Error:\n", as.character(cap$result))
@@ -713,48 +717,66 @@ mod_criteria_table_server <- function(id, tadat) {
           )
         )
 
-      # Build summary text
-      #if( equationBased_NA > 0 ){
-      text <- paste0(
-        "Loaded dataset has ",
-        nrow(df_template),
-        " rows.\n",
-        "   and ",
-        nrow(df_template2),
-        " rows contain information for analysis. Any rows missing criteria or methodology information has been removed. \n",
-        "There are ",
-        length(unique(stats::na.omit(
-          df_template$ATTAINS.OrganizationIdentifier
-        ))),
-        " unique ATTAINS.OrganizationIdentifier(s).\n",
-        "There are ",
-        length(unique(stats::na.omit(df_template$TADA.CharacteristicName))),
-        " unique TADA.CharacteristicName(s).\n",
-        "There are ",
-        length(unique(stats::na.omit(df_template$ATTAINS.UseName))),
-        " unique ATTAINS.UseName(s).\n",
-        "There are ",
-        length(unique(stats::na.omit(
-          df_template$TADA.ComparableDataIdentifier
-        ))),
-        " unique TADA.ComparableDataIdentifier(s).\n",
-        "Warning: EquationBased must be populated - Your uploaded criteria table contains ",
-        equationBased_NA,
-        " rows for analysis with EquationBased values: NA. \n",
-        "   These NAs will be filled in as 'No'. \n",
-        # "Lastly, please ensure your criteria table's MagnitudeUnit matches the TADA.ResultMeasureValue.MeasureUnit in your TADA data frame.\n",
-        TADACommunityHub::validateATTAINSParam(df_template2)$message,
-        "\n",
-        TADACommunityHub::validateATTAINSUse(df_template2)$message,
-        "\n",
-        TADACommunityHub::validateWQXUnits(df_template2)$message,
-        "\n"
-        # TADACommunityHub::validateWQXUnits(df_template2)$issues
+      # check for mismatching WQP Char, Fraction, Speciation and Units with the Criteria table
+      df_template2_ID <- EPATADA::TADA_CreateComparableID(dplyr::rename(
+        df_template2,
+        TADA.ResultMeasure.MeasureUnitCode = MagnitudeUnit
+      ))
+      non_matches <- dplyr::anti_join(
+        df_template2_ID,
+        tadat$df_mlid_input,
+        "TADA.ComparableDataIdentifier"
+      ) |>
+        dplyr::select(
+          TADA.ComparableDataIdentifier,
+          TADA.ResultSampleFractionText,
+          TADA.MethodSpeciationName,
+          TADA.ResultMeasure.MeasureUnitCode
+        ) |>
+        dplyr::distinct()
+
+      # check for accepted/rejected values in columns using TADACommunityHub functions
+      # wrap the validator call in tryCatch so a validation error can’t take down the output
+      status <- tryCatch(
+        TADACommunityHub::runAllValidations(df_template2),
+        error = function(e) {
+          list(overall_status = paste("Validation error:", e$message))
+        }
       )
-      #}
+
+      # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
+      eq_text <- paste0("")
+      if (equationBased_NA > 0) {
+        eq_text <- paste0(
+          "Warning: EquationBased must be populated - Your uploaded criteria table contains ",
+          equationBased_NA,
+          " rows for analysis with EquationBased values populated as 'NA'. \n",
+          "   These NAs will be filled in as 'No'. \n"
+        )
+      }
+
+      # Build summary text
+      text <- paste0(
+        "Your criteria table contains ",
+        nrow(df_template2),
+        " rows of information populated that are needed for analysis. \n",
+        "   Any rows missing criteria or methodology information has been removed. \n"
+      )
+
+      if (nrow(non_matches) > 0) {
+        extra_text <- paste(
+          c(
+            "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
+            unique(non_matches$TADA.ComparableDataIdentifier),
+            "\n"
+          ),
+          collapse = "\n - "
+        )
+        text <- paste(text, eq_text, extra_text, sep = "\n")
+      }
 
       # Prints final message
-      paste0(text)
+      paste(paste0(text, "\n", status$overall_status, sep = "\n"))
     })
 
     ### Generate the template summary table (adds missing required columns to the output)

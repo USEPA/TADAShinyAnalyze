@@ -37,6 +37,7 @@ Imports:
     readr,
     readxl,
     rExpertQuery,
+    rlang,
     shiny,
     shinybusy,
     shinyjs,
@@ -52,7 +53,8 @@ Imports:
 Suggests: 
     rprojroot,
     spelling,
-    testthat (>= 3.0.0)
+    testthat,
+    writexl
 Remotes:
     USEPA/EPATADA,
     USEPA/rExpertQuery,

@@ -10,6 +10,7 @@ utils::globalVariables(c(
   ".data",
   "ATTAINS.AssessmentUnitIdentifier",
   "ATTAINS.OrganizationIdentifier",
+  "ATTAINS.ParameterName",
   "ATTAINS.UseName",
   "ActivityStartDate",
   "ActivityStartDateTime",
@@ -85,5 +86,10 @@ utils::globalVariables(c(
   "params_exceeding_list",
   "sites_in_au",
   "total_params",
-  "use_param_exceeding"
+  "use_param_exceeding",
+  "ParameterForFilter",
+  "MagnitudeUnit",
+  "DateTime_Temperature",
+  "DateTime_pH",
+  "dt_diff"
 ))

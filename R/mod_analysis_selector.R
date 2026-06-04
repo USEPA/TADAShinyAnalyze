@@ -76,13 +76,9 @@ mod_analysis_selector_ui <- function(id) {
             title = "More details"
           )
         ),
-        choices = c(
-          "TADA.ComparableDataIdentifier" = "Option 1",
-          "TADA.CharacteristicName only" = "Option 2"
+        helpText(
+          "Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame."
         )
-      ),
-      helpText(
-        "Note: if you do not see any values populated please ensure your fraction and speciation specification matches those in your WQP data frame."
       )
     ))
   )

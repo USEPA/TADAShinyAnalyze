@@ -9,11 +9,18 @@
 #' @importFrom shiny NS tagList
 mod_analysis_data_viewer_custom_ui <- function(id) {
   ns <- NS(id)
-  tagList(fluidRow(column(
-    width = 12,
-    htmltools::br("Summary of the selected data"),
-    shiny::verbatimTextOutput(ns("Avail_Data_Custom"), placeholder = TRUE)
-  )))
+  tagList(fluidRow(
+    column(
+      width = 6,
+      htmltools::h4("Summary of the selected data"),
+      shiny::verbatimTextOutput(ns("Avail_Data_Custom"), placeholder = TRUE)
+    ),
+    column(
+      width = 12,
+      htmltools::h4("Matched Parameters"),
+      DT::DTOutput(ns("Matched_Data_Custom"))
+    ),
+  ))
 }
 
 #' analysis_data_viewer_custom Server Functions
@@ -37,6 +44,38 @@ mod_analysis_data_viewer_custom_server <- function(id, tadat) {
             " parameters that matched the selections."
           )
         }
+      )
+    })
+
+    # See mod_custom_analysis.R for what tadat$dat_match_custom looks like.
+    output$Matched_Data_Custom <- DT::renderDataTable({
+      shiny::validate(need(!is.null(tadat$custom_raw), "No matched data."))
+
+      custom_raw <- tadat$custom_raw |>
+        dplyr::select(
+          ATTAINS.ParameterName,
+          TADA.CharacteristicName,
+          TADA.ResultSampleFractionText,
+          TADA.MethodSpeciationName,
+          TADA.ResultMeasure.MeasureUnitCode
+        ) |>
+        dplyr::distinct()
+
+      # render table
+      DT::datatable(
+        custom_raw,
+        filter = "top",
+        class = "compact",
+        options = list(
+          scrollX = TRUE,
+          scrollY = "400px",
+          scrollCollapse = TRUE,
+          paging = TRUE,
+          pageLength = 5,
+          lengthMenu = c(5, 10, 25, 50, 100),
+          autoWidth = FALSE,
+          fillContainer = TRUE
+        )
       )
     })
   })

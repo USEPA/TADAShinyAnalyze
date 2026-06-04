@@ -342,7 +342,7 @@ mod_map_table_selector_custom_server <- function(id, tadat) {
     })
 
     # Create a reactive expression to get selected monitoring location IDs
-    selected_monitoring_locations <- reactive({
+    selected_monitoring_locations_custom <- reactive({
       req(tadat$site_AU_table_custom)
 
       # Get current selected indices
@@ -364,10 +364,18 @@ mod_map_table_selector_custom_server <- function(id, tadat) {
 
     # Update tadat whenever selection changes
     observeEvent(
-      selected_monitoring_locations(),
+      selected_monitoring_locations_custom(),
       {
         # Store the selected monitoring location IDs in tadat
-        tadat$selected_monitoring_locations_custom <- selected_monitoring_locations()
+        tadat$selected_monitoring_locations_custom <- selected_monitoring_locations_custom()
+
+        # Optional: Also store the full selected rows if needed
+        if (length(selected_idx()) > 0) {
+          tadat$selected_sites_data_custom <- tadat$site_AU_table_custom |>
+            dplyr::slice(selected_idx())
+        } else {
+          tadat$selected_sites_data_custom <- NULL
+        }
 
         # Optional: Also store the full selected rows if needed
         if (length(selected_idx()) > 0) {

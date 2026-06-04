@@ -1,26 +1,47 @@
-#' batch_analysis UI Function
+#' Batch analysis UI module
 #'
-#' @description A shiny Module.
+#' @description
+#' Constructs the UI for the Batch Analysis workflow. This module provides:
+#' - A selector panel for analysis options
+#' - A data viewer
+#' - Run/Download controls (initially disabled; enabled by server logic)
+#' - A map/table selector
+#' - A parameter filter
+#' - Summary table and plots
 #'
-#' @param id,input,output,session Internal parameters for {shiny}.
+#' @details
+#' UI sections included:
+#' 1) Header and selection widgets (mod_analysis_selector_ui)
+#' 2) Input data preview (mod_analysis_data_viewer_ui)
+#' 3) Run Batch Analysis button (disabled until server enables via shinyjs)
+#' 4) Download Batch Results button (disabled until server enables via shinyjs)
+#' 5) Map-table selector (mod_map_table_selector_ui)
+#' 6) Parameter filter (selectizeInput)
+#' 7) Summary table (mod_excursion_viewer_ui)
+#' 8) Plots (mod_analysis_plots_ui)
+#'
+#' @param id A character string, the module ID.
+#'
+#' @return A UI definition (tagList) for inclusion in a Shiny app or parent module.
 #'
 #' @noRd
-#'
-#' @importFrom shiny NS tagList
-# Load the input data
 mod_batch_analysis_ui <- function(id) {
-  # set module session id
-  ns <- NS(id)
+  # Create a namespaced function
+  ns <- shiny::NS(id)
 
-  # start taglist
-  tagList(
-    # header
+  # Assemble UI
+  shiny::tagList(
+    # Header
     htmltools::h2("3. Batch Analysis"),
 
-    # Components
-    fluidRow(column(width = 12, mod_analysis_selector_ui(ns("Batch_Select")))),
+    # Analysis selector
+    shiny::fluidRow(shiny::column(
+      width = 12,
+      mod_analysis_selector_ui(ns("Batch_Select"))
+    )),
 
-    fluidRow(column(
+    # Data viewer
+    shiny::fluidRow(shiny::column(
       width = 12,
       mod_analysis_data_viewer_ui(ns("Batch_Data_Viewer"))
     )),
@@ -28,93 +49,91 @@ mod_batch_analysis_ui <- function(id) {
     htmltools::br(),
     htmltools::br(),
 
-    fluidRow(column(
+    # Run button (enabled by server when ready)
+    shiny::fluidRow(shiny::column(
       width = 12,
-      column(
-        width = 12,
-        htmltools::h4(
-          "After finalizing the selections, click the 'Run Batch Analysis' button."
-        ),
-        shinyjs::disabled(shiny::actionButton(
-          ns("Run_Batch"),
-          "Run Batch Analysis",
-          shiny::icon("computer"),
-          style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
-        ))
-      )
+      htmltools::h4(
+        "After finalizing the selections, click the 'Run Batch Analysis' button."
+      ),
+      shinyjs::disabled(shiny::actionButton(
+        ns("Run_Batch"),
+        "Run Batch Analysis",
+        shiny::icon("computer"),
+        style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+      ))
     )),
 
     htmltools::br(),
 
-    fluidRow(column(
+    # Download button (enabled by server after analysis)
+    shiny::fluidRow(shiny::column(
       width = 12,
-      column(
-        width = 12,
-        htmltools::h4(
-          "Download the batch analysis results by clicking the 'Download Batch Results' button."
-        ),
-        shinyjs::disabled(shiny::downloadButton(
-          outputId = ns("download_results"),
-          label = "Download Batch Results (.zip)",
-          style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
-        ))
-      )
+      htmltools::h4(
+        "Download the batch analysis results by clicking the 'Download Batch Results' button."
+      ),
+      shinyjs::disabled(shiny::downloadButton(
+        outputId = ns("download_results"),
+        label = "Download Batch Results (.zip)",
+        style = "color: #fff; background-color: #337ab7; border-color: #2e6da4"
+      ))
     )),
 
-    # Horizontal divider
+    # Divider
     htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
 
     # Map-table selector
-    fluidRow(column(
+    shiny::fluidRow(shiny::column(
       width = 12,
       mod_map_table_selector_ui(ns("Batch_map_table_selector"))
     )),
 
-    # Horizontal divider
+    # Divider
     htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
 
-    # Select the ML/AU iD
-    fluidRow(column(
+    # Parameter filter
+    shiny::fluidRow(shiny::column(
       width = 12,
-      column(
-        width = 12,
-        shiny::selectizeInput(
-          inputId = ns("parameter_filter"),
-          label = "Filter parameter to view the results",
-          choices = NULL,
-          multiple = TRUE
-        )
+      shiny::selectizeInput(
+        inputId = ns("parameter_filter"),
+        label = "Filter ATTAINS parameter to view the results",
+        choices = NULL,
+        multiple = TRUE
       )
     )),
-    fluidRow(column(
+
+    # Summary table
+    shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h3("Summary Table"),
       mod_excursion_viewer_ui(ns("Summary_View"))
     )),
-    fluidRow(column(
+
+    # Plots
+    shiny::fluidRow(shiny::column(
       width = 12,
       htmltools::h3("Plots"),
       htmltools::p("Use filters to view the results"),
       mod_analysis_plots_ui(ns("Analysis_Plots"))
-    )),
-
-    # # Horizontal divider
-    # htmltools::hr(style = "border-top: 2px solid #ddd; margin: 30px 0;"),
-    #
-    # fluidRow(
-    #   column(
-    #     width = 12,
-    #     mod_exceedance_viewer_ui(ns("Summary_Exceed_View"))
-    #   )
-    # )
+    ))
   )
 }
 
-#' batch_analysis Server Functions
+#' Batch analysis server module
+#'
+#' @description
+#' Server logic for the Batch Analysis workflow. This module:
+#' - Wires the selector and data viewer child modules
+#' - Joins criteria and covariates, separates equation/non-equation cases
+#' - Runs excursion, duration, and frequency analyses
+#' - Manages UI state (run/download buttons, parameter filters)
+#' - Exposes summary and plotting data to child modules
+#'
+#' @param id Module ID (character).
+#' @param tadat A reactive data container/list used across modules.
 #'
 #' @noRd
 mod_batch_analysis_server <- function(id, tadat) {
-  moduleServer(id, function(input, output, session) {
+  shiny::moduleServer(id, function(input, output, session) {
     ns <- session$ns
 
     # Run the Batch_Select
@@ -122,7 +141,7 @@ mod_batch_analysis_server <- function(id, tadat) {
 
     # Clear all dependent data immediately when state/tribe or uses change
     shiny::observeEvent(
-      c(
+      list(
         tadat$uses_select_re,
         tadat$criteria_state_tribe,
         tadat$criteria_template
@@ -142,14 +161,6 @@ mod_batch_analysis_server <- function(id, tadat) {
         # Clear intermediate data
         tadat$dat_yes <- NULL
         tadat$dat_no <- NULL
-
-        # # Reset the filtered crosswalk
-        # if (!is.null(tadat$df_mltoau_input)) {
-        #   tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
-        #     dplyr::filter(Needs_Review == "No")
-        # } else {
-        #   tadat$df_mltoau_input_f <- NULL
-        # }
       },
       priority = 100
     )
@@ -157,27 +168,7 @@ mod_batch_analysis_server <- function(id, tadat) {
     # Run Batch_Data_Viewer
     mod_analysis_data_viewer_server("Batch_Data_Viewer", tadat)
 
-    # ### Remove records need to be reviewed in tadat$df_mltoau_input
-    # shiny::observe({
-    #   # Only proceed if we need the crosswalk (Option 1)
-    #   if (!is.null(tadat$use_type_batch) && tadat$use_type_batch == "Option 1") {
-    #     if (!is.null(tadat$df_mltoau_input)) {
-    #       tadat$df_mltoau_input_f <- tadat$df_mltoau_input |>
-    #         dplyr::filter(Needs_Review == "No")
-    #     } else {
-    #       tadat$df_mltoau_input_f <- NULL
-    #     }
-    #   } else {
-    #     # Clear if not using Option 1
-    #     tadat$df_mltoau_input_f <- NULL
-    #   }
-    # })
-
-    # shiny::observeEvent(tadat$df_mltoau_input, {
-    #   tadat$df_mltoau_input <- tadat$df_mltoau_input |>
-    #     dplyr::filter(Needs_Review == "No")
-    # })
-
+    # Prepare inputs and join criteria/covariates
     shiny::observe({
       shiny::req(
         tadat$df_mlid_input,
@@ -197,11 +188,9 @@ mod_batch_analysis_server <- function(id, tadat) {
         return()
       }
 
-      isolate({
-        ### Get the input data and convert ActivityStartDateTime to dateTime
-        dat <- tadat$df_mlid_input
-
-        dat <- dat |>
+      shiny::isolate({
+        # Get the input data and convert ActivityStartDateTime to dateTime
+        dat <- tadat$df_mlid_input |>
           dplyr::mutate(
             ActivityStartDateTime = suppressWarnings(lubridate::parse_date_time(
               ActivityStartDateTime,
@@ -212,46 +201,40 @@ mod_batch_analysis_server <- function(id, tadat) {
             ActivityStartDate = lubridate::ymd(ActivityStartDate)
           ) |>
           dplyr::mutate(DateTime = ActivityStartDateTime) |>
-          # Remove NA in TADA.ResultMeasureValue and DateTime
           tidyr::drop_na(TADA.ResultMeasureValue) |>
           tidyr::drop_na(DateTime)
 
-        ### Step 1: Join pH, Temperature, and Hardness data
+        # Step 1: Join pH, Temperature, and Hardness data
         dat2 <- dat |> pH_fun() |> Temperature_fun() |> hardness_fun()
 
-        ### Step 2: Join the criteria table
-
+        # Step 2: Join the criteria table
         if (tadat$use_type_batch %in% "Option 1") {
-          req(tadat$df_mltoau_input, tadat$df_autouse_input)
+          shiny::req(tadat$df_mltoau_input, tadat$df_autouse_input)
 
           criteria_table_f1 <- tadat$criteria_template |>
             dplyr::filter(
-              ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
-            ) |>
-            dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+              ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe,
+              ATTAINS.UseName %in% tadat$uses_select_re
+            )
 
-          # Filter the AU_Use based on available_uses_s
           AU_Use <- tadat$df_autouse_input
           AU_MLID <- tadat$df_mltoau_input
 
           AU_Use_f1 <- AU_Use |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
 
-          # Filter the AU_MLID based on AU_Use_f1
           AU_MLID_f1 <- AU_MLID |>
             dplyr::filter(
               ATTAINS.AssessmentUnitIdentifier %in%
                 AU_Use_f1$ATTAINS.AssessmentUnitIdentifier
             )
 
-          # Filter the input data based on AU_MLID_f1
           dat3 <- dat2 |>
             dplyr::filter(
               TADA.MonitoringLocationIdentifier %in%
                 AU_MLID_f1$TADA.MonitoringLocationIdentifier
             )
 
-          # Join the criteria_table_f1 and AU_MLID_f1 to dat2
           dat4 <- dat3 |>
             dplyr::left_join(AU_MLID_f1) |>
             dplyr::left_join(
@@ -268,24 +251,21 @@ mod_batch_analysis_server <- function(id, tadat) {
               match_type = tadat$join_select,
               use_type = tadat$use_type_batch
             ) |>
-            # Remove NA in TADA.ResultMeasureValue and DateTime
             tidyr::drop_na(TADA.ResultMeasureValue) |>
             tidyr::drop_na(DateTime)
         } else {
           criteria_table_f1 <- tadat$criteria_template |>
             dplyr::filter(
-              ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
-            ) |>
-            dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+              ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe,
+              ATTAINS.UseName %in% tadat$uses_select_re
+            )
 
-          # Join the criteria_table_f1 and AU_MLID_f1 to dat2
           dat4 <- dat2 |>
             criteria_join(
               criteria_table_f1,
               match_type = tadat$join_select,
               use_type = tadat$use_type_batch
             ) |>
-            # Remove NA in TADA.ResultMeasureValue and DateTime
             tidyr::drop_na(TADA.ResultMeasureValue) |>
             tidyr::drop_na(DateTime)
         }
@@ -348,11 +328,10 @@ mod_batch_analysis_server <- function(id, tadat) {
         # Select columns
         dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
 
-        ### Step 3: Separate the dataset based on if criteria exist
+        # Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
         dat_yes <- dat4_1 |>
           dplyr::filter(EquationBased %in% "Yes") |>
-          # Remove Additional Information in the EquationType for now
           dplyr::filter(!EquationType %in% "Additional Information")
 
         dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
@@ -365,6 +344,7 @@ mod_batch_analysis_server <- function(id, tadat) {
         dat_match <- dplyr::bind_rows(dat_yes, dat_no)
         dat_match2 <- dat_match |>
           dplyr::distinct(
+            ATTAINS.ParameterName,
             TADA.CharacteristicName,
             TADA.ResultSampleFractionText,
             TADA.MethodSpeciationName,
@@ -374,43 +354,25 @@ mod_batch_analysis_server <- function(id, tadat) {
         # Get the sample size
         dat_viewer_count_num <- nrow(dat_match2)
 
-        # # Get the parameter that is not in dat_match, but with the same parameter names
-        # if (tadat$join_select %in% "Option 1"){
-        #   dat_not_match <- dat_na |>
-        #     dplyr::semi_join(dat_match, by = c("TADA.CharacteristicName",
-        #                                               "TADA.ResultSampleFractionText")) |>
-        #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
-        #   dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-        #                   TADA.ResultMeasure.MeasureUnitCode)
-        # } else {
-        #   dat_not_match <- dat_na |>
-        #     dplyr::semi_join(dat_match , by = c("TADA.CharacteristicName")) |>
-        #     dplyr::anti_join(dat_match, by = "TADA.ResultMeasure.MeasureUnitCode") |>
-        #     dplyr::distinct(TADA.CharacteristicName, TADA.ResultSampleFractionText,
-        #                     TADA.ResultMeasure.MeasureUnitCode)
-        # }
-
         # Save the data
         tadat$available_param_num <- dat_viewer_count_num
         tadat$dat_match <- dat_match2
-        # tadat$dat_not_match <- dat_not_match
       })
     })
 
-    ### Run the analysis if tadat$custom_raw3 is ready
+    # Enable Run button when ready
     shiny::observe({
-      req(tadat$available_param_num)
+      shiny::req(tadat$available_param_num)
       shinyjs::toggleState(
         id = "Run_Batch",
         condition = tadat$available_param_num > 0
       )
     })
 
-    ### If the input data are ready, conduct the analysis
+    # If the input data are ready, conduct the analysis
     shiny::observeEvent(input$Run_Batch, {
       shiny::req(tadat$dat_yes, tadat$dat_no)
 
-      # a modal that pops up showing it's working on uploading the dataset from the users file
       shinybusy::show_modal_spinner(
         spin = "double-bounce",
         color = "#0071bc",
@@ -435,16 +397,14 @@ mod_batch_analysis_server <- function(id, tadat) {
       dat_yes <- tadat$dat_yes
       dat_no <- tadat$dat_no
 
-      ### Step 4: Compare the dataset that the condition is not based on equation
+      # Step 4: Compare the dataset that the condition is not based on equation
       dat_no2 <- dat_no |>
         excursion_fun() |>
-        # Drop columns
         dplyr::select(-dplyr::all_of(drop_cols))
 
-      ## Hardness
+      # Hardness
       dat_hardness <- dat_yes |>
         dplyr::filter(EquationType %in% "Hardness") |>
-        # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(Hardness), ~ !is.na(.)))
 
       if (nrow(dat_hardness) > 0) {
@@ -463,7 +423,7 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
           ) |>
           excursion_fun() |>
-          dplyr::select(all_of(names(dat_no2)))
+          dplyr::select(dplyr::all_of(names(dat_no2)))
       } else {
         dat_hardness2 <- dat_hardness
       }
@@ -471,7 +431,6 @@ mod_batch_analysis_server <- function(id, tadat) {
       # pH
       dat_pH <- dat_yes |>
         dplyr::filter(EquationType %in% "pH") |>
-        # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH), ~ !is.na(.)))
 
       if (nrow(dat_pH) > 0) {
@@ -484,7 +443,7 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
           ) |>
           excursion_fun() |>
-          dplyr::select(all_of(names(dat_no2)))
+          dplyr::select(dplyr::all_of(names(dat_no2)))
       } else {
         dat_pH2 <- dat_pH
       }
@@ -492,10 +451,8 @@ mod_batch_analysis_server <- function(id, tadat) {
       # pH and Hardness
       dat_pH_hardness <- dat_yes |>
         dplyr::filter(EquationType %in% "pH and Hardness") |>
-        # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Hardness), ~ !is.na(.)))
 
-      # Check if data are available
       if (nrow(dat_pH_hardness) > 0) {
         dat_pH_hardness2 <- dat_pH_hardness |>
           dplyr::mutate(
@@ -512,14 +469,14 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
           ) |>
           dplyr::mutate(
-            MagnitudeValueUpper = if_else(
+            MagnitudeValueUpper = dplyr::if_else(
               pH < 7,
               pmin(hardness_param_6, MagnitudeValueUpper),
               MagnitudeValueUpper
             )
           ) |>
           excursion_fun() |>
-          dplyr::select(all_of(names(dat_no2)))
+          dplyr::select(dplyr::all_of(names(dat_no2)))
       } else {
         dat_pH_hardness2 <- dat_pH_hardness
       }
@@ -527,10 +484,8 @@ mod_batch_analysis_server <- function(id, tadat) {
       # pH and Temperature
       dat_pH_temperature <- dat_yes |>
         dplyr::filter(EquationType %in% "pH and Temperature") |>
-        # Check the completeness of the input data
         dplyr::filter(dplyr::if_all(c(pH, Temperature), ~ !is.na(.)))
 
-      # Check if data are available
       if (nrow(dat_pH_temperature) > 0) {
         dat_pH_temperature2 <- dat_pH_temperature |>
           dplyr::mutate(
@@ -540,12 +495,12 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
           ) |>
           excursion_fun() |>
-          dplyr::select(all_of(names(dat_no2)))
+          dplyr::select(dplyr::all_of(names(dat_no2)))
       } else {
         dat_pH_temperature2 <- dat_pH_temperature
       }
 
-      # Combine the results from each cases
+      # Combine the results from each case
       dat5 <- dplyr::bind_rows(
         dat_no2,
         dat_hardness2,
@@ -554,28 +509,28 @@ mod_batch_analysis_server <- function(id, tadat) {
         dat_pH_temperature2
       )
 
-      # Check if dat5 has zero rows and exit
       if (nrow(dat5) == 0) {
-        # Remove the spinner
         shinybusy::remove_modal_spinner(
           session = shiny::getDefaultReactiveDomain()
         )
-
         shiny::showNotification(
           "No data available after processing. Please check your input criteria.",
           type = "warning",
           duration = 5
         )
-
-        # Exit the observeEvent
         return()
       }
 
-      tadat$excurse_dat <- dat5
+      tadat$excurse_dat <- dat5 |>
+        dplyr::mutate(
+          ParameterForFilter = dplyr::coalesce(
+            ATTAINS.ParameterName,
+            TADA.CharacteristicName
+          )
+        )
       tadat$excurse_dat_filtered <- tadat$excurse_dat
 
       if (tadat$use_type_batch %in% "Option 1") {
-        # Create a table for the map-table selector
         site_AU_table <- dat5 |>
           dplyr::distinct(
             TADA.MonitoringLocationIdentifier,
@@ -593,22 +548,20 @@ mod_batch_analysis_server <- function(id, tadat) {
             TADA.LatitudeMeasure
           )
       }
-
       tadat$site_AU_table <- site_AU_table
 
-      ### Step 6: Summarize the data
+      # Step 6: Summarize the data
       dat6 <- dat5 |>
         excursion_summary(type = tadat$loc_select) |>
         purrr::pluck("data")
 
-      ### Step 7. Aggregate the data based on time
+      # Step 7: Aggregate the data based on time
       dat7 <- dat5 |> time_aggregate(type = tadat$loc_select)
 
-      ### Step 8. Conduct Duration Analysis
+      # Step 8: Conduct Duration Analysis
       dat8 <- dat7 |>
         duration_cal(type = tadat$loc_select, complete_windows = FALSE)
 
-      # Update the magnitude
       dat8_no <- dat8 |> dplyr::filter(EquationBased %in% "No")
       dat8_yes <- dat8 |> dplyr::filter(EquationBased %in% "Yes")
       dat8_yes2 <- dat8_yes |>
@@ -617,20 +570,25 @@ mod_batch_analysis_server <- function(id, tadat) {
           hardness_equation = tadat$hardness_equation,
           pH_equation = tadat$pH_equation,
           pH_Hardness_equation = tadat$pH_hardness_equation,
-          pH_Temperature__equation = tadat$pH_Temperature_equation
+          pH_Temperature_equation = tadat$pH_Temperature_equation
         ) |>
         dplyr::select(dplyr::all_of(names(dat8_no)))
 
       dat8_3 <- dplyr::bind_rows(dat8_no, dat8_yes2)
-
       tadat$duration_table <- dat8_3
 
-      ### Step 9. Conduct frequency summary
+      # Step 9. Conduct frequency summary
       dat9 <- dat8_3 |> frequency_summary(type = tadat$loc_select)
 
-      tadat$exceed_summary <- dat9
+      tadat$exceed_summary <- dat9 |>
+        dplyr::mutate(
+          ParameterForFilter = dplyr::coalesce(
+            ATTAINS.ParameterName,
+            TADA.CharacteristicName
+          )
+        )
 
-      ### Step 10. Join the data
+      # Step 10. Join the data
       dat9_1 <- dat9 |>
         dplyr::rename(
           Duration_Excursions = Number_of_Excursions,
@@ -647,22 +605,24 @@ mod_batch_analysis_server <- function(id, tadat) {
 
       dat10 <- dat6 |> dplyr::left_join(dat9_1)
 
-      ### Step 11. Prepare the output
+      # Step 11. Prepare the output
       dat11 <- dat10 |> simplify_duration_frequency()
 
       # Save the data to tadat
-      tadat$excurse_summary <- dat11
+      tadat$excurse_summary <- dat11 |>
+        dplyr::mutate(
+          ParameterForFilter = dplyr::coalesce(
+            ATTAINS.ParameterName,
+            TADA.CharacteristicName
+          )
+        )
 
-      ### Step 10. Download the batch analysis results
+      # Step 12. Download the batch analysis results
       output$download_results <- shiny::downloadHandler(
-        # define zipfile name
         filename = function() {
           paste0("Batch_Results_", tadat$default_outfile, ".zip")
         },
-
-        # define contents of zipfile
         content = function(file) {
-          # define file paths
           temp_dir <- tempdir()
           batch_result_path <- file.path(
             temp_dir,
@@ -679,16 +639,13 @@ mod_batch_analysis_server <- function(id, tadat) {
           batch_docx_path <- file.path(temp_dir, "ReadMe_Batch.docx")
           file.copy(batch_docx_source, batch_docx_path)
 
-          # function to save tadat values
           write_tadat_file <- function(tadat, filename) {
-            # define file variables to be saved
             default_outfile <- tadat$default_outfile
             job_id <- tadat$job_id
             df_batch_result <- tadat$duration_table
             df_batch_summary <- tadat$excurse_summary
             temp_dir <- tadat$temp_dir
 
-            # save file
             save(
               default_outfile,
               job_id,
@@ -699,10 +656,8 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
           }
 
-          # write tadat RData file with session info
           write_tadat_file(tadat, progress_file_path)
 
-          # write data frames to csv
           readr::write_csv(
             x = as.data.frame(tadat$duration_table),
             file = batch_result_path,
@@ -714,7 +669,6 @@ mod_batch_analysis_server <- function(id, tadat) {
             na = ""
           )
 
-          # zip them
           utils::zip(
             zipfile = file,
             files = c(
@@ -725,7 +679,8 @@ mod_batch_analysis_server <- function(id, tadat) {
             ),
             flags = "-j"
           )
-        }
+        },
+        contentType = "application/zip"
       ) # END ~ downloadHandler
 
       # enable download button
@@ -740,43 +695,41 @@ mod_batch_analysis_server <- function(id, tadat) {
     # Activate the map-table selector
     mod_map_table_selector_server("Batch_map_table_selector", tadat)
 
-    ### Subset tadat$excurse_summary if selected_monitoring_locations is ready
+    # Subset tadat$excurse_summary if selected_monitoring_locations is ready
     shiny::observeEvent(
-      c(tadat$selected_monitoring_locations, tadat$excurse_summary),
+      list(tadat$selected_monitoring_locations, tadat$excurse_summary),
       {
-        # Check if we have the excurse_summary data
-        req(tadat$excurse_summary)
+        shiny::req(tadat$excurse_summary)
 
-        # Get selected locations - if NULL or empty, use all locations
         selected_locs <- tadat$selected_monitoring_locations
 
         if (is.null(selected_locs) || length(selected_locs) == 0) {
-          # No selection - set to NULL to show empty state
           tadat$excursion_summary2 <- NULL
-        } else {
-          # Filter based on location type
-          if (tadat$loc_select %in% "MLid") {
-            excursion_summary2 <- tadat$excurse_summary |>
-              dplyr::filter(
-                TADA.MonitoringLocationIdentifier %in% selected_locs
-              )
-          } else {
-            # For AU_group, need to filter by AU instead
-            # First get the AUs for selected monitoring locations
-            selected_aus <- tadat$site_AU_table |>
-              dplyr::filter(
-                TADA.MonitoringLocationIdentifier %in% selected_locs
-              ) |>
-              dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
-              unique()
-
-            excursion_summary2 <- tadat$excurse_summary |>
-              dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
-          }
-
-          # Save excursion_summary2 to tadat
-          tadat$excursion_summary2 <- excursion_summary2
+          return()
         }
+
+        if (tadat$loc_select %in% "MLid") {
+          excursion_summary2 <- tadat$excurse_summary |>
+            dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs)
+        } else {
+          selected_aus <- tadat$site_AU_table |>
+            dplyr::filter(
+              TADA.MonitoringLocationIdentifier %in% selected_locs
+            ) |>
+            dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
+            unique()
+
+          excursion_summary2 <- tadat$excurse_summary |>
+            dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
+        }
+
+        tadat$excursion_summary2 <- excursion_summary2 |>
+          dplyr::mutate(
+            ParameterForFilter = dplyr::coalesce(
+              ATTAINS.ParameterName,
+              TADA.CharacteristicName
+            )
+          )
       },
       ignoreNULL = FALSE
     )
@@ -785,22 +738,18 @@ mod_batch_analysis_server <- function(id, tadat) {
     shiny::observeEvent(
       tadat$excursion_summary2,
       {
-        # Handle NULL excursion_summary2 (no sites selected)
         if (is.null(tadat$excursion_summary2)) {
-          # Clear the parameter filter
           shiny::updateSelectizeInput(
             session = session,
             inputId = "parameter_filter",
             choices = character(0),
             selected = character(0)
           )
-          return() # Exit early
+          return()
         }
 
-        # Get the parameter names
-        params <- sort(unique(tadat$excursion_summary2$TADA.CharacteristicName))
+        params <- sort(unique(tadat$excursion_summary2$ParameterForFilter))
 
-        # Only update if we have parameters to show
         if (length(params) > 0) {
           shiny::updateSelectizeInput(
             session = session,
@@ -809,7 +758,6 @@ mod_batch_analysis_server <- function(id, tadat) {
             selected = params
           )
         } else {
-          # Clear the parameter filter if no data
           shiny::updateSelectizeInput(
             session = session,
             inputId = "parameter_filter",
@@ -823,11 +771,10 @@ mod_batch_analysis_server <- function(id, tadat) {
 
     # Filter the tadat$excurse_summary2 by parameter
     shiny::observeEvent(
-      c(tadat$excursion_summary2, input$parameter_filter),
+      list(tadat$excursion_summary2, input$parameter_filter),
       {
-        req(tadat$loc_select)
+        shiny::req(tadat$loc_select)
 
-        # Handle NULL excursion_summary2 (no sites selected)
         if (is.null(tadat$excursion_summary2)) {
           tadat$excurse_summary_f <- NULL
           return()
@@ -837,23 +784,20 @@ mod_batch_analysis_server <- function(id, tadat) {
         if (
           is.null(input$parameter_filter) || length(input$parameter_filter) == 0
         ) {
-          # If no parameters selected, show empty data
           tadat$excurse_summary_f <- NULL
-        } else {
-          excurse_summary3 <- tadat$excursion_summary2 |>
-            dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
-
-          # Save the data to tadat
-          tadat$excurse_summary_f <- excurse_summary3
+          tadat$excurse_dat_filtered <- NULL
+          return()
         }
+
+        excurse_summary3 <- tadat$excursion_summary2 |>
+          dplyr::filter(ParameterForFilter %in% input$parameter_filter)
+
+        tadat$excurse_summary_f <- excurse_summary3
 
         if (
           !is.null(tadat$excurse_summary_f) && nrow(tadat$excurse_summary_f) > 0
         ) {
-          # Get the filtered parameters and locations
-          filtered_params <- unique(
-            tadat$excurse_summary_f$TADA.CharacteristicName
-          )
+          filtered_params <- unique(tadat$excurse_summary_f$ParameterForFilter)
 
           if (tadat$loc_select %in% c("MLid")) {
             filtered_locs <- unique(
@@ -861,7 +805,7 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
             tadat$excurse_dat_filtered <- tadat$excurse_dat |>
               dplyr::filter(
-                TADA.CharacteristicName %in% filtered_params,
+                ParameterForFilter %in% filtered_params,
                 TADA.MonitoringLocationIdentifier %in% filtered_locs
               )
           } else {
@@ -870,7 +814,7 @@ mod_batch_analysis_server <- function(id, tadat) {
             )
             tadat$excurse_dat_filtered <- tadat$excurse_dat |>
               dplyr::filter(
-                TADA.CharacteristicName %in% filtered_params,
+                ParameterForFilter %in% filtered_params,
                 ATTAINS.AssessmentUnitIdentifier %in% filtered_aus
               )
           }
@@ -883,69 +827,62 @@ mod_batch_analysis_server <- function(id, tadat) {
 
     # Filter the tadat$exceed_summary by parameter
     shiny::observeEvent(
-      c(input$parameter_filter, tadat$exceed_summary),
+      list(input$parameter_filter, tadat$exceed_summary),
       {
-        req(tadat$loc_select, tadat$selected_monitoring_locations)
+        shiny::req(tadat$loc_select, tadat$selected_monitoring_locations)
 
-        # Handle NULL exceedance_summary2 (no sites selected)
         if (is.null(tadat$selected_monitoring_locations)) {
           tadat$exceed_summary_f <- NULL
           return()
         }
 
-        # Get selected locations - if NULL or empty, use all locations
         selected_locs <- tadat$selected_monitoring_locations
 
         if (is.null(selected_locs) || length(selected_locs) == 0) {
-          # No selection - set to NULL to show empty state
           tadat$exceedance_summary2 <- NULL
-        } else {
-          # Filter based on location type for the exceedance results
-          if (tadat$loc_select %in% "MLid") {
-            exceedance_summary2 <- tadat$exceed_summary |>
-              dplyr::filter(
-                TADA.MonitoringLocationIdentifier %in% selected_locs
-              )
-          } else {
-            selected_aus <- tadat$site_AU_table |>
-              dplyr::filter(
-                TADA.MonitoringLocationIdentifier %in% selected_locs
-              ) |>
-              dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
-              unique()
-
-            exceedance_summary2 <- tadat$exceed_summary |>
-              dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
-          }
+          return()
         }
 
-        # Handle NULL or empty parameter filter
+        if (tadat$loc_select %in% "MLid") {
+          exceedance_summary2 <- tadat$exceed_summary |>
+            dplyr::filter(TADA.MonitoringLocationIdentifier %in% selected_locs)
+        } else {
+          selected_aus <- tadat$site_AU_table |>
+            dplyr::filter(
+              TADA.MonitoringLocationIdentifier %in% selected_locs
+            ) |>
+            dplyr::pull(ATTAINS.AssessmentUnitIdentifier) |>
+            unique()
+
+          exceedance_summary2 <- tadat$exceed_summary |>
+            dplyr::filter(ATTAINS.AssessmentUnitIdentifier %in% selected_aus)
+        }
+
         if (
           is.null(input$parameter_filter) || length(input$parameter_filter) == 0
         ) {
-          # If no parameters selected, show empty data
           tadat$exceed_summary_f <- NULL
         } else {
           exceedance_summary3 <- exceedance_summary2 |>
-            dplyr::filter(TADA.CharacteristicName %in% input$parameter_filter)
+            dplyr::filter(ParameterForFilter %in% input$parameter_filter)
 
-          # Save the data to tadat
           tadat$exceed_summary_f <- exceedance_summary3
         }
       },
       ignoreNULL = FALSE
     )
 
+    # Child modules for summary table and plots
     mod_excursion_viewer_server(
       "Summary_View",
-      summary_dat = reactive(tadat$excurse_summary_f)
+      summary_dat = shiny::reactive(tadat$excurse_summary_f)
     )
 
     mod_analysis_plots_server(
       "Analysis_Plots",
-      excurse_dat = reactive(tadat$excurse_dat_filtered),
-      excurse_summary = reactive(tadat$excurse_summary_f),
-      loc_select = reactive(tadat$loc_select),
+      excurse_dat = shiny::reactive(tadat$excurse_dat_filtered),
+      excurse_summary = shiny::reactive(tadat$excurse_summary_f),
+      loc_select = shiny::reactive(tadat$loc_select),
       tabname = "batch"
     )
   })

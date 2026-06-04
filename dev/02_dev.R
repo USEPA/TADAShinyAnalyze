@@ -151,42 +151,50 @@ attachment::att_amend_desc()
 # devtools::build_vignettes()
 
 ## Code Coverage----
-## Set the code coverage service ("codecov" or "coveralls")
-usethis::use_coverage()
+# install.packages("covr")
+# library(covr)
+# Measure coverage
+cov <- covr::package_coverage(
+  quiet = FALSE,
+  clean = FALSE)
+print(cov)
 
-# Create a summary readme for the testthat subdirectory
-covrpage::covrpage()
-
-## CI ----
-## Use this part of the script if you need to set up a CI
-## service for your application
-##
-## (You'll need GitHub there)
-usethis::use_github()
-
-# GitHub Actions
-usethis::use_github_action()
-# Chose one of the three
-# See https://usethis.r-lib.org/reference/use_github_action.html
-usethis::use_github_action_check_release()
-usethis::use_github_action_check_standard()
-usethis::use_github_action_check_full()
-# Add action for PR
-usethis::use_github_action_pr_commands()
-
-# Circle CI
-usethis::use_circleci()
-usethis::use_circleci_badge()
-
-# Jenkins
-usethis::use_jenkins()
-
-# GitLab CI
-usethis::use_gitlab_ci()
+# ## CI ----
+# ## Use this part of the script if you need to set up a CI
+# ## service for your application
+# ##
+# ## (You'll need GitHub there)
+# usethis::use_github()
+# 
+# # GitHub Actions
+# usethis::use_github_action()
+# # Chose one of the three
+# # See https://usethis.r-lib.org/reference/use_github_action.html
+# usethis::use_github_action_check_release()
+# usethis::use_github_action_check_standard()
+# usethis::use_github_action_check_full()
+# # Add action for PR
+# usethis::use_github_action_pr_commands()
+# 
+# # Circle CI
+# usethis::use_circleci()
+# usethis::use_circleci_badge()
+# 
+# # Jenkins
+# usethis::use_jenkins()
+# 
+# # GitLab CI
+# usethis::use_gitlab_ci()
 
 # Spelling check
 spelling::spell_check_package()
 spelling::update_wordlist()
+
+# devtools
+devtools::load_all()
+devtools:document()
+devtools::test()
+devtools::check()
 
 # You're now set! ----
 # go to dev/03_deploy.R
