@@ -826,9 +826,9 @@ create_parameter_map <- function(
   type = "MLid",
   use_type = "Option 1"
 ) {
-  # Filter for selected parameter
+  # Filter on ParameterForFilter
   if (!is.null(selected_param)) {
-    data <- data |> dplyr::filter(TADA.CharacteristicName == selected_param)
+    data <- data |> dplyr::filter(ParameterForFilter %in% selected_param)
   }
 
   # Filter for selected use
@@ -1828,25 +1828,20 @@ frequency_summary <- function(x, type) {
 
 # Helper functions for duration and frequency analysis
 window_before_period <- function(unit, value) {
-  if (is.na(value)) {
-    value <- 1
-  }
-  if (is.na(unit)) {
-    unit <- "n-day"
-  }
-  if (unit == "n-hour") {
-    return(lubridate::hours(max(value, 1) - 1))
-  }
-  if (unit == "n-day") {
-    return(lubridate::days(max(value, 1) - 1))
-  }
-  if (unit == "n-month") {
-    return(lubridate::month(max(value, 1)) - lubridate::days(1))
-  }
-  if (unit == "n-season") {
-    return(lubridate::month(3L * max(value, 1)) - lubridate::days(1))
-  }
-  lubridate::days(max(value, 1) - 1)
+  if (is.na(value)) value <- 1
+  if (is.na(unit)) unit <- "n-day"
+  
+  v <- max(value, 1)
+  
+  if (unit == "n-hour")   return(lubridate::hours(v - 1))
+  if (unit == "n-day")    return(lubridate::days(v - 1))
+  
+  # Use periods for month/season windows
+  if (unit == "n-month")  return(lubridate::period(v, "months") - lubridate::days(1))
+  if (unit == "n-season") return(lubridate::period(3L * v, "months") - lubridate::days(1))
+  
+  # Fallback: treat as days
+  lubridate::days(v - 1)
 }
 
 step_label <- function(step) {
@@ -1879,9 +1874,9 @@ na_gmean <- function(x) {
 ### This function simplify the duration and frequency summary output
 simplify_duration_frequency <- function(x) {
   x2 <- x |>
-    dplyr::mutate(DurationUnit = stringr::str_remove(DurationUnit, "n")) |>
+    dplyr::mutate(DurationUnit = stringr::str_remove(DurationUnit, "^n-")) |>
     dplyr::mutate(
-      DurationValueUnit = stringr::str_c(DurationValue, DurationUnit),
+      DurationValueUnit = stringr::str_c(DurationValue, " ", DurationUnit),
       .keep = "unused"
     ) |>
     dplyr::mutate(
