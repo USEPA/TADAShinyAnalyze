@@ -10,23 +10,21 @@
 mod_analysis_selector_custom_ui <- function(id) {
   ns <- NS(id)
   tagList(
-    fluidRow(
-      column(
-        width = 12,
-        shiny::verbatimTextOutput(ns("current_criteria_info_custom"))
+    fluidRow(column(
+      width = 12,
+      shiny::verbatimTextOutput(ns("current_criteria_info_custom"))
+    )),
+    fluidRow(column(
+      width = 12,
+      htmltools::p(
+        "Determine the spatial unit and the uses included in the analysis."
+      ),
+      htmltools::p(
+        "If only Water Quality Data File is available or if users select the EPA option in the 'Criteria Table' tab, ",
+        "the AU option would not be available for the 'Batch Analyzed by the spatial unit'. In this case, ",
+        "the tool will not match the ATTAINS.UseName from the criteria table to the assessment units."
       )
-    ),
-    fluidRow(
-      column(
-        width = 12,
-        htmltools::p("Determine the spatial unit and the uses included in the analysis."),
-        htmltools::p(
-          "If only Water Quality Data File is available or if users select the EPA option in the 'Criteria Table' tab, ",
-          "the AU option would not be available for the 'Batch Analyzed by the spatial unit'. In this case, ",
-          "the tool will not match the ATTAINS.UseName from the criteria table to the assessment units."
-        )
-      )
-    ),
+    )),
     fluidRow(
       column(
         width = 6,
@@ -57,41 +55,35 @@ mod_analysis_selector_custom_ui <- function(id) {
         )
       )
     ),
-    fluidRow(
-      column(
-        width = 12,
-        htmltools::p(
-          htmltools::strong(
-            "Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation)."
-          )
-        )
-      )
-    ),
-    fluidRow(
-      column(
-        width = 6,
-        shiny::radioButtons(
-          inputId = ns("join_select_custom"),
-          label = tagList(
-            "Choose option for joining the criteria table to your WQP dataframe",
-            shiny::actionLink(
-              ns("join_help"),
-              label = NULL,
-              icon = shiny::icon("circle-info"),
-              title = "More details"
-            )
-          ),
-          choices = c(
-            "TADA.ComparableDataIdentifier" = "Option 1",
-            "TADA.CharacteristicName only" = "Option 2"
+    fluidRow(column(
+      width = 12,
+      htmltools::p(htmltools::strong(
+        "Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation)."
+      ))
+    )),
+    fluidRow(column(
+      width = 6,
+      shiny::radioButtons(
+        inputId = ns("join_select_custom"),
+        label = tagList(
+          "Choose option for joining the criteria table to your WQP dataframe",
+          shiny::actionLink(
+            ns("join_help"),
+            label = NULL,
+            icon = shiny::icon("circle-info"),
+            title = "More details"
           )
         ),
-        shiny::helpText(
-          "Note: If you do not see a match populated for a TADA.CharacteristicName, ",
-          "please ensure the fraction and speciation specification matches those in your WQP data frame."
+        choices = c(
+          "TADA.ComparableDataIdentifier" = "Option 1",
+          "TADA.CharacteristicName only" = "Option 2"
         )
+      ),
+      shiny::helpText(
+        "Note: If you do not see a match populated for a TADA.CharacteristicName, ",
+        "please ensure the fraction and speciation specification matches those in your WQP data frame."
       )
-    )
+    ))
   )
 }
 
@@ -101,10 +93,10 @@ mod_analysis_selector_custom_ui <- function(id) {
 mod_analysis_selector_custom_server <- function(id, tadat) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
-    
+
     # Disable uses_select on initialization since uses_all defaults to TRUE
     shinyjs::disable("uses_select_custom")
-    
+
     # Show the state/tribe selection
     output$current_criteria_info_custom <- shiny::renderText({
       paste0(
@@ -115,13 +107,15 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
         ")"
       )
     })
-    
+
     # Determine the use_type
     shiny::observe({
       req(tadat$criteria_template)
-      if (isTRUE(tadat$files_loaded_mlid) &&
+      if (
+        isTRUE(tadat$files_loaded_mlid) &&
           isTRUE(tadat$files_loaded_mltoau) &&
-          isTRUE(tadat$files_loaded_autouse)) {
+          isTRUE(tadat$files_loaded_autouse)
+      ) {
         use_type <- "Option 1"
       } else if (isTRUE(tadat$files_loaded_mlid)) {
         use_type <- "Option 2"
@@ -130,7 +124,7 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
       }
       tadat$use_type_custom <- use_type
     })
-    
+
     # Update the loc_select_custom choices based on use_type
     shiny::observeEvent(tadat$use_type_custom, {
       if (tadat$use_type_custom %in% "Option 2") {
@@ -138,11 +132,13 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
           "Monitoring Location ID" = "MLid",
           "Custom Grouping (Use the following map-table selector to select sites to group)" = "CG"
         )
-        
+
         current_selection <- isolate(input$loc_select_custom)
         if (!is.null(current_selection) && current_selection %in% "AU") {
           selected <- "MLid"
-        } else if (!is.null(current_selection) && current_selection %in% c("MLid", "CG")) {
+        } else if (
+          !is.null(current_selection) && current_selection %in% c("MLid", "CG")
+        ) {
           selected <- current_selection
         } else {
           selected <- "MLid"
@@ -153,15 +149,18 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
           "Assessment Unit" = "AU",
           "Custom Grouping (Use the following map-table selector to select sites to group)" = "CG"
         )
-        
+
         current_selection <- isolate(input$loc_select_custom)
-        if (!is.null(current_selection) && current_selection %in% c("MLid", "AU", "CG")) {
+        if (
+          !is.null(current_selection) &&
+            current_selection %in% c("MLid", "AU", "CG")
+        ) {
           selected <- current_selection
         } else {
           selected <- "MLid"
         }
       }
-      
+
       shiny::updateRadioButtons(
         session = session,
         inputId = "loc_select_custom",
@@ -169,40 +168,56 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
         selected = selected
       )
     })
-    
+
     # Update the available uses when state/tribe changes
     shiny::observeEvent(c(tadat$criteria_state_tribe, tadat$use_type_custom), {
-      req(tadat$criteria_state_tribe, tadat$use_type_custom, tadat$criteria_template)
-      
+      req(
+        tadat$criteria_state_tribe,
+        tadat$use_type_custom,
+        tadat$criteria_template
+      )
+
       if (tadat$use_type_custom %in% "Option 1") {
         req(tadat$df_autouse_input)
-        
+
         criteria_table_f1 <- tadat$criteria_template |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
-        
+          dplyr::filter(
+            ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
+          )
+
         criteria_uses <- unique(criteria_table_f1$ATTAINS.UseName)
         AU_Use_uses <- unique(tadat$df_autouse_input$ATTAINS.UseName)
         available_uses <- base::intersect(criteria_uses, AU_Use_uses)
       } else {
         criteria_table_f1 <- tadat$criteria_template |>
-          dplyr::filter(ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe)
+          dplyr::filter(
+            ATTAINS.OrganizationIdentifier %in% tadat$criteria_state_tribe
+          )
         available_uses <- unique(criteria_table_f1$ATTAINS.UseName)
       }
-      
+
       tadat$available_uses_custom <- available_uses
-      
+
       if (input$uses_all_custom) {
         tadat$uses_select_re_custom <- available_uses
       } else {
         current_uses <- isolate(tadat$uses_select_re_custom)
         if (!is.null(current_uses) && length(current_uses) > 0) {
           valid_uses <- intersect(current_uses, available_uses)
-          tadat$uses_select_re_custom <- if (length(valid_uses) > 0) valid_uses else available_uses[1]
+          tadat$uses_select_re_custom <- if (length(valid_uses) > 0) {
+            valid_uses
+          } else {
+            available_uses[1]
+          }
         } else {
-          tadat$uses_select_re_custom <- if (length(available_uses) > 0) available_uses[1] else character(0)
+          tadat$uses_select_re_custom <- if (length(available_uses) > 0) {
+            available_uses[1]
+          } else {
+            character(0)
+          }
         }
       }
-      
+
       shinyWidgets::updateVirtualSelect(
         session = session,
         inputId = "uses_select_custom",
@@ -210,13 +225,13 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
         selected = tadat$uses_select_re_custom
       )
     })
-    
+
     # Handle checkbox changes
     shiny::observeEvent(
       input$uses_all_custom,
       {
         req(tadat$available_uses_custom)
-        
+
         if (input$uses_all_custom) {
           shinyjs::disable("uses_select_custom")
           tadat$uses_select_re_custom <- tadat$available_uses_custom
@@ -228,15 +243,17 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
           )
         } else {
           shinyjs::enable("uses_select_custom")
-          if (!is.null(tadat$uses_select_re_custom) &&
-              length(tadat$uses_select_re_custom) > 0) {
+          if (
+            !is.null(tadat$uses_select_re_custom) &&
+              length(tadat$uses_select_re_custom) > 0
+          ) {
             selected_uses <- tadat$uses_select_re_custom
           } else if (length(tadat$available_uses_custom) > 0) {
             selected_uses <- tadat$available_uses_custom[1]
           } else {
             selected_uses <- character(0)
           }
-          
+
           shinyWidgets::updateVirtualSelect(
             session = session,
             inputId = "uses_select_custom",
@@ -248,13 +265,15 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
       },
       ignoreInit = TRUE
     )
-    
+
     # Handle uses_select changes separately
     shiny::observeEvent(
       input$uses_select_custom,
       {
         req(isFALSE(input$uses_all_custom))
-        tadat$uses_select_re_custom <- if (shiny::isTruthy(input$uses_select_custom)) {
+        tadat$uses_select_re_custom <- if (
+          shiny::isTruthy(input$uses_select_custom)
+        ) {
           input$uses_select_custom
         } else {
           NULL
@@ -262,33 +281,39 @@ mod_analysis_selector_custom_server <- function(id, tadat) {
       },
       ignoreInit = TRUE
     )
-    
+
     # Pop-up helper
     shiny::observeEvent(input$join_help, {
-      shiny::showModal(
-        shiny::modalDialog(
-          title = "Join options explained",
-          easyClose = TRUE,
-          footer = shiny::modalButton("Close"),
-          tagList(
-            shiny::tags$h5("Option 1 - ComparableDataIdentifier"),
-            shiny::tags$p("Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."),
-            shiny::tags$ul(
-              shiny::tags$li("Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."),
-              shiny::tags$li("Stricter matching (fewer false/ambiguous joins).")
+      shiny::showModal(shiny::modalDialog(
+        title = "Join options explained",
+        easyClose = TRUE,
+        footer = shiny::modalButton("Close"),
+        tagList(
+          shiny::tags$h5("Option 1 - ComparableDataIdentifier"),
+          shiny::tags$p(
+            "Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."
+          ),
+          shiny::tags$ul(
+            shiny::tags$li(
+              "Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."
             ),
-            shiny::tags$hr(),
-            shiny::tags$h5("Option 2 - CharacteristicName only"),
-            shiny::tags$p("Joins only on TADA.CharacteristicName."),
-            shiny::tags$ul(
-              shiny::tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
-              shiny::tags$li("More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis.")
+            shiny::tags$li("Stricter matching (fewer false/ambiguous joins).")
+          ),
+          shiny::tags$hr(),
+          shiny::tags$h5("Option 2 - CharacteristicName only"),
+          shiny::tags$p("Joins only on TADA.CharacteristicName."),
+          shiny::tags$ul(
+            shiny::tags$li(
+              "Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."
+            ),
+            shiny::tags$li(
+              "More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis."
             )
           )
         )
-      )
+      ))
     })
-    
+
     # Save selected loc_select and join_select to tadat
     shiny::observe({
       tadat$loc_select_custom <- input$loc_select_custom
