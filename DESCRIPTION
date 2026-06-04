@@ -52,9 +52,8 @@ Imports:
 Suggests: 
     rprojroot,
     spelling,
+    testthat,
     writexl
-Depends: 
-    R (>= 4.1.0)
 Remotes:
     USEPA/EPATADA,
     USEPA/rExpertQuery,
