@@ -82,10 +82,9 @@ mod_analysis_selector_ui <- function(id) {
         )
       ),
       helpText(
-          "Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame."
-        )
+        "Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame."
       )
-    )
+    ))
   )
 }
 
