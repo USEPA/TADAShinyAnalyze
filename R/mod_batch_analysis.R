@@ -301,7 +301,6 @@ mod_batch_analysis_server <- function(id, tadat) {
           "DurationMethod",
           "FreqValue",
           "FreqMethod",
-          # Equation coefficient columns
           "EquationFormula",
           "hardness_param_1",
           "hardness_param_2",
@@ -314,7 +313,7 @@ mod_batch_analysis_server <- function(id, tadat) {
           "pH_param_3",
           "pH_param_4"
         )
-
+        
         if (tadat$use_type_batch %in% "Option 1") {
           selected_cols2 <- c(
             selected_cols[1:4],
@@ -324,6 +323,13 @@ mod_batch_analysis_server <- function(id, tadat) {
         } else {
           selected_cols2 <- selected_cols
         }
+        
+        # Treat fraction/speciation as optional
+        optional_cols <- c("TADA.ResultSampleFractionText", "TADA.MethodSpeciationName")
+        
+        # Create optional columns as NA_character_ if missing
+        missing_opt <- setdiff(optional_cols, names(dat4))
+        for (col in missing_opt) dat4[[col]] <- NA_character_
 
         # Select columns
         dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
