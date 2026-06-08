@@ -15,18 +15,18 @@
 #' @param criteria data.frame/tibble of criteria rows.
 #'
 #' @return data.frame with WQP rows and matching criteria columns.
-#' 
+#'
 #' @examples
 #' # load example data.frame
 #' utils::data("Data_MT_MissoulaCounty", package = "EPATADA")
 #' MT_data <- Data_MT_MissoulaCounty
-#' 
+#'
 #' # load example criteria table from community hub
 #' criteria_MT <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
-#' 
+#'
 #' # join the table by best match from what is filled out from the criteria table
 #' MT_data_criteria <- join_wqp_criteria(MT_data, criteria_MT)
-#' 
+#'
 #' @noRd
 join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
   stopifnot(is.data.frame(wqp), is.data.frame(criteria))
