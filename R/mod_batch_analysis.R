@@ -205,8 +205,15 @@ mod_batch_analysis_server <- function(id, tadat) {
           tidyr::drop_na(DateTime)
 
         # Step 1: Join pH, Temperature, and Hardness data
-        dat2 <- dat |> pH_fun() |> Temperature_fun() |> hardness_fun()
+        dat2_ph <- pH_fun(dat)
+        dat2_temperature <- Temperature_fun(dat)
+        dat_hardness <- hardness_fun(dat)
 
+        dat2 <- dat |>
+          dplyr::left_join(dat2_ph, by = names(dat)) |>
+          dplyr::left_join(dat2_temperature, by = names(dat)) |>
+          dplyr::left_join(dat2_hardness, by = names(dat))
+        
         # decide how to join WQP dataframe to criteria table
         if (tadat$join_select %in% "Option 1") {
           byChar = FALSE
@@ -263,9 +270,9 @@ mod_batch_analysis_server <- function(id, tadat) {
               ATTAINS.UseName %in% tadat$uses_select_re
             )
 
-          dat4 <- dat2 |> join_wqp_criteria(criteria_table_f1, byChar = byChar) #|>
-          #tidyr::drop_na(TADA.ResultMeasureValue) |>
-          #tidyr::drop_na(DateTime)
+          dat4 <- dat2 |> join_wqp_criteria(criteria_table_f1, byChar = byChar) |>
+          tidyr::drop_na(TADA.ResultMeasureValue) |>
+          tidyr::drop_na(DateTime)
         }
 
         # Construct the selected columns
@@ -328,10 +335,10 @@ mod_batch_analysis_server <- function(id, tadat) {
         # Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
         dat_yes <- dat4_1 |>
-          dplyr::filter(EquationBased %in% toupper("Yes")) |>
-          dplyr::filter(!EquationType %in% toupper("Additional Information"))
+          dplyr::filter(EquationBased %in% "Yes") |>
+          dplyr::filter(!EquationType %in% "Additional Information")
 
-        dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% toupper("No"))
+        dat_no <- dat4_1 |> dplyr::filter(EquationBased %in% "No")
 
         # Save the data
         tadat$dat_yes <- dat_yes
