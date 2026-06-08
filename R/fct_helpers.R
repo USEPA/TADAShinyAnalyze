@@ -17,7 +17,7 @@
 #' @noRd
 join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
   stopifnot(is.data.frame(wqp), is.data.frame(criteria))
-  
+
   # Harmonize case on selected keys only
   upper_keys <- c(
     "TADA.ComparableDataIdentifier",
@@ -26,13 +26,16 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
     "TADA.MethodSpeciationName"
   )
   criteria <- criteria |>
-    dplyr::mutate(dplyr::across(dplyr::any_of(upper_keys), ~ toupper(as.character(.x))))
+    dplyr::mutate(dplyr::across(
+      dplyr::any_of(upper_keys),
+      ~ toupper(as.character(.x))
+    ))
   for (nm in upper_keys) {
     if (nm %in% names(wqp)) {
       wqp[[nm]] <- toupper(as.character(wqp[[nm]]))
     }
   }
-  
+
   # Join keys
   id_col1 <- "TADA.ComparableDataIdentifier"
   id_col2 <- c(
@@ -43,12 +46,12 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
   id_col3 <- c("TADA.CharacteristicName", "TADA.ResultSampleFractionText")
   id_col4 <- c("TADA.CharacteristicName", "TADA.MethodSpeciationName")
   id_col5 <- c("TADA.CharacteristicName")
-  
+
   # Optional use/org keys (only if present in BOTH)
   use_org <- c("ATTAINS.UseName", "ATTAINS.OrganizationIdentifier")
   use_org_in_both <- intersect(use_org, intersect(names(wqp), names(criteria)))
   with_use_org <- function(keys) unique(c(keys, use_org_in_both))
-  
+
   # Split criteria into disjoint sets and deduplicate by keys (+use/org)
   criteria1 <- dplyr::filter(
     criteria,
@@ -65,7 +68,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       dplyr::across(dplyr::all_of(with_use_org(id_col1))),
       .keep_all = TRUE
     )
-  
+
   criteria2 <- dplyr::filter(
     criteria,
     is.na(.data$`TADA.ComparableDataIdentifier`),
@@ -77,7 +80,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       dplyr::across(dplyr::all_of(with_use_org(id_col2))),
       .keep_all = TRUE
     )
-  
+
   criteria3 <- dplyr::filter(
     criteria,
     is.na(.data$`TADA.ComparableDataIdentifier`),
@@ -94,7 +97,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       dplyr::across(dplyr::all_of(with_use_org(id_col3))),
       .keep_all = TRUE
     )
-  
+
   criteria4 <- dplyr::filter(
     criteria,
     is.na(.data$`TADA.ComparableDataIdentifier`),
@@ -111,7 +114,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       dplyr::across(dplyr::all_of(with_use_org(id_col4))),
       .keep_all = TRUE
     )
-  
+
   criteria5 <- dplyr::filter(
     criteria,
     is.na(.data$`TADA.ComparableDataIdentifier`),
@@ -129,14 +132,14 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       dplyr::across(dplyr::all_of(with_use_org(id_col5))),
       .keep_all = TRUE
     )
-  
+
   # Expected characteristics (only those present in criteria)
   expected_chars <- if ("TADA.CharacteristicName" %in% names(criteria)) {
     unique(stats::na.omit(criteria$TADA.CharacteristicName))
   } else {
     character(0)
   }
-  
+
   if (isTRUE(byChar)) {
     # Char-only join (+ optional Use/Org)
     keys <- with_use_org("TADA.CharacteristicName")
@@ -145,13 +148,13 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       "TADA.ResultSampleFractionText",
       "TADA.MethodSpeciationName"
     )
-    
+
     crit_char <- criteria |>
       dplyr::select(-dplyr::any_of(drop_cols)) |>
       dplyr::distinct(dplyr::across(dplyr::all_of(keys)), .keep_all = TRUE)
-    
+
     wqp_criteria <- dplyr::left_join(wqp, crit_char, by = keys)
-    
+
     # Warn only for criteria characteristics that had WQP rows but did not match
     if (
       "TADA.CharacteristicName" %in% names(wqp) && length(expected_chars) > 0
@@ -178,11 +181,11 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
     }
     return(wqp_criteria)
   }
-  
+
   # Non-char-only path: sequential passes to avoid duplicates and preserve left-join semantics
   results <- list()
   wqp_rem <- wqp # define unconditionally so it's always available
-  
+
   # Pass 1: ID (+ optional Use/Org)
   if (nrow(criteria1) > 0 && all(with_use_org(id_col1) %in% names(wqp_rem))) {
     keys <- with_use_org(id_col1)
@@ -196,7 +199,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       wqp_rem <- dplyr::anti_join(wqp_rem, criteria1, by = keys)
     }
   }
-  
+
   # Pass 2: Char + Fraction + Speciation (+ optional Use/Org)
   if (nrow(criteria2) > 0 && all(with_use_org(id_col2) %in% names(wqp_rem))) {
     keys <- with_use_org(id_col2)
@@ -210,7 +213,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       wqp_rem <- dplyr::anti_join(wqp_rem, criteria2, by = keys)
     }
   }
-  
+
   # Pass 3: Char + Fraction (+ optional Use/Org)
   if (nrow(criteria3) > 0 && all(with_use_org(id_col3) %in% names(wqp_rem))) {
     keys <- with_use_org(id_col3)
@@ -224,7 +227,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       wqp_rem <- dplyr::anti_join(wqp_rem, criteria3, by = keys)
     }
   }
-  
+
   # Pass 4: Char + Speciation (+ optional Use/Org)
   if (nrow(criteria4) > 0 && all(with_use_org(id_col4) %in% names(wqp_rem))) {
     keys <- with_use_org(id_col4)
@@ -238,7 +241,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       wqp_rem <- dplyr::anti_join(wqp_rem, criteria4, by = keys)
     }
   }
-  
+
   # Pass 5: Char only (+ optional Use/Org)
   if (nrow(criteria5) > 0 && all(with_use_org(id_col5) %in% names(wqp_rem))) {
     keys <- with_use_org(id_col5)
@@ -252,13 +255,13 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       wqp_rem <- dplyr::anti_join(wqp_rem, criteria5, by = keys)
     }
   }
-  
+
   wqp_criteria <- if (length(results) > 0) {
     dplyr::bind_rows(dplyr::bind_rows(results), wqp_rem)
   } else {
     wqp_rem
   }
-  
+
   # Warn only for expected (criteria) characteristics that had unmatched WQP rows
   if (
     "TADA.CharacteristicName" %in% names(wqp_rem) && length(expected_chars) > 0
@@ -278,7 +281,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
       )
     }
   }
-  
+
   return(wqp_criteria)
 }
 

@@ -213,7 +213,7 @@ mod_batch_analysis_server <- function(id, tadat) {
           dplyr::left_join(dat2_ph, by = names(dat)) |>
           dplyr::left_join(dat2_temperature, by = names(dat)) |>
           dplyr::left_join(dat2_hardness, by = names(dat))
-        
+
         # decide how to join WQP dataframe to criteria table
         if (tadat$join_select %in% "Option 1") {
           byChar = FALSE
@@ -270,9 +270,10 @@ mod_batch_analysis_server <- function(id, tadat) {
               ATTAINS.UseName %in% tadat$uses_select_re
             )
 
-          dat4 <- dat2 |> join_wqp_criteria(criteria_table_f1, byChar = byChar) |>
-          tidyr::drop_na(TADA.ResultMeasureValue) |>
-          tidyr::drop_na(DateTime)
+          dat4 <- dat2 |>
+            join_wqp_criteria(criteria_table_f1, byChar = byChar) |>
+            tidyr::drop_na(TADA.ResultMeasureValue) |>
+            tidyr::drop_na(DateTime)
         }
 
         # Construct the selected columns
