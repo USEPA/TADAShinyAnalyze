@@ -1474,3 +1474,166 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
   expect_true("Exceedance" %in% names(fs_n3))
   expect_true(any(fs_n3$Exceedance %in% c("Exceed", "Not Exceed")))
 })
+
+
+
+test_that("setup: EPATADA and criteria are available", {
+  skip_if_not_installed("EPATADA")
+  criteria <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
+  expect_true(is.data.frame(criteria))
+  expect_gt(nrow(criteria), 0)
+})
+
+test_that("Pass 1: matches by TADA.ComparableDataIdentifier (ID join)", {
+  skip_if_not_installed("EPATADA")
+  utils::data("Data_MT_MissoulaCounty", package = "EPATADA")
+  criteria_all <- Data_MT_MissoulaCounty
+  
+  skip_if(!("TADA.ComparableDataIdentifier" %in% names(criteria_all)))
+  crit1_row <- criteria_all |>
+    dplyr::filter(!is.na(.data$`TADA.ComparableDataIdentifier`)) |>
+    dplyr::slice(1)
+  skip_if(nrow(crit1_row) == 0)
+  
+  # Add a marker so we can confirm the join
+  criteria_p1 <- crit1_row |> dplyr::mutate(marker = "p1")
+  
+  # Build WQP that matches by ID only; case-mix to test uppercasing
+  wqp <- dplyr::tibble(
+    TADA.ComparableDataIdentifier = tolower(crit1_row$TADA.ComparableDataIdentifier),
+    # These are not used in pass 1 keys and can be anything
+    TADA.CharacteristicName       = "dummy",
+    TADA.ResultSampleFractionText = "dummy",
+    TADA.MethodSpeciationName     = "dummy",
+    wqp_row_id                    = "w1"
+  )
+  
+  out <- join_wqp_criteria(wqp, criteria_p1, byChar = FALSE)
+  
+  expect_equal(nrow(out), nrow(wqp))
+  expect_true("marker" %in% names(out))
+  expect_equal(unique(out$marker), "p1")
+  # Ensure there are no .x/.y suffix columns
+  expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+test_that("Pass 2: matches by Characteristic + Fraction + Speciation", {
+  skip_if_not_installed("EPATADA")
+  criteria_all <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
+  
+  crit2_row <- criteria_all |>
+    dplyr::filter(
+      is.na(.data$`TADA.ComparableDataIdentifier`),
+      !is.na(.data$`TADA.ResultSampleFractionText`),
+      !is.na(.data$`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  skip_if(nrow(crit2_row) == 0)
+  
+  criteria_p2 <- crit2_row |> dplyr::mutate(marker = "p2")
+  
+  # Build WQP using mixed case keys to validate uppercasing
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName       = tolower(crit2_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = tolower(crit2_row$TADA.ResultSampleFractionText),
+    TADA.MethodSpeciationName     = tolower(crit2_row$TADA.MethodSpeciationName),
+    wqp_row_id                    = "w2"
+  )
+  
+  out <- join_wqp_criteria(wqp, criteria_p2, byChar = FALSE)
+  
+  expect_equal(nrow(out), nrow(wqp))
+  expect_true("marker" %in% names(out))
+  expect_equal(unique(out$marker), "p2")
+  expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+test_that("Pass 3: matches by Characteristic + Fraction (Speciation is NA)", {
+  skip_if_not_installed("EPATADA")
+  criteria_all <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
+  
+  crit3_row <- criteria_all |>
+    dplyr::filter(
+      is.na(.data$`TADA.ComparableDataIdentifier`),
+      !is.na(.data$`TADA.ResultSampleFractionText`),
+      is.na(.data$`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  skip_if(nrow(crit3_row) == 0)
+  
+  criteria_p3 <- crit3_row |> dplyr::mutate(marker = "p3")
+  
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName       = tolower(crit3_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = tolower(crit3_row$TADA.ResultSampleFractionText),
+    TADA.MethodSpeciationName     = NA_character_, # must be NA to match pass 3
+    wqp_row_id                    = "w3"
+  )
+  
+  out <- join_wqp_criteria(wqp, criteria_p3, byChar = FALSE)
+  
+  expect_equal(nrow(out), nrow(wqp))
+  expect_true("marker" %in% names(out))
+  expect_equal(unique(out$marker), "p3")
+  expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+test_that("Pass 4: matches by Characteristic + Speciation (Fraction is NA)", {
+  skip_if_not_installed("EPATADA")
+  criteria_all <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
+  
+  crit4_row <- criteria_all |>
+    dplyr::filter(
+      is.na(.data$`TADA.ComparableDataIdentifier`),
+      is.na(.data$`TADA.ResultSampleFractionText`),
+      !is.na(.data$`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  skip_if(nrow(crit4_row) == 0)
+  
+  criteria_p4 <- crit4_row |> dplyr::mutate(marker = "p4")
+  
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName       = tolower(crit4_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = NA_character_, # must be NA to match pass 4
+    TADA.MethodSpeciationName     = tolower(crit4_row$TADA.MethodSpeciationName),
+    wqp_row_id                    = "w4"
+  )
+  
+  out <- join_wqp_criteria(wqp, criteria_p4, byChar = FALSE)
+  
+  expect_equal(nrow(out), nrow(wqp))
+  expect_true("marker" %in% names(out))
+  expect_equal(unique(out$marker), "p4")
+  expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+test_that("Pass 5: matches by Characteristic only (Fraction and Speciation are NA)", {
+  skip_if_not_installed("EPATADA")
+  criteria_all <- EPATADA::TADA_GetCriteriaFile(org_id = "MTDEQ")
+  
+  crit5_row <- criteria_all |>
+    dplyr::filter(
+      is.na(.data$`TADA.ComparableDataIdentifier`),
+      is.na(.data$`TADA.ResultSampleFractionText`),
+      is.na(.data$`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  skip_if(nrow(crit5_row) == 0)
+  
+  criteria_p5 <- crit5_row |> dplyr::mutate(marker = "p5")
+  
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName       = tolower(crit5_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = NA_character_,
+    TADA.MethodSpeciationName     = NA_character_,
+    wqp_row_id                    = "w5"
+  )
+  
+  out <- join_wqp_criteria(wqp, criteria_p5, byChar = FALSE)
+  
+  expect_equal(nrow(out), nrow(wqp))
+  expect_true("marker" %in% names(out))
+  expect_equal(unique(out$marker), "p5")
+  expect_false(any(grepl("\\.(x|y)$", names(out))))
+})

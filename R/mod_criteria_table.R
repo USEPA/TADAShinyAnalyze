@@ -757,10 +757,12 @@ mod_criteria_table_server <- function(id, tadat) {
 
       # Build summary text
       text <- paste0(
-        "Your criteria table contains ",
+        "Your template contains ",
         nrow(df_template2),
-        " rows of information populated that are needed for analysis. \n",
-        "   Any rows missing criteria or methodology information has been removed. \n"
+        " rows of criteria information for anlaysis. \n",
+        " and is missing criteria information for: \n",
+        nrow(non_matches),
+        " rows. "
       )
 
       if (nrow(non_matches) > 0) {

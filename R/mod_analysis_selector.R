@@ -82,7 +82,10 @@ mod_analysis_selector_ui <- function(id) {
         )
       ),
       helpText(
-        "Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame."
+        "Please review the matches and make sure everything you expect is listed.",
+        "If something is missing, check that the entries in your Criteria & Methodologies template ",
+        "use the exact same wording and formatting as in your WQP data file for: ",
+        "characteristic name, fraction (for example, total vs. dissolved), and speciation (for example, nitrate reported as N vs. as NO3)"
       )
     ))
   )
