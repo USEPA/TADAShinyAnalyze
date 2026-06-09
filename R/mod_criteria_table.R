@@ -770,8 +770,7 @@ mod_criteria_table_server <- function(id, tadat) {
         if (length(ids) > 0) {
           header <- "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:"
           bullets <- paste0(" - ", ids)
-          extra_text <- paste(c(header, bullets),
-                              collapse = "\n")
+          extra_text <- paste(c(header, bullets), collapse = "\n")
           text <- paste(text, eq_text, extra_text, sep = "\n")
         }
       }
