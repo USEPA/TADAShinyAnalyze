@@ -312,22 +312,32 @@ mod_analysis_selector_server <- function(id, tadat) {
         footer = modalButton("Close"),
         tagList(
           tags$h5("Option 1 - Automatic (Recommended)"),
-          tags$p("Join by using the most specific available match for each row, in priority order:"),
-          tags$p("1) Exact Identifier (TADA.ComparableDataIdentifier = Characteristic + Fraction + Speciation + Unit)"),
+          tags$p(
+            "Join by using the most specific available match for each row, in priority order:"
+          ),
+          tags$p(
+            "1) Exact Identifier (TADA.ComparableDataIdentifier = Characteristic + Fraction + Speciation + Unit)"
+          ),
           tags$p("2) Characteristic + Fraction + Speciation"),
           tags$p("3a) Characteristic + Fraction"),
           tags$p("3b) Characteristic + Speciation"),
           tags$p("4) Characteristic only"),
           tags$ul(
-            tags$li("Use when TADA.ComparableDataIdentifier has been filled or by fraction and/or speciation that are present and consistent between your criteria table and WQP data frame."),
+            tags$li(
+              "Use when TADA.ComparableDataIdentifier has been filled or by fraction and/or speciation that are present and consistent between your criteria table and WQP data frame."
+            ),
             tags$li("Stricter matching (fewer false/ambiguous joins).")
           ),
           tags$hr(),
           tags$h5("Option 2 - CharacteristicName only"),
           tags$p("Joins only on TADA.CharacteristicName."),
           tags$ul(
-            tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
-            tags$li("More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis.")
+            tags$li(
+              "Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."
+            ),
+            tags$li(
+              "More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis."
+            )
           )
         )
       ))

@@ -197,12 +197,12 @@ mod_custom_analysis_server <- function(id, tadat) {
       dat2_ph <- pH_fun(dat)
       dat2_temperature <- Temperature_fun(dat)
       dat2_hardness <- hardness_fun(dat)
-      
+
       dat2 <- dat |>
         dplyr::left_join(dat2_ph, by = names(dat)) |>
         dplyr::left_join(dat2_temperature, by = names(dat)) |>
         dplyr::left_join(dat2_hardness, by = names(dat))
-      
+
       # decide how to join WQP dataframe to criteria table
       if (tadat$join_select_custom %in% "Option 1") {
         byChar = FALSE
