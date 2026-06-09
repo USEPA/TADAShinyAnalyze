@@ -207,7 +207,7 @@ mod_batch_analysis_server <- function(id, tadat) {
         # Step 1: Join pH, Temperature, and Hardness data
         dat2_ph <- pH_fun(dat)
         dat2_temperature <- Temperature_fun(dat)
-        dat_hardness <- hardness_fun(dat)
+        dat2_hardness <- hardness_fun(dat)
 
         dat2 <- dat |>
           dplyr::left_join(dat2_ph, by = names(dat)) |>

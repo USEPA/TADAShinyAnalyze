@@ -59,11 +59,11 @@ mod_analysis_selector_ui <- function(id) {
     fluidRow(column(
       width = 12,
       htmltools::p(htmltools::strong(
-        "Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation)."
+        "Join by TADA.CharacteristicName only, or choose Automatic (recommended) to join using TADA.ComparableDataIdentifier when available, else by TADA.CharacteristicName with TADA.ResultSampleFractionText and/or TADA.MethodSpeciationName, else by TADA.CharacteristicName alone."
       ))
     )),
     fluidRow(column(
-      width = 6,
+      width = 12,
       shiny::radioButtons(
         inputId = ns("join_select"),
         label = tagList(
@@ -77,7 +77,7 @@ mod_analysis_selector_ui <- function(id) {
           )
         ),
         choices = c(
-          "TADA.ComparableDataIdentifier" = "Option 1",
+          "Automatic (Recommended)" = "Option 1",
           "TADA.CharacteristicName only" = "Option 2"
         )
       ),
@@ -311,26 +311,23 @@ mod_analysis_selector_server <- function(id, tadat) {
         easyClose = TRUE,
         footer = modalButton("Close"),
         tagList(
-          tags$h5("Option 1 - ComparableDataIdentifier"),
-          tags$p(
-            "Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."
-          ),
+          tags$h5("Option 1 - Automatic (Recommended)"),
+          tags$p("Join by using the most specific available match for each row, in priority order:"),
+          tags$p("1) Exact Identifier (TADA.ComparableDataIdentifier = Characteristic + Fraction + Speciation + Unit)"),
+          tags$p("2) Characteristic + Fraction + Speciation"),
+          tags$p("3a) Characteristic + Fraction"),
+          tags$p("3b) Characteristic + Speciation"),
+          tags$p("4) Characteristic only"),
           tags$ul(
-            tags$li(
-              "Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."
-            ),
+            tags$li("Use when TADA.ComparableDataIdentifier has been filled or by fraction and/or speciation that are present and consistent between your criteria table and WQP data frame."),
             tags$li("Stricter matching (fewer false/ambiguous joins).")
           ),
           tags$hr(),
           tags$h5("Option 2 - CharacteristicName only"),
           tags$p("Joins only on TADA.CharacteristicName."),
           tags$ul(
-            tags$li(
-              "Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."
-            ),
-            tags$li(
-              "More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis."
-            )
+            tags$li("Use when fraction/speciation are missing or inconsistent between your criteria table and WQP data frame."),
+            tags$li("More permissive; TADAShinyAnalyze will not consider fraction or speciation in analysis.")
           )
         )
       ))

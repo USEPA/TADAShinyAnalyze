@@ -759,22 +759,21 @@ mod_criteria_table_server <- function(id, tadat) {
       text <- paste0(
         "Your template contains ",
         nrow(df_template2),
-        " rows of criteria information for anlaysis. \n",
-        " and is missing criteria information for: \n",
-        nrow(non_matches),
-        " rows. "
+        " row(s) of criteria information for anlaysis. \n",
+        " and is missing criteria information for: ",
+        row_NA,
+        " row(s). "
       )
 
       if (nrow(non_matches) > 0) {
-        extra_text <- paste(
-          c(
-            "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
-            unique(non_matches$TADA.ComparableDataIdentifier),
-            "\n"
-          ),
-          collapse = "\n - "
-        )
-        text <- paste(text, eq_text, extra_text, sep = "\n")
+        ids <- unique(stats::na.omit(non_matches$TADA.ComparableDataIdentifier))
+        if (length(ids) > 0) {
+          header <- "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:"
+          bullets <- paste0(" - ", ids)
+          extra_text <- paste(c(header, bullets),
+                              collapse = "\n")
+          text <- paste(text, eq_text, extra_text, sep = "\n")
+        }
       }
 
       # Prints final message
