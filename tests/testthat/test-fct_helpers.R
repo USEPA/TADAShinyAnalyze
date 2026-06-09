@@ -1478,7 +1478,7 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
 
 # tests/testthat/helper-criteria-fixtures.R
 criteria_fixture <- function() {
-  tibble::tibble(
+  dplyr::tibble(
     `TADA.CharacteristicName` = c(
       "Chloride", # P1: Characteristic only
       "Chloride", # P2: Characteristic + Fraction + Speciation
@@ -1611,7 +1611,7 @@ testthat::test_that("Pass 4: matches by Characteristic + Speciation (no Fraction
 
   # If the base fixture doesn't contain such a row, synthesize one quickly:
   if (nrow(crit4_row) == 0) {
-    crit4_row <- tibble::tibble(
+    crit4_row <- dplyr::tibble(
       `TADA.CharacteristicName` = "Chloride",
       `TADA.ResultSampleFractionText` = NA_character_,
       `TADA.MethodSpeciationName` = "as Cl",
