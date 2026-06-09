@@ -186,7 +186,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
           sprintf(
             "WQP contains %d characteristic(s) present in criteria that did not match (showing up to 10): %s",
             length(unmatched_chars),
-            paste(head(unmatched_chars, 10), collapse = ", ")
+            paste(utils::head(unmatched_chars, 10), collapse = ", ")
           ),
           call. = FALSE
         )
@@ -288,7 +288,7 @@ join_wqp_criteria <- function(wqp, criteria, byChar = FALSE) {
         sprintf(
           "WQP contains %d characteristic(s) present in criteria that did not match: %s \nPlease ensure the fraction and/or speciation in your criteria table match those in your WQP data.",
           length(unmatched_chars),
-          paste(head(unmatched_chars, 10), collapse = ", ")
+          paste(utils::head(unmatched_chars, 10), collapse = ", ")
         ),
         call. = FALSE
       )

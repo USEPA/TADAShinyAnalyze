@@ -91,5 +91,6 @@ utils::globalVariables(c(
   "MagnitudeUnit",
   "DateTime_Temperature",
   "DateTime_pH",
-  "dt_diff"
+  "dt_diff",
+  "dat2_hardness"
 ))
