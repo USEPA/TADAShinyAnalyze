@@ -742,49 +742,60 @@ mod_criteria_table_server <- function(id, tadat) {
           tadat$df_autouse_input,
           "ATTAINS.UseName"
         ) |>
-          dplyr::select(
-            ATTAINS.UseName
-          ) |>
+          dplyr::select(ATTAINS.UseName) |>
           dplyr::distinct()
       } else {
         non_matches_uses <- NULL
       }
-      
+
       # check for accepted/rejected values in columns using TADACommunityHub functions
       # Run validations safely
       status <- tryCatch(
         TADACommunityHub::runAllValidations(df_template2),
-        error = function(e) list(overall_status = paste("Validation error:", conditionMessage(e)))
+        error = function(e) {
+          list(overall_status = paste("Validation error:", conditionMessage(e)))
+        }
       )
-      
+
       # Base summary
       msg <- c(
-        sprintf("Your template contains %d row(s) of criteria information for analysis.", nrow(df_template2)),
+        sprintf(
+          "Your template contains %d row(s) of criteria information for analysis.",
+          nrow(df_template2)
+        ),
         sprintf("and is missing criteria information for: %d row(s).", row_NA)
       )
-      
+
       # EquationBased NA warning
       if (equationBased_NA > 0) {
         msg <- c(
           msg,
-          sprintf("Warning: EquationBased must be populated - Your uploaded criteria table contains %d row(s) with EquationBased = 'NA'.", equationBased_NA),
+          sprintf(
+            "Warning: EquationBased must be populated - Your uploaded criteria table contains %d row(s) with EquationBased = 'NA'.",
+            equationBased_NA
+          ),
           "   These NAs will be filled in as 'No'."
         )
       }
-      
+
       # Mismatch summaries
       nm <- nrow(non_matches) > 0
       nu <- nrow(non_matches_uses) > 0
-      
+
       # Optional concise overall mismatch line
       msg <- c(
         msg,
-        if (nm && nu) "Mismatches found: TADA.ComparableDataIdentifier(s) and ATTAINS.UseName(s)."
-        else if (nm)  "Mismatches found: TADA.ComparableDataIdentifier(s)."
-        else if (nu)  "Mismatches found: ATTAINS.UseName(s)."
-        else          "No mismatches found."
+        if (nm && nu) {
+          "Mismatches found: TADA.ComparableDataIdentifier(s) and ATTAINS.UseName(s)."
+        } else if (nm) {
+          "Mismatches found: TADA.ComparableDataIdentifier(s)."
+        } else if (nu) {
+          "Mismatches found: ATTAINS.UseName(s)."
+        } else {
+          "No mismatches found."
+        }
       )
-      
+
       # Detailed identifier mismatches
       if (nm) {
         ids <- unique(stats::na.omit(non_matches$TADA.ComparableDataIdentifier))
@@ -796,7 +807,7 @@ mod_criteria_table_server <- function(id, tadat) {
           )
         }
       }
-      
+
       # Detailed use mismatches
       if (nu) {
         ids2 <- unique(stats::na.omit(non_matches_uses$ATTAINS.UseName))
@@ -808,7 +819,7 @@ mod_criteria_table_server <- function(id, tadat) {
           )
         }
       }
-      
+
       # Final message
       msg <- c(msg, status$overall_status)
       paste(msg, collapse = "\n")
