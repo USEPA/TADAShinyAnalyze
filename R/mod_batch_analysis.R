@@ -237,7 +237,6 @@ mod_batch_analysis_server <- function(id, tadat) {
           AU_Use_f1 <- AU_Use |>
             #dplyr::mutate(ATTAINS.UseName = toupper(ATTAINS.UseName)) |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
-            
 
           AU_MLID_f1 <- AU_MLID |>
             dplyr::filter(
