@@ -235,7 +235,9 @@ mod_batch_analysis_server <- function(id, tadat) {
           AU_MLID <- tadat$df_mltoau_input
 
           AU_Use_f1 <- AU_Use |>
+            #dplyr::mutate(ATTAINS.UseName = toupper(ATTAINS.UseName)) |>
             dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re)
+            
 
           AU_MLID_f1 <- AU_MLID |>
             dplyr::filter(
@@ -324,14 +326,14 @@ mod_batch_analysis_server <- function(id, tadat) {
           selected_cols2 <- c(
             selected_cols[1:4],
             "ATTAINS.AssessmentUnitIdentifier",
-            selected_cols[5:40]
+            selected_cols[5:length(selected_cols)]
           )
         } else {
           selected_cols2 <- selected_cols
         }
 
         # Select columns
-        dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
+        dat4_1 <- dat4 |> dplyr::select(dplyr::any_of(selected_cols2))
 
         # Step 3: Separate the dataset based on if criteria exist
         dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
