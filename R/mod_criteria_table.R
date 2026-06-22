@@ -735,48 +735,94 @@ mod_criteria_table_server <- function(id, tadat) {
         ) |>
         dplyr::distinct()
 
+      # check for mismatching uses (if AU_Uses is uploaded)
+      if (!is.null(tadat$df_autouse_input)) {
+        non_matches_uses <- dplyr::anti_join(
+          df_template2_ID,
+          tadat$df_autouse_input,
+          "ATTAINS.UseName"
+        ) |>
+          dplyr::select(ATTAINS.UseName) |>
+          dplyr::distinct()
+      } else {
+        non_matches_uses <- NULL
+      }
+
       # check for accepted/rejected values in columns using TADACommunityHub functions
-      # wrap the validator call in tryCatch so a validation error can’t take down the output
+      # Run validations safely
       status <- tryCatch(
         TADACommunityHub::runAllValidations(df_template2),
         error = function(e) {
-          list(overall_status = paste("Validation error:", e$message))
+          list(overall_status = paste("Validation error:", conditionMessage(e)))
         }
       )
 
-      # EquationBased must be populated as "Yes" or "No". If left as NA, print a message that this occurred.
-      eq_text <- paste0("")
-      if (equationBased_NA > 0) {
-        eq_text <- paste0(
-          "Warning: EquationBased must be populated - Your uploaded criteria table contains ",
-          equationBased_NA,
-          " rows for analysis with EquationBased values populated as 'NA'. \n",
-          "   These NAs will be filled in as 'No'. \n"
-        )
-      }
-
-      # Build summary text
-      text <- paste0(
-        "Your criteria table contains ",
-        nrow(df_template2),
-        " rows of information populated that are needed for analysis. \n",
-        "   Any rows missing criteria or methodology information has been removed. \n"
+      # Base summary
+      msg <- c(
+        sprintf(
+          "Your template contains %d row(s) of criteria information for analysis.",
+          nrow(df_template2)
+        ),
+        sprintf("and is missing criteria information for: %d row(s).", row_NA)
       )
 
-      if (nrow(non_matches) > 0) {
-        extra_text <- paste(
-          c(
-            "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifiers:",
-            unique(non_matches$TADA.ComparableDataIdentifier),
-            "\n"
+      # EquationBased NA warning
+      if (equationBased_NA > 0) {
+        msg <- c(
+          msg,
+          sprintf(
+            "Warning: EquationBased must be populated - Your uploaded criteria table contains %d row(s) with EquationBased = 'NA'.",
+            equationBased_NA
           ),
-          collapse = "\n - "
+          "   These NAs will be filled in as 'No'."
         )
-        text <- paste(text, eq_text, extra_text, sep = "\n")
       }
 
-      # Prints final message
-      paste(paste0(text, "\n", status$overall_status, sep = "\n"))
+      # Mismatch summaries
+      nm <- nrow(non_matches) > 0
+      nu <- nrow(non_matches_uses) > 0
+
+      # Optional concise overall mismatch line
+      msg <- c(
+        msg,
+        if (nm && nu) {
+          "Mismatches found: TADA.ComparableDataIdentifier(s) and ATTAINS.UseName(s)."
+        } else if (nm) {
+          "Mismatches found: TADA.ComparableDataIdentifier(s)."
+        } else if (nu) {
+          "Mismatches found: ATTAINS.UseName(s)."
+        } else {
+          "No mismatches found."
+        }
+      )
+
+      # Detailed identifier mismatches
+      if (nm) {
+        ids <- unique(stats::na.omit(non_matches$TADA.ComparableDataIdentifier))
+        if (length(ids) > 0) {
+          msg <- c(
+            msg,
+            "Warning: Mismatching fraction, speciation, and/or units were found for these TADA.ComparableDataIdentifier(s) compared to your criteria table:",
+            paste0(" - ", ids)
+          )
+        }
+      }
+
+      # Detailed use mismatches
+      if (nu) {
+        ids2 <- unique(stats::na.omit(non_matches_uses$ATTAINS.UseName))
+        if (length(ids2) > 0) {
+          msg <- c(
+            msg,
+            "Warning: Mismatching uses in your loaded AU to Uses file (1c) were found for these ATTAINS.UseName(s) compared to your criteria table:",
+            paste0(" - ", ids2)
+          )
+        }
+      }
+
+      # Final message
+      msg <- c(msg, status$overall_status)
+      paste(msg, collapse = "\n")
     })
 
     ### Generate the template summary table (adds missing required columns to the output)

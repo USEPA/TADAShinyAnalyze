@@ -54,7 +54,8 @@ Suggests:
     rprojroot,
     spelling,
     testthat,
-    writexl
+    writexl,
+    mockery
 Remotes:
     USEPA/EPATADA,
     USEPA/rExpertQuery,

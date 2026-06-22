@@ -1,12 +1,14 @@
-#' The application server-side
+#' Application server-side
 #'
-#' @param input,output,session Internal parameters for {shiny}.
-#'     DO NOT REMOVE.
+#' Initializes reactive state, fetches external resources with guarded error
+#' handling, wires Shiny modules, and manages initial UI state.
+#'
+#' @param input,output,session Internal parameters for {shiny}. DO NOT REMOVE.
 #' @import shiny
 #' @noRd
-#'
 
-# server
+# Do NOT set global options here. Upload size and timeouts are configured in run_app().
+
 app_server <- function(input, output, session) {
   # Fetch ATTAINS organization IDs
   ATTAINS_orgs_vec <- tryCatch(
@@ -36,7 +38,14 @@ app_server <- function(input, output, session) {
     }
   )
 
-  criteria_file_list <- criteria_file_list |> dplyr::arrange(display_name)
+  # Guard arrange: only sort when criteria_file_list is a data.frame with 'display_name'
+  if (
+    !is.null(criteria_file_list) &&
+      is.data.frame(criteria_file_list) &&
+      "display_name" %in% names(criteria_file_list)
+  ) {
+    criteria_file_list <- dplyr::arrange(criteria_file_list, display_name)
+  }
 
   # create list object to hold reactive values passed between modules
   tadat <- shiny::reactiveValues()

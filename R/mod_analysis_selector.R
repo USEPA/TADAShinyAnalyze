@@ -59,11 +59,11 @@ mod_analysis_selector_ui <- function(id) {
     fluidRow(column(
       width = 12,
       htmltools::p(htmltools::strong(
-        "Join by TADA.CharacteristicName or TADA.ComparableDataIdentifier (Characteristic, Fraction and Speciation)."
+        "Join by TADA.CharacteristicName only, or choose Automatic (recommended) to join using TADA.ComparableDataIdentifier when available, else by TADA.CharacteristicName with TADA.ResultSampleFractionText and/or TADA.MethodSpeciationName, else by TADA.CharacteristicName alone."
       ))
     )),
     fluidRow(column(
-      width = 6,
+      width = 12,
       shiny::radioButtons(
         inputId = ns("join_select"),
         label = tagList(
@@ -76,9 +76,16 @@ mod_analysis_selector_ui <- function(id) {
             title = "More details"
           )
         ),
-        helpText(
-          "Note: If you do not see a match populated for a TADA.CharacteristicName, please ensure the fraction and speciation specification matches those in your WQP data frame."
+        choices = c(
+          "Automatic (Recommended)" = "Option 1",
+          "TADA.CharacteristicName only" = "Option 2"
         )
+      ),
+      helpText(
+        "Please review the matches and make sure everything you expect is listed.",
+        "If something is missing, check that the entries in your Criteria & Methodologies template ",
+        "use the exact same wording and formatting as in your WQP data file for: ",
+        "characteristic name, fraction (for example, total vs. dissolved), and speciation (for example, nitrate reported as N vs. as NO3)"
       )
     ))
   )
@@ -304,13 +311,20 @@ mod_analysis_selector_server <- function(id, tadat) {
         easyClose = TRUE,
         footer = modalButton("Close"),
         tagList(
-          tags$h5("Option 1 - ComparableDataIdentifier"),
+          tags$h5("Option 1 - Automatic (Recommended)"),
           tags$p(
-            "Joins using TADA.CharacteristicName, TADA.ResultSampleFractionText, and TADA.MethodSpeciationName."
+            "Join by using the most specific available match for each row, in priority order:"
           ),
+          tags$p(
+            "1) Exact Identifier (TADA.ComparableDataIdentifier = Characteristic + Fraction + Speciation + Unit)"
+          ),
+          tags$p("2) Characteristic + Fraction + Speciation"),
+          tags$p("3a) Characteristic + Fraction"),
+          tags$p("3b) Characteristic + Speciation"),
+          tags$p("4) Characteristic only"),
           tags$ul(
             tags$li(
-              "Use when fraction and speciation are present and consistent between your criteria table and WQP data frame."
+              "Use when TADA.ComparableDataIdentifier has been filled or by fraction and/or speciation that are present and consistent between your criteria table and WQP data frame."
             ),
             tags$li("Stricter matching (fewer false/ambiguous joins).")
           ),

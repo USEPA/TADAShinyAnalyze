@@ -194,7 +194,21 @@ mod_custom_analysis_server <- function(id, tadat) {
         dplyr::mutate(DateTime = ActivityStartDateTime)
 
       # Step 1: Join pH, Temperature, and Hardness data
-      dat2 <- dat |> pH_fun() |> Temperature_fun() |> hardness_fun()
+      dat2_ph <- pH_fun(dat)
+      dat2_temperature <- Temperature_fun(dat)
+      dat2_hardness <- hardness_fun(dat)
+
+      dat2 <- dat |>
+        dplyr::left_join(dat2_ph, by = names(dat)) |>
+        dplyr::left_join(dat2_temperature, by = names(dat)) |>
+        dplyr::left_join(dat2_hardness, by = names(dat))
+
+      # decide how to join WQP dataframe to criteria table
+      if (tadat$join_select_custom %in% "Option 1") {
+        byChar = FALSE
+      } else {
+        byChar = TRUE
+      }
 
       # Step 2: Join the criteria table
       if (tadat$use_type_custom %in% "Option 1") {
@@ -210,6 +224,7 @@ mod_custom_analysis_server <- function(id, tadat) {
         AU_MLID <- tadat$df_mltoau_input
 
         AU_Use_f1 <- AU_Use |>
+          #dplyr::mutate(ATTAINS.UseName = toupper(ATTAINS.UseName)) |>
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
 
         AU_MLID_f1 <- AU_MLID |>
@@ -239,11 +254,7 @@ mod_custom_analysis_server <- function(id, tadat) {
             ),
             relationship = "many-to-many"
           ) |>
-          criteria_join(
-            criteria_table_f1,
-            match_type = tadat$join_select_custom,
-            use_type = tadat$use_type_custom
-          ) |>
+          join_wqp_criteria(criteria_table_f1, byChar = byChar) |>
           tidyr::drop_na(TADA.ResultMeasureValue) |>
           tidyr::drop_na(DateTime)
       } else {
@@ -254,11 +265,7 @@ mod_custom_analysis_server <- function(id, tadat) {
           dplyr::filter(ATTAINS.UseName %in% tadat$uses_select_re_custom)
 
         dat4 <- dat2 |>
-          criteria_join(
-            criteria_table_f1,
-            match_type = tadat$join_select_custom,
-            use_type = tadat$use_type_custom
-          ) |>
+          join_wqp_criteria(criteria_table_f1, byChar = byChar) |>
           tidyr::drop_na(TADA.ResultMeasureValue) |>
           tidyr::drop_na(DateTime)
       }
@@ -294,7 +301,6 @@ mod_custom_analysis_server <- function(id, tadat) {
         "DurationMethod",
         "FreqValue",
         "FreqMethod",
-        # Equation coefficient columns
         "EquationFormula",
         "hardness_param_1",
         "hardness_param_2",
@@ -312,16 +318,16 @@ mod_custom_analysis_server <- function(id, tadat) {
         selected_cols2 <- c(
           selected_cols[1:4],
           "ATTAINS.AssessmentUnitIdentifier",
-          selected_cols[5:40]
+          selected_cols[5:length(selected_cols)]
         )
       } else {
         selected_cols2 <- selected_cols
       }
 
-      dat4_1 <- dat4 |> dplyr::select(dplyr::all_of(selected_cols2))
+      dat4_1 <- dat4 |> dplyr::select(dplyr::any_of(selected_cols2))
 
       # Step 3: Separate the dataset based on if criteria exist
-      dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
+      # dat_na <- dat4_1 |> dplyr::filter(is.na(EquationBased))
       dat_yes <- dat4_1 |>
         dplyr::filter(EquationBased %in% "Yes") |>
         dplyr::filter(!EquationType %in% "Additional Information")

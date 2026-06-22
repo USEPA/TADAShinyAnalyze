@@ -190,7 +190,7 @@ test_that("mod_criteria_table_server Option E upload and summary works (mocked v
     ATTAINS_orgs_vec = character(),
     df_mlid_input = dplyr::tibble(TADA.ComparableDataIdentifier = character()),
     df_mltoau_input = dplyr::tibble(),
-    df_autouse_input = dplyr::tibble()
+    df_autouse_input = dplyr::tibble(ATTAINS.UseName = character())
   )
 
   # Simulate Shiny fileInput value

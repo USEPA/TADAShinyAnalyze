@@ -1474,3 +1474,194 @@ test_that("frequency_summary computes outputs for all frequency methods (via dur
   expect_true("Exceedance" %in% names(fs_n3))
   expect_true(any(fs_n3$Exceedance %in% c("Exceed", "Not Exceed")))
 })
+
+
+# tests/testthat/helper-criteria-fixtures.R
+criteria_fixture <- function() {
+  dplyr::tibble(
+    `TADA.CharacteristicName` = c(
+      "Chloride", # P1: Characteristic only
+      "Chloride", # P2: Characteristic + Fraction + Speciation
+      "Chloride", # P3: Characteristic + Fraction only
+      "Sulfate" # distractor row
+    ),
+    `TADA.ResultSampleFractionText` = c(
+      NA_character_,
+      "Dissolved",
+      "Total",
+      "Dissolved"
+    ),
+    `TADA.MethodSpeciationName` = c(
+      NA_character_,
+      "as Cl",
+      NA_character_,
+      "as SO4"
+    ),
+    `TADA.ComparableDataIdentifier` = c(
+      NA_character_, # keep NA for rows we will pick in tests
+      NA_character_,
+      NA_character_,
+      "has_id" # row excluded by filters
+    )
+  )
+}
+
+testthat::test_that("Pass 1: matches by Characteristic only", {
+  criteria_all <- criteria_fixture()
+
+  crit1_row <- criteria_all |>
+    dplyr::filter(
+      is.na(`TADA.ComparableDataIdentifier`),
+      is.na(`TADA.ResultSampleFractionText`),
+      is.na(`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  testthat::skip_if(nrow(crit1_row) == 0)
+
+  criteria_p1 <- crit1_row |> dplyr::mutate(marker = "p1")
+
+  # Build WQP using mixed/lower case to assert case-insensitive match
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName = tolower(crit1_row$TADA.CharacteristicName),
+    wqp_row_id = "w1"
+  )
+
+  out <- join_wqp_criteria(wqp, criteria_p1, byChar = TRUE)
+
+  testthat::expect_equal(nrow(out), nrow(wqp))
+  testthat::expect_true("marker" %in% names(out))
+  testthat::expect_equal(unique(out$marker), "p1")
+  testthat::expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+testthat::test_that("Pass 2: matches by Characteristic + Fraction + Speciation", {
+  criteria_all <- criteria_fixture()
+
+  crit2_row <- criteria_all |>
+    dplyr::filter(
+      is.na(`TADA.ComparableDataIdentifier`),
+      !is.na(`TADA.ResultSampleFractionText`),
+      !is.na(`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  testthat::skip_if(nrow(crit2_row) == 0)
+
+  criteria_p2 <- crit2_row |> dplyr::mutate(marker = "p2")
+
+  # Build WQP using mixed case keys to validate uppercasing/case-insensitivity
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName = tolower(crit2_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = tolower(
+      crit2_row$TADA.ResultSampleFractionText
+    ),
+    TADA.MethodSpeciationName = tolower(crit2_row$TADA.MethodSpeciationName),
+    wqp_row_id = "w2"
+  )
+
+  out <- join_wqp_criteria(wqp, criteria_p2, byChar = FALSE)
+
+  testthat::expect_equal(nrow(out), nrow(wqp))
+  testthat::expect_true("marker" %in% names(out))
+  testthat::expect_equal(unique(out$marker), "p2")
+  testthat::expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+testthat::test_that("Pass 3: matches by Characteristic + Fraction (no Speciation)", {
+  criteria_all <- criteria_fixture()
+
+  crit3_row <- criteria_all |>
+    dplyr::filter(
+      is.na(`TADA.ComparableDataIdentifier`),
+      !is.na(`TADA.ResultSampleFractionText`),
+      is.na(`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  testthat::skip_if(nrow(crit3_row) == 0)
+
+  criteria_p3 <- crit3_row |> dplyr::mutate(marker = "p3")
+
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName = tolower(crit3_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = tolower(
+      crit3_row$TADA.ResultSampleFractionText
+    ),
+    wqp_row_id = "w3"
+  )
+
+  out <- join_wqp_criteria(wqp, criteria_p3, byChar = FALSE)
+
+  testthat::expect_equal(nrow(out), nrow(wqp))
+  testthat::expect_true("marker" %in% names(out))
+  testthat::expect_equal(unique(out$marker), "p3")
+  testthat::expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+testthat::test_that("Pass 4: matches by Characteristic + Speciation (no Fraction)", {
+  criteria_all <- criteria_fixture()
+
+  # Create a row with speciation but no fraction (if not already present)
+  # If your fixture already has such a row, just filter to it; otherwise, add here.
+  crit4_row <- criteria_all |>
+    dplyr::filter(
+      is.na(`TADA.ComparableDataIdentifier`),
+      is.na(`TADA.ResultSampleFractionText`),
+      !is.na(`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+
+  # If the base fixture doesn't contain such a row, synthesize one quickly:
+  if (nrow(crit4_row) == 0) {
+    crit4_row <- dplyr::tibble(
+      `TADA.CharacteristicName` = "Chloride",
+      `TADA.ResultSampleFractionText` = NA_character_,
+      `TADA.MethodSpeciationName` = "as Cl",
+      `TADA.ComparableDataIdentifier` = NA_character_
+    )
+  }
+
+  testthat::skip_if(nrow(crit4_row) == 0)
+
+  criteria_p4 <- crit4_row |> dplyr::mutate(marker = "p4")
+
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName = tolower(crit4_row$TADA.CharacteristicName),
+    TADA.MethodSpeciationName = tolower(crit4_row$TADA.MethodSpeciationName),
+    wqp_row_id = "w4"
+  )
+
+  out <- join_wqp_criteria(wqp, criteria_p4, byChar = FALSE)
+
+  testthat::expect_equal(nrow(out), nrow(wqp))
+  testthat::expect_true("marker" %in% names(out))
+  testthat::expect_equal(unique(out$marker), "p4")
+  testthat::expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
+
+testthat::test_that("Pass 5: matches by Characteristic only (Fraction and Speciation are NA)", {
+  criteria_all <- criteria_fixture()
+
+  crit5_row <- criteria_all |>
+    dplyr::filter(
+      is.na(`TADA.ComparableDataIdentifier`),
+      is.na(`TADA.ResultSampleFractionText`),
+      is.na(`TADA.MethodSpeciationName`)
+    ) |>
+    dplyr::slice(1)
+  testthat::skip_if(nrow(crit5_row) == 0)
+
+  criteria_p5 <- crit5_row |> dplyr::mutate(marker = "p5")
+
+  wqp <- dplyr::tibble(
+    TADA.CharacteristicName = tolower(crit5_row$TADA.CharacteristicName),
+    TADA.ResultSampleFractionText = NA_character_,
+    TADA.MethodSpeciationName = NA_character_,
+    wqp_row_id = "w5"
+  )
+
+  out <- join_wqp_criteria(wqp, criteria_p5, byChar = FALSE)
+
+  testthat::expect_equal(nrow(out), nrow(wqp))
+  testthat::expect_true("marker" %in% names(out))
+  testthat::expect_equal(unique(out$marker), "p5")
+  testthat::expect_false(any(grepl("\\.(x|y)$", names(out))))
+})
