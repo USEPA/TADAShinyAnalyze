@@ -205,9 +205,9 @@ mod_custom_analysis_server <- function(id, tadat) {
 
       # decide how to join WQP dataframe to criteria table
       if (tadat$join_select_custom %in% "Option 1") {
-        byChar = FALSE
+        byChar <- FALSE
       } else {
-        byChar = TRUE
+        byChar <- TRUE
       }
 
       # Step 2: Join the criteria table

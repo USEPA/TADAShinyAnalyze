@@ -13,7 +13,7 @@ mod_excursion_viewer_ui <- function(id) {
     htmltools::p(
       "The table shows the summary of excursion (individual sample in comparison to the standard) and exceedance (evaluated based on the duration and frequency information.)"
     ),
-    DT::DTOutput((outputId = ns("excurse_table")))
+    DT::DTOutput((outputId <- ns("excurse_table")))
   )
 }
 
