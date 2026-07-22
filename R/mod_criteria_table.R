@@ -346,7 +346,7 @@ mod_criteria_table_server <- function(id, tadat) {
 
     ### Determine the options to generate the criteria table
 
-    # Run the TADA_DefineCriteriaMethodology_Shiny function to get the criteria table
+    # Run the TADA_DefineCriteriaMethodology function to get the criteria table
     criteria_template_rv <- shiny::reactiveVal(NULL) # store last capture if you need it
 
     # Return the capture (messages + stdout) when Generate is clicked
@@ -396,7 +396,7 @@ mod_criteria_table_server <- function(id, tadat) {
                   AU_UsesRef = tadat$df_autouse_input,
                   excel = TRUE,
                   overwrite = FALSE
-                )
+                )[[1]]
               })
             } else if (input$criteria_method %in% "B") {
               req(input$state_tribe_select, tadat$df_mlid_input)
@@ -411,7 +411,7 @@ mod_criteria_table_server <- function(id, tadat) {
                   AU_UsesRef = tadat$df_autouse_input,
                   excel = TRUE,
                   overwrite = FALSE
-                )
+                )[[1]]
               })
             } else if (input$criteria_method %in% "C") {
               capture_all_output({
@@ -425,14 +425,14 @@ mod_criteria_table_server <- function(id, tadat) {
                   AU_UsesRef = tadat$df_autouse_input,
                   excel = TRUE,
                   overwrite = FALSE
-                )
+                )[[1]]
               })
             } else if (input$criteria_method %in% "D") {
               capture_all_output({
                 EPATADA::TADA_DefineCriteriaMethodology(
                   excel = TRUE,
                   overwrite = FALSE
-                )
+                )[[1]]
               })
             } else {
               req(input$state_tribe_select_OP_E != "", uploaded_temp_table())
@@ -448,7 +448,7 @@ mod_criteria_table_server <- function(id, tadat) {
                   AU_UsesRef = tadat$df_autouse_input,
                   excel = TRUE,
                   overwrite = FALSE
-                )
+                )[[1]]
               })
             }
           },
@@ -569,7 +569,7 @@ mod_criteria_table_server <- function(id, tadat) {
 
       # Define required columns for criteria template
       selected_cols <- c(
-        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
+        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology()[[1]])),
         "EquationType",
         # Equation coefficient columns
         "EquationFormula",
@@ -875,7 +875,7 @@ mod_criteria_table_server <- function(id, tadat) {
 
       # Define required columns for criteria template
       selected_cols <- c(
-        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology())),
+        names(suppressMessages(EPATADA::TADA_DefineCriteriaMethodology()[[1]])),
         "EquationType",
         # Equation coefficient columns
         "EquationFormula",
