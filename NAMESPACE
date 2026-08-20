@@ -2,12 +2,16 @@
 
 export(run_app)
 import(shiny)
-importFrom(shiny,HTML)
-importFrom(shiny,NS)
-importFrom(shiny,column)
-importFrom(shiny,tagAppendAttributes)
-importFrom(shiny,tagList)
-importFrom(shiny,tags)
-importFrom(shinyjs,hide)
-importFrom(shinyjs,show)
-importFrom(shinyjs,useShinyjs)
+importFrom(shiny,
+  HTML,
+  NS,
+  column,
+  tagAppendAttributes,
+  tagList,
+  tags
+)
+importFrom(shinyjs,
+  hide,
+  show,
+  useShinyjs
+)
