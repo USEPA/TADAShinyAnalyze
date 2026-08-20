@@ -95,7 +95,7 @@ golem::document_and_reload()
 # Use packrat
 # options(rsconnect.packrat = TRUE) # already done
 # Deploy app to staging
-# Add staging link here: https://rstudio-connect.dmap-stage.aws.epa.gov/content/019dcc7e-863b-426a-a2a5-1813f53f5702/ 
+# Add staging link here: https://rstudio-connect.dmap-stage.aws.epa.gov/content/019dcc7e-863b-426a-a2a5-1813f53f5702/
 rsconnect::deployApp(
   appDir = getwd(),
   # appFiles = c("app.R", "DESCRIPTION", "NAMESPACE", "R/", "inst/"),
@@ -107,5 +107,6 @@ rsconnect::deployApp(
 )
 
 # To deploy to EPA posit connect production (public)
+# https://rconnect-public.epa.gov/TADAShinyAnalyze/
 # We must reach out to the DMAP team
 # Add public URL here when ready: 
